@@ -51,7 +51,7 @@
 //// defines how to handle notification click 
 // defaults to open a screen with the group1 (substation) name, adjust for your display naming standard
 //function EventsViewer_NotificationClick( nponto, id, group1 ) {
-//    window.open('display.html?SELTELA=../svg/'+group1+'.svg','screen','dependent=no,height=1000,width=800,toolbar=no,directories=no,status=no,menubar=no,scrollbars=no,resizable=no,modal=no');
+//    window.open('/#/display-viewer?screen=' + encodeURIComponent(group1), 'screen');
 //    }
 //
 //// Tabular Viewer ----------------------------------------------------------------------------------
@@ -108,7 +108,6 @@
 //// parameters for display preview 
 //var ScreenViewer_DefaultDisplayPreviewWidth = 700;
 //var ScreenViewer_DefaultDisplayPreviewHeight = 480;
-//var ScreenViewer_DisplayPreviewZoom = 0.5;
 //
 //var ScreenViewer_PinnedAnnotationsBGColor = "slategray"; // background color of pinned annotations
 //var ScreenViewer_PinnedAnnotationsTextColor = "white"; // text color of pinned annotations

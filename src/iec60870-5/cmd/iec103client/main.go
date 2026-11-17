@@ -38,6 +38,7 @@ import (
 
 	"iec60870-5/internal/cliapp"
 	"iec60870-5/internal/conv103"
+	"iec60870-5/internal/cs101util"
 	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
 	"iec60870-5/internal/mongoutil"
@@ -50,7 +51,7 @@ import (
 
 const (
 	protocolDriverName = "IEC60870-5-103"
-	driverVersion      = "0.4.1"
+	driverVersion      = "0.5.0"
 )
 
 // redundancy arbitrates the active node; command execution gates on it.
@@ -132,7 +133,7 @@ func buildConfig103(cc *model.ConnCfg) (cs103.Config, error) {
 	if portName == "" {
 		portName = "COM1"
 	}
-	if strings.Contains(portName, ":") {
+	if cs101util.IsTCPAddress(portName) {
 		cfg.Transport = cs103.TransportTCPClient
 		cfg.TCP = cs101.TCPConfig{
 			Address:        portName,
@@ -303,7 +304,11 @@ func main() {
 	jslog.Log(jslog.LevelBasic, "Instance: %d", instanceNumber)
 
 	connCfgs, err := mongoutil.LoadConns(db, protocolDriverName, instanceNumber)
-	if err != nil || len(connCfgs) == 0 {
+	if err != nil {
+		jslog.Log(jslog.LevelBasic, "%s", "Error loading connections: "+err.Error())
+		os.Exit(-1)
+	}
+	if len(connCfgs) == 0 {
 		jslog.Log(jslog.LevelBasic, "No connections found!")
 		os.Exit(-1)
 	}
@@ -363,8 +368,9 @@ func main() {
 	redundancy.Config = cfg
 	redundancy.DriverName = protocolDriverName
 	redundancy.InstanceNumber = instanceNumber
-	// No OnActivate/OnDeactivate: acquisition runs on both nodes, and only
-	// command execution gates on Active().
+	// No OnActivate/OnDeactivate: supervise polls Active() and closes the
+	// protocol connection on an inactive node; command execution also gates
+	// on it.
 	redundancy.OnTick = statsFn
 	go redundancy.Run(context.Background())
 

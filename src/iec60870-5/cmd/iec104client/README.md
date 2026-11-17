@@ -94,7 +94,7 @@ Parameters needed only for TLS encrypted connections (when there are redundant s
 - _**localCertFilePath**_ [String] - Path to file that contains the local certificate (\*.pfx) that will be presented to the remote side of the connection. **Optional parameter**.
 - _**passphrase**_ [String] - Password to the local certificate file (\*.pfx). **Optional parameter**.
 - _**peerCertFilePath**_ [String] - Path to certificate file used to verify the peer (server) (\*.cer). **Optional parameter**.
-- _**rootCertFilePath**_ [String] - Path to CA certificate file to check the certificate provided by the server - not required when _chainValidation=false_. **Optional parameter**.
+- _**rootCertFilePath**_ [String] - Path to CA certificate file to check the certificate provided by the server - not required when _chainValidation=false_. Without _rootCertFilePath_ the system root certificates are used. **Optional parameter**.
 - _**allowOnlySpecificCertificates**_ [bool] - Indicates whether the driver allows only specific certificates. Default: false. **Optional parameter**.
 - _**chainValidation**_ [bool] - Indicates whether the drivers performs a X509 chain validation against the registered CA certificates. Default: false. **Optional parameter**.
 

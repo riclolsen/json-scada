@@ -56,6 +56,17 @@ document, same model layout and object references, no native library dependency.
 - The control handler runs on the connection's goroutine, holding the server's model write lock:
   it must not block, and must never call `Update` or `Read` on the server (deadlock). Commands are
   queued and inserted by a separate goroutine.
+- `watchRealtimeData` re-reads every point (`resyncPoints`) each time the change stream opens:
+  events missed while it was closed are never delivered.
+- The control handler refuses a control flagged test (`Blocked-by-mode`): there is no test mode to
+  run it in, and the queued command would act on the real device.
+- `password` is the passphrase of the private key (`loadKeyPair`), as in the C# driver — not an
+  ACSE password.
+- `MaxRcbCopiesPerDataSet` is `MaxRcbPerLLN0 / 2`: a logical device may hold a status and a
+  measurand data set, and both families of blocks must fit `LLN0`. This is the one sizing bound
+  that differs from the C# driver (it allowed 4).
+- If `Serve` returns while the gateway is not stopped, the listener is closed and marked down so the
+  1 Hz loop binds a new one; initial values are applied only on the first start.
 - Values are only ever written through `Update`, which is what drives reporting. A client must
   never change a status point: library ≥ v0.6.6 refuses a forged operate (`LN$CO$DO$Oper`) of an
   object that has no `Oper`, which older versions wrote into its `stVal`.

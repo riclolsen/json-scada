@@ -99,13 +99,29 @@ func newTagDoc(iv Dnp3Value, connName string, id float64, isCommand bool,
 	return doc
 }
 
+// newTag is one document autoCreateFor built, with the address it was built
+// for, so settleInserts can take the address back if the insert fails.
+type newTag struct {
+	conn *Connection
+	key  [2]int
+	doc  bson.M
+}
+
+// unmark forgets that the address has a tag, so the next value for it tries
+// again, and makes the key allocator look at the collection afresh: a failed
+// insert may be an _id collision, which a stale cached key would repeat.
+func (t newTag) unmark() {
+	delete(t.conn.insertedAddresses, t.key)
+	t.conn.tagKeys.Reset()
+}
+
 // autoCreateFor returns the documents to insert for a value whose address has
 // not been seen before, or nil when nothing is to be created.
 //
 // A supervised point of a controllable family gets a command twin as well, so
 // that an operator can act on what the outstation reports. The twin is
 // allocated first so that its id is the lower of the two, as in the C++ driver.
-func autoCreateFor(ctx context.Context, conn *Connection, rtd *mongo.Collection, iv Dnp3Value) []any {
+func autoCreateFor(ctx context.Context, conn *Connection, rtd *mongo.Collection, iv Dnp3Value) []newTag {
 	if !conn.AutoCreateTags {
 		return nil
 	}
@@ -115,7 +131,7 @@ func autoCreateFor(ctx context.Context, conn *Connection, rtd *mongo.Collection,
 	}
 	conn.insertedAddresses[key] = true
 
-	var docs []any
+	var docs []newTag
 	commandID := 0.0
 
 	if conn.CommandsEnabled &&
@@ -130,15 +146,17 @@ func autoCreateFor(ctx context.Context, conn *Connection, rtd *mongo.Collection,
 			asdu = 1.0
 			duration = 3.0 // LATCH 1=ON 0=OFF
 		}
-		docs = append(docs, newTagDoc(iv, conn.Name, commandID, true, cmdGroup, asdu, duration,
-			0.0, commandID+1.0))
-		conn.insertedAddresses[[2]int{cmdGroup, iv.Address}] = true
+		cmdKey := [2]int{cmdGroup, iv.Address}
+		docs = append(docs, newTag{conn: conn, key: cmdKey,
+			doc: newTagDoc(iv, conn.Name, commandID, true, cmdGroup, asdu, duration, 0.0, commandID+1.0)})
+		conn.insertedAddresses[cmdKey] = true
 		jslog.Log(jslog.LevelBasic, "%s - INSERT NEW COMMAND TAG: %s;%d;%d",
 			conn.Name, conn.Name, cmdGroup, iv.Address)
 	}
 
 	newID := conn.tagKeys.Next(ctx, rtd, conn.ProtocolConnectionNumber)
-	docs = append(docs, newTagDoc(iv, conn.Name, newID, false, iv.BaseGroup, 0.0, 0.0, commandID, 0.0))
+	docs = append(docs, newTag{conn: conn, key: key,
+		doc: newTagDoc(iv, conn.Name, newID, false, iv.BaseGroup, 0.0, 0.0, commandID, 0.0)})
 	jslog.Log(jslog.LevelBasic, "%s - INSERT NEW TAG: %s;%d;%d",
 		conn.Name, conn.Name, iv.BaseGroup, iv.Address)
 

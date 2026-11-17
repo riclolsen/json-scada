@@ -24,6 +24,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -55,6 +56,13 @@ const (
 	// maxDiscoveryBackoff caps the wait between repeated failed attempts to
 	// discover a namespace.
 	maxDiscoveryBackoff = 5 * time.Minute
+
+	// maxSetupFailures is how many sessions in a row may be rebuilt because
+	// their subscriptions could not all be created. After that the session is
+	// kept as it is: a server that persistently refuses (a subscription limit,
+	// say) would otherwise flap forever, and the points that did get a
+	// subscription are better served than none.
+	maxSetupFailures = 3
 
 	// sessionTimeout matches the value the C# driver passes to
 	// Session.Create.
@@ -89,6 +97,7 @@ func connectionLoop(ctx context.Context, cfg jsconfig.Config, conn *OPCUAConnect
 	appCfg := readUAConfigXML(conn.ConfigFileName)
 	attempt := 0
 	discoveryFailures := 0
+	setupFailures := 0
 
 	for ctx.Err() == nil {
 		cli, err := connectOnce(ctx, conn, appCfg, attempt)
@@ -104,6 +113,11 @@ func connectionLoop(ctx context.Context, cfg jsconfig.Config, conn *OPCUAConnect
 		jslog.Log(jslog.LevelNoLog, "%s - Session created successfully.", conn.Name)
 		conn.setClient(cli)
 
+		// Everything this session starts (the notification pumps) ends with
+		// it, so a rebuilt connection never leaves goroutines behind.
+		sctx, endSession := context.WithCancel(ctx)
+		health := newSessionHealth()
+
 		// Browsing must precede the subscriptions: it appends the
 		// discovered items to conn.ListMon, which is what they subscribe.
 		//
@@ -113,12 +127,12 @@ func connectionLoop(ctx context.Context, cfg jsconfig.Config, conn *OPCUAConnect
 		// tag until the driver is restarted. Rebuild the session instead.
 		discovered := true
 		if conn.AutoCreateTags {
-			browsed, err := browseFullAddressSpace(ctx, cli, conn,
+			browsed, err := browseFullAddressSpace(sctx, cli, conn,
 				ua.NewNumericNodeID(0, id.ObjectsFolder))
 			if err != nil {
 				jslog.Log(jslog.LevelNoLog, "%s - Error browsing the namespace: %v", conn.Name, err)
 				discovered = false
-			} else if err := autotagPass(ctx, cli, conn, browsed); err != nil {
+			} else if err := autotagPass(sctx, cli, conn, browsed); err != nil {
 				jslog.Log(jslog.LevelNoLog, "%s - Tag discovery incomplete: %v", conn.Name, err)
 				discovered = false
 
@@ -141,11 +155,21 @@ func connectionLoop(ctx context.Context, cfg jsconfig.Config, conn *OPCUAConnect
 		if !discovered {
 			discoveryFailures++
 			conn.setClient(nil)
+			endSession()
 			closeCtx, cancelDisc := context.WithTimeout(context.Background(), 5*time.Second)
 			_ = cli.Close(closeCtx)
 			cancelDisc()
 			if ctx.Err() != nil {
 				return
+			}
+			// The writer may still hold values of the failed pass, and the
+			// tags it inserts for them must be in the database before the
+			// reload reads them back (deviation D29).
+			if !waitWriterIdle(ctx, 30*time.Second) {
+				if ctx.Err() != nil {
+					return
+				}
+				jslog.Log(jslog.LevelNoLog, "%s - The writer did not drain in time, reloading tags anyway.", conn.Name)
 			}
 			// Read the tags back, including any the partial pass created,
 			// so the next attempt starts from the same state a fresh
@@ -168,12 +192,26 @@ func connectionLoop(ctx context.Context, cfg jsconfig.Config, conn *OPCUAConnect
 		}
 
 		discoveryFailures = 0
-		setupSubscriptions(ctx, cli, conn)
 
-		jslog.Log(jslog.LevelNoLog, "%s - Running...", conn.Name)
-
-		reason := watchClient(ctx, conn, cli)
+		// deviation D28: a session whose subscriptions are incomplete is
+		// rebuilt, a few times, instead of silently leaving points dead.
+		reason := ""
+		if err := setupSubscriptions(sctx, cli, conn, health); err != nil && setupFailures < maxSetupFailures {
+			setupFailures++
+			reason = fmt.Sprintf("subscriptions incomplete (%d/%d): %v", setupFailures, maxSetupFailures, err)
+		} else {
+			if err != nil {
+				jslog.Log(jslog.LevelNoLog,
+					"%s - Subscriptions are still incomplete after %d rebuilds; running with what could be created.",
+					conn.Name, maxSetupFailures)
+			} else {
+				setupFailures = 0
+			}
+			jslog.Log(jslog.LevelNoLog, "%s - Running...", conn.Name)
+			reason = watchClient(ctx, conn, cli, health)
+		}
 		conn.setClient(nil)
+		endSession()
 		closeCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		_ = cli.Close(closeCtx)
 		cancel()
@@ -276,10 +314,18 @@ func selectEndpoint(ctx context.Context, conn *OPCUAConnection, endpointURL stri
 				}
 			}
 		}
+		// deviation D30: the fallback never settles for a weaker mode than the
+		// one configured. With security requested, an endpoint without it
+		// would send the credentials in the clear.
+		for _, ep := range eps {
+			if selected == nil && ep.SecurityMode >= wantMode {
+				selected = ep
+				jslog.Log(jslog.LevelNoLog, "%s - Using first discovered endpoint with at least that mode: %s | Mode: %v",
+					conn.Name, policyShortName(ep.SecurityPolicyURI), ep.SecurityMode)
+			}
+		}
 		if selected == nil {
-			selected = eps[0]
-			jslog.Log(jslog.LevelNoLog, "%s - Using first discovered endpoint: %s | Mode: %v",
-				conn.Name, policyShortName(selected.SecurityPolicyURI), selected.SecurityMode)
+			return nil, fmt.Errorf("the server offers no endpoint with security mode %v or stronger", wantMode)
 		}
 	}
 
@@ -434,11 +480,15 @@ func clientOptions(conn *OPCUAConnection, appCfg uaAppConfig, ep *ua.EndpointDes
 // The state is polled rather than read from opcua.StateChangedCh, because
 // the client sends to that channel synchronously: a slow or unread reader
 // would stall the client itself.
-func watchClient(ctx context.Context, conn *OPCUAConnection, cli *opcua.Client) string {
+//
+// It also returns when the session is up but its subscriptions are not
+// delivering (deviation D28).
+func watchClient(ctx context.Context, conn *OPCUAConnection, cli *opcua.Client, health *sessionHealth) string {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
 	lastConnected := time.Now()
+	wasConnected := true
 	var lastWaitLog time.Time
 	for {
 		select {
@@ -450,6 +500,20 @@ func watchClient(ctx context.Context, conn *OPCUAConnection, cli *opcua.Client) 
 		switch cli.State() {
 		case opcua.Connected:
 			lastConnected = time.Now()
+			if !wasConnected {
+				// gopcua reconnected and recreates the subscriptions itself:
+				// give them a fresh budget.
+				health.touch()
+				wasConnected = true
+			}
+			select {
+			case err := <-health.failure:
+				return fmt.Sprintf("subscription error: %v", err)
+			default:
+			}
+			if silent, stale := health.staleFor(lastConnected); stale {
+				return fmt.Sprintf("subscriptions silent for %.0fs", silent.Seconds())
+			}
 
 		case opcua.Closed:
 			// gopcua gave up by itself, e.g. the server refused the
@@ -457,6 +521,7 @@ func watchClient(ctx context.Context, conn *OPCUAConnection, cli *opcua.Client) 
 			return "session closed"
 
 		default:
+			wasConnected = false
 			// Disconnected or Reconnecting: gopcua is retrying this one
 			// endpoint URL. Give it a while, then rebuild so the next
 			// configured endpoint gets a turn.

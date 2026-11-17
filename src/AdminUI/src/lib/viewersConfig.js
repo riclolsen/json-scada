@@ -70,7 +70,7 @@ export const defaultConfig = {
   // notification click handler (opens the SVG display for the group1 in the
   // display viewer, reusing the same window for later notifications)
   EventsViewer_NotificationClick: (nponto, id, group1) => {
-    window.open('/#/display-viewer-new?screen=' + encodeURIComponent(group1), 'screen')
+    window.open('/#/display-viewer?screen=' + encodeURIComponent(group1), 'screen')
   },
 
   // Display (Screen) Viewer ---------------------------------------------------
@@ -93,7 +93,6 @@ export const defaultConfig = {
   ScreenViewer_ShowScreenNameTB: 1,
   ScreenViewer_DefaultDisplayPreviewWidth: 700,
   ScreenViewer_DefaultDisplayPreviewHeight: 480,
-  ScreenViewer_DisplayPreviewZoom: 0.5,
   ScreenViewer_DisplayPreviewTimeout: 1500, // ms hover delay before showing a preview
   ScreenViewer_SecurityCardScale: 1.0, // scale of the pinned annotation badge
   // Pinned documental-annotations panel (#PIN notes filtered by #set_filter group1)

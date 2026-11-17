@@ -216,7 +216,9 @@ Each value is written to the tag's `sourceDataUpdate`:
 
 A block whose content did not change since the last read is not written again. Every
 `giInterval` seconds, and on the first cycle after a connection, the integrity cycle writes all
-values whatever they are.
+values whatever they are. Re-reading the tag list (every 60 seconds) keeps this cache for every
+block whose tags and decoding did not change. When writing to `realtimeData` fails, the next
+cycle writes every value, and every invalidation, again.
 
 A block that fails (timeout, exception, transport error) marks its tags invalid
 (`sourceDataUpdate.invalidAtSource: true`) once, and they become valid again with the next good
@@ -224,14 +226,18 @@ read. An exception does not drop the connection: the device answered.
 
 ## Connection handling
 
-The driver connects to the first address in `ipAddresses`. The link is considered down when it
-cannot connect, or when a whole poll cycle gets no answer and at least one transport error. It
-then:
+The driver connects to the first address in `ipAddresses`. The status turns `connected` once the
+device answers a request (an exception counts), or at once when the connection has no tags. The
+link is considered down when it cannot connect, or when a whole poll cycle gets no answer: every
+block timed out or hit a transport error. A peer that accepts the connection and never answers
+is therefore a lost link. A cycle stops at the first transport error, or after 3 blocks in a row
+timed out, while nothing has answered yet. The driver then:
 
-- marks every tag of the connection invalid, once per outage;
+- marks every tag of the connection invalid, once per outage (again on the next attempt when that
+  write failed);
 - moves to the next address in `ipAddresses`;
 - waits before the next attempt: 1 second, doubling up to 30 seconds, and back to 1 second after
-  a successful connection.
+  a connection on which the device answered.
 
 When a node becomes standby in a redundant pair, connections stop unless
 `keepProtocolRunningWhileInactive` is `true`.
@@ -247,12 +253,18 @@ to the device while the connection runs. They are executed only when:
 - the command's `timeTag` is less than 10 seconds old (otherwise `command expired`);
 - the link is up (otherwise `connection down`).
 
-The value is sent with the function the address and type call for:
+Commands are executed one at a time, in the order they were inserted. Commands still queued when
+the connection stops are acknowledged `connection down`.
+
+The value is sent with the function the address and type call for. Only `co` and `hr` can be
+written; a command for `di` or `ir` is refused. An ON/OFF command (coil, register bit, ASDU `bool`)
+whose value is not a number is refused.
 
 | Target | Function |
 |---|---|
-| `co` area, or ASDU `bool` | FC5 Write Single Coil. `kconv1 = -1` inverts. |
+| `co` area | FC5 Write Single Coil. `kconv1 = -1` inverts. |
 | Register bit `hr:N.bB` | FC22 Mask Write Register, or with `useMaskWrite: false` FC3 then FC6. |
+| A register with ASDU `bool` | FC6 Write Single Register, 1 or 0. `kconv1 = -1` inverts. |
 | One 16-bit register (`uint16`, `int16`, `bcd16`, `bitstring16`) | FC6 Write Single Register |
 | Multi-register values and strings | FC16 Write Multiple Registers |
 
@@ -270,6 +282,8 @@ The driver updates the command document with `delivered: true`, `ack`, `ackTimeT
 | `response timeout` | `false` |
 | `Modbus exception 02 ILLEGAL DATA ADDRESS (FC 6)` and the like | `false` |
 | an encoding error, such as a value out of range for the type | `false` |
+| `area di is read-only`, `area ir is read-only` | `false` |
+| `invalid value for an ON/OFF command: <value>` | `false` |
 | `command expired`, `connection down` | `false` |
 
 Modbus has no end-to-end confirmation: `ack: true` means the device answered the write.
@@ -279,6 +293,8 @@ when shorter) and acknowledges it. A register bit write to unit 0 always uses FC
 register cannot be read back first.
 
 Commands go ahead of the poll queue: a command waits only for the request in progress.
+
+A register read with ASDU `bool` is ON when it is not zero; `kconv1 = -1` inverts.
 
 ## Automatic tag creation
 
@@ -306,7 +322,7 @@ While the node is active, every 5 seconds the driver writes the connection's `st
 
 | Field | Meaning |
 |---|---|
-| `status` | `connecting`, `connected`, `disconnected` or `stopped`. |
+| `status` | `connecting`, `connected` (the device answers), `disconnected` or `stopped`. `stats.isConnected` is `true` while `connected`. |
 | `connectedTo` | `tcp://host:port`, `tls://host:port` or `serial://port@baud`. |
 | `requests` | Block reads sent. |
 | `errors` | Transport errors. |

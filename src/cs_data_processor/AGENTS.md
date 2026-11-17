@@ -23,6 +23,7 @@ Node.js service that processes MongoDB Change Stream events for alarm detection,
   - `metrics.js` — latency instrumentation (histograms, counters, HTTP endpoint)
   - `commstatus.js` — communication status tags (`_System.Driver/Conn/Comm.*`); port of `../cs_data_processor-go/commstatus.go`, keep tag names, keys, fields, BSON number types (`Double`) and timing identical; the connection name comes from `protocolConnections.name`; contract in `docs/schema.md` (Communication status tags); the MCP server (`src/mcp-json-scada-db/src/jsonscada/system-tags.ts`) mirrors the names, points, keys and owned fields to explain and check these tags, so change it together
   - `commstatus.test.js` — `node:test` suite mirroring `commstatus_test.go`
+  - SQL files for PostgreSQL (`../../sql/pg_hist_*.sql`, `pg_rtdata_*.sql`) are written as `*.tmp` and renamed by `writeSqlFile()`; `src/process_pg_sql` loads them, so keep the name pattern in step with it and `../cs_data_processor-go/writers.go`
 - **Config:** INI file via Supervisor or environment variables
 
 ## Work Guidance

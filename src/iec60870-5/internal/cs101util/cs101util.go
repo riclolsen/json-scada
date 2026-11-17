@@ -22,6 +22,8 @@
 package cs101util
 
 import (
+	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +36,21 @@ import (
 
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 )
+
+// IsTCPAddress reports whether a portName is a "host:port" TCP endpoint
+// rather than a serial device. Device paths (/dev/serial/by-path/...:1.0,
+// \\.\COM10) and names without a numeric port stay serial.
+func IsTCPAddress(portName string) bool {
+	if strings.HasPrefix(portName, "/") || strings.HasPrefix(portName, `\\`) {
+		return false
+	}
+	host, port, err := net.SplitHostPort(portName)
+	if err != nil || host == "" {
+		return false
+	}
+	n, err := strconv.Atoi(port)
+	return err == nil && n > 0 && n <= 65535
+}
 
 func msToSeconds(ms float64, def, min, max int) time.Duration {
 	s := def
@@ -63,7 +80,7 @@ func BuildConfig(cc *model.ConnCfg, isServer bool) (cs101.Config, error) {
 	// portName "host:port" is TCP-encapsulated FT1.2 (the C# driver used a
 	// TcpClientVirtualSerialPort for this). go-iecp5 carries the frames over
 	// a TCP client connection to the terminal/serial-device server.
-	if strings.Contains(portName, ":") {
+	if IsTCPAddress(portName) {
 		cfg.Transport = cs101.TransportTCPClient
 		cfg.TCP = cs101.TCPConfig{
 			Address:        portName,

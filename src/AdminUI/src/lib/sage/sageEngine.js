@@ -73,7 +73,7 @@ function rgbMix(a, b, t) {
 }
 
 export class SageEngine {
-  constructor({ container, cfg, onOpenPoint, onAlarmBeep, onStatus, onScreenLink, onUpdateTime, onAlarmBox }) {
+  constructor({ container, cfg, onOpenPoint, onAlarmBeep, onStatus, onScreenLink, onUpdateTime, onAlarmBox, alarmBoxHost }) {
     this.container = container
     this.cfg = cfg
     this.onOpenPoint = onOpenPoint || (() => {})
@@ -96,7 +96,7 @@ export class SageEngine {
       this.highlightByKey(k)
       // alarm box sits top-right, so anchor there -> dialog opens bottom-left
       this.onOpenPoint(k, { x: window.innerWidth - 40, y: 60 })
-    })
+    }, alarmBoxHost)
     this.screenFilter = '' // group1 filter from #set_filter markup
     this.queryKeys = new Set()
     this.jsonKeys = new Set() // points whose valueJson is requested (subset of queryKeys)
@@ -658,7 +658,7 @@ export class SageEngine {
         el,
         () => {
           const key = this.resolveKey(tag)
-          return key !== undefined ? 'trend.html?NPONTO=' + key + '&HIDECTRLS=1' : null
+          return key !== undefined ? '/#/trend-viewer?point=' + key + '&embed=1&controls=0' : null
         },
         610,
         340
@@ -808,15 +808,8 @@ export class SageEngine {
       const screen = src.trim()
       el.style.cursor = 'pointer'
       el.addEventListener('click', () => this.onScreenLink(screen))
-      // hovering a screen link previews that screen (zoomed-out, toolbar hidden)
-      const name = screen.endsWith('.svg') ? screen : screen + '.svg'
-      const zoom = this.cfg.ScreenViewer_DisplayPreviewZoom || 0.5
-      const zpw = Math.round(this.cfg.ScreenViewer_SVGMaxWidth / zoom)
-      const zph = Math.round(this.cfg.ScreenViewer_SVGMaxHeight / zoom)
-      this.preview.attach(
-        el,
-        `display.html?SELTELA=../svg/${name}&ZPX=0&ZPY=0&ZPW=${zpw}&ZPH=${zph}&HIDETB=1`
-      )
+      // hovering a screen link previews that screen (fitted, no toolbar)
+      this.preview.attach(el, '/#/display-viewer?screen=' + encodeURIComponent(screen) + '&embed=1')
     }
   }
 
@@ -1405,6 +1398,7 @@ export class SageEngine {
           alarmTime: p.alarmTime || '',
         }
       })
+      if (this.disposed || this.timeMachine) return // left the page or entered replay meanwhile
       this.alarmBox.render(items)
       this.onAlarmBox(items.length > 0) // box is shown only when there are alarms
     } catch (e) {
@@ -1492,7 +1486,7 @@ export class SageEngine {
   ingest(points, full) {
     points.forEach((p) => {
       let value
-      let flags = 0
+      let flags
       if (p.type === 'digital') {
         value = p.valueRaw ? 0 : 1 // OSHMI: on(true)=0, off(false)=1
         flags = p.valueRaw ? 0x02 : 0x01

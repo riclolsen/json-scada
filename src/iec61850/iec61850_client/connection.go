@@ -37,8 +37,6 @@ import (
 	"github.com/dscsystems/go-iec61850/model"
 )
 
-// active tells whether this node is the active one of the redundant pair.
-
 // connectionLoop keeps one association to an IED alive, reconnecting for as
 // long as the driver runs.
 func connectionLoop(ctx context.Context, conn *Iec61850Connection) {
@@ -132,6 +130,9 @@ func runConnection(ctx context.Context, conn *Iec61850Connection) error {
 	conn.Brcb = nil
 	conn.Urcb = nil
 	conn.TakeSubscriptions()
+	// Report coverage belongs to an association: the blocks enabled on this
+	// one mark their members again.
+	conn.ResetEntryReports()
 	conn.mu.Lock()
 	conn.RcbByRptID = map[string]*rcbState{}
 	conn.RcbByDataSet = map[string]*rcbState{}
@@ -242,6 +243,17 @@ func pollSweep(ctx context.Context, conn *Iec61850Connection) error {
 		})
 	}
 
+	// Everything is reported, so nothing above would notice an IED that
+	// keeps the TCP connection open but stopped answering. Ask it
+	// something: any answer, a refusal included, means it is alive.
+	if len(reqs) == 0 {
+		_, _, _, err := cli.MMS().Identify(readCtx)
+		if isAssociationDown(ctx, cli, err) {
+			return fmt.Errorf("%s Connection error detected! IED not answering: %v", conn.Name, err)
+		}
+		return nil
+	}
+
 	for _, p := range reqs {
 		value, err := p.req.Result()
 		tag := p.entry.JsTag
@@ -249,7 +261,7 @@ func pollSweep(ctx context.Context, conn *Iec61850Connection) error {
 			tag = p.entry.Path
 		}
 		if err != nil {
-			if isAssociationDown(cli, err) {
+			if isAssociationDown(ctx, cli, err) {
 				return fmt.Errorf("%s Connection error detected! %v", conn.Name, err)
 			}
 			jslog.Log(jslog.LevelBasic, "%s READ  %s %s\n    Read error: %v", conn.Name, p.entry.Path, tag, err)
@@ -262,8 +274,7 @@ func pollSweep(ctx context.Context, conn *Iec61850Connection) error {
 		// A point the driver discovered itself publishes its tag; a point
 		// configured in realtimeData already has one.
 		selfPublish := conn.AutoCreateTags && p.entry.AutoPublish
-		iv, _ := buildIECValue(conn, p.entry, value, selfPublish, false, &log)
-		enqueueValue(iv)
+		emitValues(conn, p.entry, value, selfPublish, false, 0, &log)
 		jslog.Log(jslog.LevelBasic, "%s", log.String())
 	}
 	return nil
@@ -272,10 +283,18 @@ func pollSweep(ctx context.Context, conn *Iec61850Connection) error {
 // isAssociationDown separates a dead link from a rejected point. A
 // data-access error or a service error means the point is bad; anything the
 // transport reports, or a client whose state already dropped, means the
-// association is gone.
-func isAssociationDown(cli *client.Client, err error) bool {
+// association is gone. So does a request that ran out of time while the
+// driver itself was not stopping: the IED holds the connection but no
+// longer answers, and only a new association can recover from that.
+func isAssociationDown(ctx context.Context, cli *client.Client, err error) bool {
 	if err == nil {
 		return false
+	}
+	if ctx.Err() != nil {
+		return false // the driver is stopping: says nothing about the link
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
 	}
 	var dae mms.DataAccessError
 	if errors.As(err, &dae) {
@@ -288,17 +307,32 @@ func isAssociationDown(cli *client.Client, err error) bool {
 	return cli.State() != mms.StateConnected
 }
 
-// closeConnection releases report subscriptions and the association.
+// disableTimeout bounds the disable of one report block on close.
+const disableTimeout = 5 * time.Second
+
+// closeConnection releases report subscriptions and the association. Each
+// block gets a budget of its own: a shared one let a slow IED leave the later
+// blocks enabled, and some IEDs keep an enabled block owned by the dead
+// association until they restart.
 func closeConnection(conn *Iec61850Connection) {
 	cli := conn.Client()
 	if cli == nil {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	for _, sub := range conn.TakeSubscriptions() {
-		_ = sub.Disable(ctx)
+	budget := conn.requestTimeout()
+	if budget > disableTimeout {
+		budget = disableTimeout
 	}
-	cancel()
+	for _, sub := range conn.TakeSubscriptions() {
+		if cli.State() != mms.StateConnected {
+			break // nothing can be written any more
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), budget)
+		if err := sub.Disable(ctx); err != nil {
+			jslog.Log(jslog.LevelBasic, "%s Report block disable failed: %v", conn.Name, err)
+		}
+		cancel()
+	}
 	_ = cli.Close()
 	conn.SetClient(nil)
 }

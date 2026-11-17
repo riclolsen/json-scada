@@ -215,13 +215,14 @@ The rules below are deliberately separated: only the first group is enforced; th
 **Enforced constraints**
 
 * Non-empty string, unique in _realtimeData_ (unique index `tagIndex`). Case sensitive.
+* A tag name must not begin with a number, nor with a sign followed by a number (`1abc`, `42`, `-5` are invalid): APIs that take a point id (`/Invoke/` `NodeId.Id`, GraphQL `tagOrId`) read a number or a digit string as the point key (_\_id_). _server_realtime_auth_ (`createTag`/`updateTag`, used by the AdminUI and the MCP server) refuses such names.
 * When created via the AdminUI/_server_realtime_auth_, leading/trailing spaces are trimmed and an empty name becomes `new_tag_<_id>`.
-* No character set or length is validated by MongoDB, the AdminUI or the server.
+* No other character set or length rule is validated by MongoDB, the AdminUI or the server.
 * Names beginning with `_System.` are reserved for internal system tags created by the seed and processes.
 
 **Recommended conventions for new user-defined tags**
 
-* Begin with a letter (A-Z, a-z). A leading underscore is accepted but should be left to system tags.
+* Begin with a letter (A-Z, a-z). A leading underscore is accepted but should be left to system tags; a leading digit is not allowed (see above).
 * Use letters, digits, `_`, `-` and `.`; avoid spaces and symbols such as `#/|*!^~%$;:`.
 * Keep names short (below about 30 characters) so displays stay readable.
 
@@ -272,7 +273,7 @@ Do not rename existing tags to fit the conventions. Tag names are referenced by 
 * _**_substituted_**_ [Boolean] - When true, indicates that the value is substituted locally by the operator. **Mandatory parameter**.
 * _**_alarmDisabled_**_ [Boolean] - When true, indicates that alarms are disabled for the point. **Mandatory parameter**.
 * _**_annotation_**_ [String] - Blocking annotation text (reason command for blocking). **Mandatory parameter**.
-* _**_commandBlocked_**_ [Boolean] - When true, the command is disabled by the operator. **Mandatory parameter**.
+* _**_commandBlocked_**_ [Boolean] - When true, the command is disabled by the operator. **Mandatory parameter**. _server_realtime_auth_ (`/Invoke/` and GraphQL) refuses a command while the command point, or the supervised point it acts on (_supervisedOfCommand_), has _commandBlocked_ true or a non-empty blocking _annotation_; only points with _origin_ `command` accept commands.
 * _**_notes_**_ [String] - Documental notes text about the point. **Mandatory parameter**.
 * _**_commissioningRemarks_**_ [String] - Remarks about the point commissioning. **Mandatory parameter**.
 
@@ -527,7 +528,7 @@ MongoDB time series collection written by _cs_data_processor_ (and the Go _cs_da
 | | MongoDB `hist` collection | PostgreSQL/TimescaleDB `hist` table |
 |---|---|---|
 | Role | Secondary historian, needs no extra database | Primary historian |
-| Written by | _cs_data_processor_ directly (`insertMany`, `w: 0`) | _cs_data_processor_ writes SQL files, `sql/process_pg_hist.sh`/`.bat` loads them |
+| Written by | _cs_data_processor_ directly (`insertMany`, `w: 0`) | _cs_data_processor_ writes SQL files, `src/process_pg_sql` (`process_pg_hist` service) loads them |
 | Retention | `expireAfterSeconds` (60 days as seeded) | TimescaleDB `add_retention_policy('hist', INTERVAL '45 days')` in `sql/create_tables.sql` (`sql/delete_old.sql` for manual pruning) |
 | Quality fields | `invalid`, `timeTagAtSource`, `timeTagAtSourceOk`, `cot` | `time_tag_at_source`, `flags` bit mask |
 | Read by | _OPC-UA-Server_ HistoryRead (default backend, `historian: "mongodb"`) | _server_realtime_auth_ `/Invoke` HistoryRead and GraphQL, Grafana, Metabase, _OPC-UA-Server_ with `historian: "postgresql"` |
@@ -539,13 +540,14 @@ User accounts used by _server_realtime_auth_ (model `app/models/user.model.js`).
 * _**__id_**_ [ObjectId] - Document id.
 * _**_username_**_ [String] - Login name. Unique (`userNameIndex`).
 * _**_email_**_ [String] - E-mail address.
-* _**_password_**_ [String] - bcrypt hash (cost 8), never plain text. Not used for LDAP users, who authenticate against the directory.
+* _**_password_**_ [String] - bcrypt hash (cost 10; older hashes of cost 8 stay valid and are rehashed at the next successful sign-in), never plain text. Passwords set through _server_realtime_auth_ need at least 8 characters. Not used for LDAP users, who authenticate against the directory.
 * _**_roles_**_ [Array of ObjectId] - References to _roles_ documents. Effective rights combine all roles (see below).
 * _**_isLDAPUser_**_ [Boolean] - User is authenticated and synchronized via LDAP.
 * _**_ldapDN_**_ [String] - LDAP distinguished name.
 * _**_lastLDAPSync_**_ [Date] - Last LDAP synchronization, null when never.
+* _**_tokenVersion_**_ [Integer] - Incremented by a password change (own or by an admin): session tokens issued before it are refused. Default 0. Not changed by user updates.
 
-Authentication: `POST /Invoke/auth/signin` with `{username, password}` returns the JWT in the httpOnly `x-access-token` cookie (also accepted as an `x-access-token` header on later requests) plus a readable `json-scada-user` cookie with the user's rights. The JWT carries the combined rights and expires after the largest `maxSessionDays` of the user's roles.
+Authentication: `POST /Invoke/auth/signin` with `{username, password}` returns the JWT in the httpOnly `x-access-token` cookie (also accepted as an `x-access-token` header on later requests) plus a readable `json-scada-user` cookie with the user's rights. The JWT only identifies the user (`id`, `username`, `tv` = _tokenVersion_, `jti` = token id) and expires after the largest `maxSessionDays` of the user's roles (at least one hour; LDAP users at most `JS_LDAP_MAX_SESSION_HOURS`, default 12). Rights are read from the database on every request (cached for 10 seconds), so role changes, deleted users, password changes and sign-outs take effect at once. The `json-scada-user` cookie carries the rights for the client scripts, without the station lists (`group1List`, `group1CommandList`); a `displayList` too long for a cookie is left out (`displayListTruncated: true`) and read from `GET /Invoke/auth/userDisplays`.
 
 ## _roles_ collection
 
@@ -560,8 +562,8 @@ RBAC roles (model `app/models/role.model.js`); seed in `mongo_seed/roles.json`. 
 * _**_substituteValues_**_ [Boolean] - May substitute values.
 * _**_ackEvents_**_, _**_ackAlarms_**_, _**_disableAlarms_**_ [Boolean] - May acknowledge events, acknowledge alarms, disable alarms.
 * _**_group1List_**_ [Array of String] - _group1_ values the role can see. Empty = all.
-* _**_group1CommandList_**_ [Array of String] - _group1_ values the role can command.
-* _**_displayList_**_ [Array of String] - Displays the role can open.
+* _**_group1CommandList_**_ [Array of String] - _group1_ values the role can command. Empty = all the stations the user can see: a user restricted by _group1List_ can only command those stations (when both lists are given, a station must be in both). Special `$$` commands (no point) are allowed to a user restricted by either list only when _group1CommandList_ contains `$$`.
+* _**_displayList_**_ [Array of String] - Display files (e.g. `kaw2.svg`) the role can open; enforced for the `.svg` files under `/svg`. Empty = all; admins open any display.
 * _**_cimEngineering_**_ [Boolean] - CIM-EMS engineering: upload and activate network models, approve binding revisions, download CIM-EMS artifacts. Checked in addition to _isAdmin_. Default false.
 * _**_maxSessionDays_**_ [Double] - Session (JWT) lifetime in days. Default 3.
 
@@ -576,6 +578,13 @@ Audit log written by _server_realtime_auth_ through a queue (model `app/models/u
 * _**_tag_**_ [String] - Affected tag name, when the action targets a tag.
 * _**_properties_**_ [Object] - Action details (e.g. the request body without password, the command value).
 * _**_timeTag_**_ [Date] - When the action happened. Indexed (`actionsTimeTagIndex`).
+
+## _revokedTokens_ collection
+
+Session tokens ended by a sign-out before their expiry, written by _server_realtime_auth_ and read back every 10 seconds (so all server instances refuse them). A TTL index on _expireAt_ removes each entry when the token would have expired anyway.
+
+* _**__id_**_ [String] - Token id (`jti` claim).
+* _**_expireAt_**_ [Date] - Expiry of the token.
 
 ## Extending the Database Schema
 
@@ -616,7 +625,7 @@ In this table historical data is written. Local and source timestamps are record
     -- data retention policy (older data will be deleted)
     SELECT add_retention_policy('hist', INTERVAL '45 days');
 
-Rows are queued by _cs_data_processor_ as SQL files and loaded by `sql/process_pg_hist.sh` (or `.bat`). See [MongoDB _hist_ versus PostgreSQL _hist_](#mongodb-hist-versus-postgresql-hist) for the differences from the MongoDB time series collection. Authoritative DDL: [sql/create_tables.sql](../sql/create_tables.sql).
+Rows are queued by _cs_data_processor_ as SQL files and loaded by [src/process_pg_sql](../src/process_pg_sql/README.md) (`process_pg_hist` service). See [MongoDB _hist_ versus PostgreSQL _hist_](#mongodb-hist-versus-postgresql-hist) for the differences from the MongoDB time series collection. Authoritative DDL: [sql/create_tables.sql](../sql/create_tables.sql).
 
 ## Realtime Data Table
 

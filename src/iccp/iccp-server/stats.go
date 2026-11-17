@@ -177,8 +177,8 @@ func publishConnectionStats(coll *mongo.Collection, registry *serverRegistry, co
 
 // serveClientCallbacks returns the ServeClients build callback and
 // post-disconnect hook for one listening connection: each association gets
-// its own server, is tracked in the registry for change-stream fan-out and
-// statistics, and has its server events observed.
+// its own server, is tracked in the registry for statistics and redundancy,
+// and has its server events observed.
 func serveClientCallbacks(
 	registry *serverRegistry,
 	dataModel *tase2.DataModel,
@@ -188,6 +188,12 @@ func serveClientCallbacks(
 	cmdCollection *mongo.Collection,
 ) (func(ce *tase2.Endpoint) *tase2.Server, tase2.PostDisconnectHook) {
 	build := func(ce *tase2.Endpoint) *tase2.Server {
+		// Off the active node (unless keepProtocolRunningWhileInactive)
+		// associations are refused; returning nil closes the transport.
+		if !protocolRunning() {
+			LogMsg(LogLevelNormal, "ICCP - Node inactive, refusing association on %s", conn.Name)
+			return nil
+		}
 		// IP filtering is done at the ICCP bilateral-table level; IP-based
 		// access control can be added in a future version.
 		srv := buildServer(dataModel, ce, cfg, conn, datasetDefs, cmdCollection)

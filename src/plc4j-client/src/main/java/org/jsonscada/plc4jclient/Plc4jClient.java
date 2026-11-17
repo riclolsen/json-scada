@@ -27,7 +27,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.ServiceLoader;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.PlcConnectionFactory;
 import org.apache.plc4x.java.api.PlcDriver;
@@ -40,18 +43,34 @@ import org.slf4j.LoggerFactory;
 
 /**
  * PLC4J Client - Generic PLC protocol driver for {json:scada}, based on Apache
- * PLC4X for Java. Registers in MongoDB as protocolDriver "PLC4X": it is a
- * drop-in alternative executable for the Go plc4x-client, sharing the same
- * instance/connection/tag configuration. Only one of the two executables may
- * run for a given instance number.
+ * PLC4X for Java. Registers in MongoDB as protocolDriver "PLC4X".
  */
 public final class Plc4jClient {
 
+  /** Version from the jar manifest (written by the build from pom.xml). */
+  private static final String VERSION =
+      Plc4jClient.class.getPackage() != null
+          && Plc4jClient.class.getPackage().getImplementationVersion() != null
+          ? Plc4jClient.class.getPackage().getImplementationVersion()
+          : "dev";
   public static final String SOFTWARE_VERSION =
-      "{json:scada} PLC4J Generic PLC Protocol Driver v.0.1.1 - Copyright 2020-2026 Ricardo L. Olsen";
+      "{json:scada} PLC4J Generic PLC Protocol Driver v." + VERSION
+          + " - Copyright 2020-2026 Ricardo L. Olsen";
   public static final String DRIVER_NAME = "PLC4X";
 
   private static final long PING_TIMEOUT_SECONDS = 5;
+  /** Wait after a failed connection attempt, so an unreachable PLC is not hammered. */
+  private static final long RETRY_DELAY_MS = 5000;
+
+  /**
+   * Connection attempts run off the supervision loop: PLC4X connects can block for
+   * many seconds and the loop must keep the redundancy keep-alive advancing.
+   */
+  private static final ExecutorService CONNECT_POOL = Executors.newCachedThreadPool(r -> {
+    Thread t = new Thread(r, "plc-connect");
+    t.setDaemon(true);
+    return t;
+  });
 
   private Plc4jClient() {}
 
@@ -71,6 +90,28 @@ public final class Plc4jClient {
     writerThread.start();
 
     RedundancyManager redundancy = new RedundancyManager(cfgRes.cfg);
+    // Heartbeat is independent of connection attempts, PLC close, and stats writes.
+    Executors.newSingleThreadScheduledExecutor(r -> {
+      Thread t = new Thread(r, "redundancy");
+      t.setDaemon(true);
+      return t;
+    }).scheduleWithFixedDelay(() -> {
+      try {
+        MongoCollection<Document> instances = writer.instancesColl;
+        ObjectId id = writer.instanceId;
+        if (instances == null || id == null) {
+          RedundancyManager.isActive = false;
+        } else {
+          redundancy.process(instances, id);
+          if (instances != writer.instancesColl) {
+            RedundancyManager.isActive = false;
+          }
+        }
+      } catch (Exception e) {
+        RedundancyManager.isActive = false;
+        Log.log("Redundancy - " + e);
+      }
+    }, 0, 1, TimeUnit.SECONDS);
     AutoTagCreator autoTagCreator = new AutoTagCreator();
     PlcConnectionFactory connectionFactory = PlcDriverManager.getDefault().getConnectionFactory();
 
@@ -86,20 +127,19 @@ public final class Plc4jClient {
         RedundancyManager.sleepMs(1000);
         continue;
       }
-      redundancy.process(instancesColl, instanceId);
       if (!RedundancyManager.isActive) {
+        // the standby node must not stay connected to the PLCs (or write commands)
+        for (ProtocolConnection pc : conns) {
+          pc.closeQuietly();
+        }
         RedundancyManager.sleepMs(1000);
         continue;
       }
       for (ProtocolConnection pc : conns) {
-        try {
-          connectAndScan(pc, connectionFactory, rtDataColl, autoTagCreator, writer);
-        } catch (Exception e) {
-          Log.log(pc.name + ": error setting up connection - " + e);
-        }
+        startConnectIfNeeded(pc, connectionFactory, rtDataColl, autoTagCreator, writer);
       }
       updateConnectionStats(writer.connectionsColl, conns, cfgRes.cfg.nodeName);
-      RedundancyManager.sleepMs(2000);
+      RedundancyManager.sleepMs(1000);
     }
   }
 
@@ -141,6 +181,39 @@ public final class Plc4jClient {
     }
   }
 
+  /** Starts an asynchronous connection attempt when the PLC is not connected. */
+  static void startConnectIfNeeded(
+      ProtocolConnection pc,
+      PlcConnectionFactory connectionFactory,
+      MongoCollection<Document> rtDataColl,
+      AutoTagCreator autoTagCreator,
+      MongoWriter writer) {
+    if (pc.retired) {
+      return;
+    }
+    PlcConnection c = pc.plcConn;
+    if (c != null && c.isConnected()) {
+      return;
+    }
+    if (System.currentTimeMillis() < pc.nextAttemptMs
+        || !pc.connecting.compareAndSet(false, true)) {
+      return;
+    }
+    CONNECT_POOL.execute(() -> {
+      try {
+        connectAndScan(pc, connectionFactory, rtDataColl, autoTagCreator, writer);
+      } catch (Exception e) {
+        Log.log(pc.name + ": error setting up connection - " + e);
+        pc.closeQuietly();
+      } finally {
+        if (pc.plcConn == null) {
+          pc.nextAttemptMs = System.currentTimeMillis() + RETRY_DELAY_MS;
+        }
+        pc.connecting.set(false);
+      }
+    });
+  }
+
   static void connectAndScan(
       ProtocolConnection pc,
       PlcConnectionFactory connectionFactory,
@@ -156,7 +229,8 @@ public final class Plc4jClient {
     autoTagCreator.getAutoKeyInitialValue(rtDataColl, pc);
 
     if (pc.endpointURLs == null || pc.endpointURLs.isEmpty()) {
-      Log.fatal("No server endpoint for connection: " + pc.name);
+      Log.log("No server endpoint for connection: " + pc.name);
+      return;
     }
 
     String connUrl = pc.endpointURLs.get(pc.reconnectCount % pc.endpointURLs.size());
@@ -177,10 +251,17 @@ public final class Plc4jClient {
           + (e.getMessage() != null ? e.getMessage() : e.toString()));
       return;
     }
-    pc.plcConn = connection;
+    synchronized (pc) {
+      if (pc.retired || !RedundancyManager.isActive) {
+        // Configuration reloaded or node deactivated while connecting.
+        pc.close(connection);
+        return;
+      }
+      pc.plcConn = connection;
+    }
 
     // try to ping the plc (tolerated when the driver doesn't support ping)
-    if (!pingOk(pc)) {
+    if (!pingOk(pc.name, connection)) {
       Log.log(pc.name + ": Couldn't ping device");
       pc.closeQuietly();
       return;
@@ -207,9 +288,12 @@ public final class Plc4jClient {
       Log.log(pc.name + ": error checking connection metadata - " + e);
     }
 
-    // build a read-request with all topics
+    // build a read-request with all topics; each topic is validated on its own
+    // request so that one invalid address does not discard the others
     PlcReadRequest.Builder reqBld = connection.readRequestBuilder();
     pc.endiannessByTag.clear();
+    pc.arrayLengthByTag.clear();
+    int validTopics = 0;
     for (String topic : pc.topics) {
       TopicParser.ParsedTopic pt = TopicParser.parse(topic, pc.addrSeparator);
       if (pt.address.isEmpty()) {
@@ -219,10 +303,27 @@ public final class Plc4jClient {
         Log.log(pc.name + ": error parsing array number from address: " + pt.address);
         continue;
       }
-      pc.endiannessByTag.put(pt.address, pt.endianness);
       // the configured address stays the PLC4X tag name (and the realtimeData
       // key); only the address handed to PLC4X may have been translated
-      reqBld.addTagAddress(pt.address, pt.plc4xAddress);
+      try {
+        PlcReadRequest probe = connection.readRequestBuilder()
+            .addTagAddress(pt.address, pt.plc4xAddress).build();
+        var status = probe.getTagResponseCode(pt.address);
+        if (probe.getTag(pt.address) == null
+            || (status != null && status != org.apache.plc4x.java.api.types.PlcResponseCode.OK)) {
+          throw new IllegalArgumentException("PLC4X rejected topic: " + status);
+        }
+        reqBld.addTagAddress(pt.address, pt.plc4xAddress);
+      } catch (Exception e) {
+        Log.log(pc.name + ": invalid address '" + pt.address + "', topic ignored - "
+            + (e.getMessage() != null ? e.getMessage() : e.toString()));
+        continue;
+      }
+      validTopics++;
+      pc.endiannessByTag.put(pt.address, pt.endianness);
+      if (pt.arrayLength > 1) {
+        pc.arrayLengthByTag.put(pt.address, pt.arrayLength);
+      }
       if (!pt.plc4xAddress.equals(pt.address) && Log.level >= Log.LEVEL_BASIC) {
         Log.log(pc.name + ": legacy array address '" + pt.address
             + "' sent to PLC4X as '" + pt.plc4xAddress + "'");
@@ -266,41 +367,49 @@ public final class Plc4jClient {
       }
     }
 
+    PlcReadRequest readRequest;
     try {
-      pc.readRequest = reqBld.build();
+      if (validTopics == 0) {
+        throw new IllegalStateException("no valid topic configured");
+      }
+      readRequest = reqBld.build();
     } catch (Exception e) {
       Log.log(pc.name + ": error preparing read-request: " + e);
       pc.closeQuietly();
       return;
     }
-
-    Thread scanThread = new Thread(new ScanTask(pc, writer), pc.name + "-scan");
+    Thread scanThread =
+        new Thread(new ScanTask(pc, writer, connection, readRequest), pc.name + "-scan");
     scanThread.setDaemon(true);
     scanThread.start();
   }
 
   /**
    * Pings the PLC. Drivers that do not implement ping are treated as reachable
-   * (unlike plc4go, several PLC4J drivers throw/complete exceptionally with
-   * "not supported" for ping).
+   * (several PLC4J drivers throw/complete exceptionally with "not supported"
+   * for ping).
    */
-  static boolean pingOk(ProtocolConnection pc) {
-    PlcConnection conn = pc.plcConn;
+  static boolean pingOk(String connName, PlcConnection conn) {
     if (conn == null) {
       return false;
     }
+    java.util.concurrent.Future<?> future = null;
     try {
-      conn.ping().get(PING_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      future = conn.ping();
+      future.get(PING_TIMEOUT_SECONDS, TimeUnit.SECONDS);
       return true;
     } catch (UnsupportedOperationException e) {
       return true;
     } catch (Exception e) {
+      if (e instanceof TimeoutException && future != null) {
+        future.cancel(true);
+      }
       String msg = e.getMessage() != null ? e.getMessage().toLowerCase(Locale.ROOT) : "";
       if (msg.contains("not supported") || msg.contains("unsupported")
           || msg.contains("not implemented")) {
         return true;
       }
-      Log.log(pc.name + ": ping error - " + e);
+      Log.log(connName + ": ping error - " + e);
       return false;
     }
   }

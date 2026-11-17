@@ -23,6 +23,10 @@ const MongoClient = require('mongodb').MongoClient
 const bcrypt = require('bcryptjs')
 const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
 
+// same rules as server_realtime_auth (auth.controller.js)
+const BCRYPT_COST = 10
+const MIN_PASSWORD_LENGTH = 8
+
 ;(async () => {
   const args = process.argv.slice(2)
 
@@ -42,7 +46,13 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
   const password = args[1]
   let email = ''
   if (args.length >= 3) email = args[2]
-  const hashedPassword = bcrypt.hashSync(password, 8)
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    console.log(
+      'Password too short (minimum ' + MIN_PASSWORD_LENGTH + ' characters)!'
+    )
+    process.exit(1)
+  }
+  const hashedPassword = bcrypt.hashSync(password, BCRYPT_COST)
 
   let configFileArg = null
   if (args.length >= 4) configFileArg = args[3]
@@ -63,6 +73,13 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
 
     let res = await usersCollection.findOne({ username: username })
     if (res) {
+      if (res.isLDAPUser) {
+        // the server checks LDAP users against the directory only
+        console.log(
+          'User ' + username + ' is an LDAP user: its password is set in the directory, not here!'
+        )
+        process.exit(1)
+      }
       if (res.username == username) {
         console.log('User found, updating password...')
         res = await usersCollection.updateOne(
@@ -72,12 +89,21 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
               password: hashedPassword,
               ...(email != '' ? { email: email } : {}),
             },
+            // ends every session of the user issued before the reset
+            $inc: { tokenVersion: 1 },
           }
         )
-        if (res.matchedCount === 1) console.log('User updated successfully.')
-        else console.log('Error updating user!')
+        if (res.matchedCount === 1)
+          console.log(
+            'User updated successfully. Its existing sessions end within 10 seconds.'
+          )
+        else {
+          console.log('Error updating user!')
+          process.exitCode = 1
+        }
       } else {
         console.log('Unexpected error querying user!')
+        process.exitCode = 1
       }
     } else {
       console.log('User not found, creating user...')
@@ -86,13 +112,18 @@ const { LoadConfig, getMongoConnectionOptions } = require('./load-config')
         password: hashedPassword,
         email: email,
         roles: [],
+        isLDAPUser: false,
+        tokenVersion: 0,
       })
       if ('insertedId' in res) {
         console.log('User created successfully.')
         console.log(
           'An administrator must assign a role to the new user so that he can possibly login!'
         )
-      } else console.log('Error creating user!')
+      } else {
+        console.log('Error creating user!')
+        process.exitCode = 1
+      }
     }
   })
   process.exit()

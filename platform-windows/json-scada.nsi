@@ -21,8 +21,8 @@ RequestExecutionLevel admin
 
 ;--------------------------------
 
-!define VERSION "v.0.70"
-!define VERSION_ "0.70.0.0"
+!define VERSION "v.0.71"
+!define VERSION_ "0.71.0.0"
 
 Function .onInit
  System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
@@ -186,12 +186,12 @@ SetRegView 64
   StrCpy $NAVPREOPT ""
   StrCpy $NAVPOSOPT "--disable-popup-blocking --no-proxy-server --bwsi"
   StrCpy $NAVINDEX  "/"
-  StrCpy $NAVVISABO "/about.html"
-  StrCpy $NAVVISEVE "/events.html"
-  StrCpy $NAVVISHEV "/events.html?MODO=4"
-  StrCpy $NAVVISTAB "/tabular.html"
-  StrCpy $NAVVISANO "/tabular.html?SELMODULO=ALARMS_VIEWER"
-  StrCpy $NAVVISTEL "/display.html"
+  StrCpy $NAVVISABO "/#/about"
+  StrCpy $NAVVISEVE "/#/events-viewer"
+  StrCpy $NAVVISHEV "/#/events-viewer?modo=4"
+  StrCpy $NAVVISTAB "/#/tabular-viewer"
+  StrCpy $NAVVISANO "/#/alarms-viewer"
+  StrCpy $NAVVISTEL "/#/display-viewer"
   StrCpy $NAVGRAFAN "/grafana"
   StrCpy $NAVMETABA "/metabase"
 
@@ -353,7 +353,6 @@ SetRegView 64
   File /a /r "..\platform-windows\dbx-runtime\*.*"
 
   SetOutPath $INSTDIR\sql
-  File /a "..\sql\*.bat"
   File /a "..\sql\create_tables.sql"
   File /a "..\sql\metabaseappdb.sql"
   File /a "..\sql\grafanaappdb.sql"
@@ -454,6 +453,9 @@ SetRegView 64
 
   SetOutPath $INSTDIR\src\telegraf-listener
   File /a /r "..\src\telegraf-listener\*.*"
+
+  SetOutPath $INSTDIR\src\process_pg_sql
+  File /a /r "..\src\process_pg_sql\*.*"
 
   SetOutPath $INSTDIR\src\cim-ems
   File /a /r /x .venv /x __pycache__ /x spike /x data /x build /x *.egg-info /x *_plan.md "..\src\cim-ems\*.*"
@@ -639,6 +641,21 @@ IfFileExists "$INSTDIR\postgresql-data\base" pgDatabaseExists 0
   ExecWait '"$0" /C "$INSTDIR\platform-windows\initial_setup.bat"'
 
 pgDatabaseExists:
+
+  ; Point the PostgreSQL loader services to src\process_pg_sql (upgrades from the former
+  ; sql\process_pg_*.bat loaders; a no-op on fresh installs, create_services.bat already did it)
+  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist Application "$INSTDIR\platform-windows\nodejs-runtime\node.exe"'
+  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist AppParameters "$INSTDIR\src\process_pg_sql\index.js" hist 1'
+  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist AppDirectory "$INSTDIR\src\process_pg_sql"'
+  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist AppStdout "$INSTDIR\log\process_pg_hist.log"'
+  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata Application "$INSTDIR\platform-windows\nodejs-runtime\node.exe"'
+  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata AppParameters "$INSTDIR\src\process_pg_sql\index.js" rtdata 1'
+  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata AppDirectory "$INSTDIR\src\process_pg_sql"'
+  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata AppStdout "$INSTDIR\log\process_pg_rtdata.log"'
+  Delete "$INSTDIR\sql\process_pg_hist.bat"
+  Delete "$INSTDIR\sql\process_pg_rtdata.bat"
+  Delete "$INSTDIR\sql\terminate_pg_hist.bat"
+  Delete "$INSTDIR\sql\terminate_pg_rtdata.bat"
 
   MessageBox MB_OK "Installation finished! To run the system: Open the JSON-SCADA desktop folder, execute the '_Start_Services' shortcut and then open '_JSON SCADA WEB'."
   

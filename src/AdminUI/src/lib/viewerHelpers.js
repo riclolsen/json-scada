@@ -59,6 +59,36 @@ export function storageAvailable(type) {
   }
 }
 
+// Per-user browser settings: the same browser can be used by several users,
+// so a key is stored as <key>@<username> (the signed-in user of the
+// json-scada-user cookie; plain <key> when nobody is signed in). Reads fall
+// back to the plain key once, so a setting saved before keeps working until
+// this user saves their own. Never throws: storage may be unavailable.
+export function userStorageKey(key) {
+  const name = getUserObj()?.username
+  return name ? key + '@' + name : key
+}
+export function getUserSetting(key) {
+  try {
+    if (!storageAvailable('localStorage')) return null
+    const own = localStorage.getItem(userStorageKey(key))
+    return own !== null ? own : localStorage.getItem(key)
+  } catch (e) {
+    return null
+  }
+}
+// alsoShared: also store the plain key, the browser's choice for pages shown
+// before sign-in (theme, language) and the default of users without their own
+export function setUserSetting(key, value, { alsoShared = false } = {}) {
+  try {
+    if (!storageAvailable('localStorage')) return
+    localStorage.setItem(userStorageKey(key), String(value))
+    if (alsoShared) localStorage.setItem(key, String(value))
+  } catch (e) {
+    // not saved
+  }
+}
+
 // --- numbers / formatting ----------------------------------------------------
 
 export function roundnum(value, decimals) {

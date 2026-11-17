@@ -2,14 +2,16 @@
 
 ## Purpose
 
-Pure-Go DNP3 master and outstation drivers for JSON-SCADA. Drop-in alternatives to the C++
-drivers in `src/dnp3`: same `protocolDriver` names (`DNP3`, `DNP3_SERVER`), same configuration
-documents, same MongoDB semantics, no opendnp3, mongo-cxx-driver, OpenSSL, vcpkg or CMake.
+Pure-Go DNP3 master and outstation drivers for JSON-SCADA. Drop-in replacements for the C++
+drivers that lived in `src/dnp3` until commit `e0227836`: same `protocolDriver` names (`DNP3`,
+`DNP3_SERVER`), same configuration documents, same MongoDB semantics, no opendnp3,
+mongo-cxx-driver, OpenSSL, vcpkg or CMake.
 
 ## Ownership
 
-- dnp3-go owns the Go implementation of both DNP3 drivers
-- `src/dnp3` (C++) remains the reference implementation; behaviour is matched to it
+- dnp3-go owns both DNP3 drivers; the C++ drivers are removed from the tree
+- The C++ drivers (git history before `e0227836`) are the historical reference that `parity:`
+  comments and Q-numbers point at
 
 ## Local Contracts
 
@@ -83,7 +85,7 @@ documents, same MongoDB semantics, no opendnp3, mongo-cxx-driver, OpenSSL, vcpkg
   - `cmd/dnp3client/README.md` and `cmd/dnp3server/README.md` are the **standalone operator
     references** of the two drivers: configuration, tag setup, behaviour, statistics,
     troubleshooting. They must stand on their own — never link to or defer to the C++ drivers'
-    documentation in `src/dnp3`.
+    documentation.
   - `README.md` (this directory) keeps what spans both: build, deviations from the C++ drivers
     (D-numbers), reproduced quirks (Q-numbers), engineering notes and testing. Describe a driver's
     behaviour in that driver's README and not here.
@@ -94,9 +96,24 @@ documents, same MongoDB semantics, no opendnp3, mongo-cxx-driver, OpenSSL, vcpkg
 
 ## Work Guidance
 
-- The C++ drivers are the specification. Before changing behaviour, check what `src/dnp3` does.
-  Quirks are reproduced on purpose and marked `parity:` in comments; intentional differences are
-  numbered D1..D28 in `README.md` — add to that list rather than diverging silently.
+- The C++ drivers were the specification. Before changing behaviour marked `parity:`, read what
+  they did in git history (`git show e0227836^:src/dnp3/...`). Quirks are reproduced on purpose and
+  numbered Q in `README.md`; intentional differences are numbered D1..D35 there — add to that list
+  rather than diverging silently.
+- **A batch the client writer could not write is requeued** (`ValueQueue.Requeue`), never dropped.
+  An auto-created address is marked when its document is built and unmarked by `settleInserts` when
+  the insert fails for anything but an existing tag, so the next value retries it.
+- **Going to standby does not invalidate points** (`Engine.observeLink`): only a link lost while
+  the node is active does. `TestStandbyDoesNotInvalidate` pins it.
+- **Every narrowing to a wire width is checked first.** Server destinations outside 0..65535 are
+  ignored (`Destination.ValidAddress`), counters are clamped with DISCONTINUITY (`counterValue`),
+  client setpoints that do not fit their g41 variation are cancelled `value_out_of_range`
+  (`analogOutput`), link addresses outside 0..65535 stop startup, range-scan group/variation must
+  be 0..255. Never cast a configured or measured number to a narrower type unchecked.
+- Frozen analog inputs (g31/g33) are filed under common address 31 (`HandleFrozenAnalog`), apart
+  from the running analog.
+- The passive allowed-client list is per endpoint, not per station: `allowedOf` merges the lists of
+  the connections sharing it, and entries may be host names, resolved at accept time.
 - Only `sourceDataUpdate` is written for client data; never the tag `value`, alarms or history.
 - All numbers written to MongoDB must be Go `float64` so they land as BSON doubles. The `stats`
   counters are the exception: they are `int64`, as in the C++ drivers.
@@ -186,6 +203,9 @@ documents, same MongoDB semantics, no opendnp3, mongo-cxx-driver, OpenSSL, vcpkg
   open is lost. In that retry loop, `channel.ErrClosed` and a cancelled context must propagate
   rather than be retried: both are an orderly shutdown, a closed channel can never produce a
   connection, and retrying hides the shutdown signal from the session.
+- **Passive channels retry in `countchan` too.** Their only connect error is a failed bind, and the
+  bus treats any connect error as fatal: without the retry an outstation whose port was busy at
+  startup keeps the process alive and never listens. `TestPassiveChannelRetriesBind` pins it.
 
 ## Verification
 

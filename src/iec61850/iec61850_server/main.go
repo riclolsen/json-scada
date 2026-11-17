@@ -89,6 +89,7 @@ func main() {
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	lastOpen := -1
+	started := false
 
 	for {
 		select {
@@ -105,9 +106,15 @@ func main() {
 			// retried until the bind succeeds (the port may still be held by
 			// a previous instance shutting down).
 			if !gw.Serving() {
+				first := !started
 				gw.Start()
 				if gw.Serving() {
-					applyInitialValues(gw, points)
+					// The model keeps its values across a restart of the
+					// listener; only the first start loads them.
+					if first {
+						applyInitialValues(gw, points)
+						started = true
+					}
 					lastOpen = -1
 				}
 				continue

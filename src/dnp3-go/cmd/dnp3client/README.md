@@ -106,9 +106,10 @@ the active node, one DNP3 master session runs per connection:
    unsolicited reporting for classes 1, 2 and 3 (unless the connection disables it).
 2. Configured periodic polls are scheduled: integrity, class 0 to 3, and range scans.
 3. Every measurement received, from a poll or unsolicited, is turned into a value and queued.
-   A single writer drains the queue into MongoDB in batches.
+   A single writer drains the queue into MongoDB in batches. A batch MongoDB does not accept is
+   put back on the queue and written again once the database answers.
 4. If the connection drops, every point of the connection is marked invalid, and the driver
-   reconnects with the next configured address.
+   reconnects with the next configured address. Going to standby does not invalidate anything.
 5. Commands inserted into `commandsQueue` are issued to the right session and acknowledged.
 
 The driver is built around three independent loops: the DNP3 sessions, the MongoDB writer, and
@@ -193,8 +194,8 @@ One document in `protocolConnections` per outstation:
 
 | Field | Default | Meaning |
 | --- | --- | --- |
-| `localLinkAddress` | `1` | The master's own DNP3 link address. |
-| `remoteLinkAddress` | `1` | The outstation's DNP3 link address. |
+| `localLinkAddress` | `1` | The master's own DNP3 link address, `0` to `65535`. Outside that range the driver stops at startup. |
+| `remoteLinkAddress` | `1` | The outstation's DNP3 link address, `0` to `65535`. |
 
 Connections that share one physical endpoint must differ in link address; see
 [Multi-drop](#multi-drop).
@@ -251,8 +252,8 @@ Connections that share one physical endpoint must differ in link address; see
 
 | Field | Default | Meaning |
 | --- | --- | --- |
-| `group` | `1` | DNP3 object group to read (for example `1` binary input, `10` binary output status, `20` counter, `30` analog input, `40` analog output status). |
-| `variation` | `1` | Object variation. `0` lets the outstation choose its default, which is usually what is wanted. |
+| `group` | `1` | DNP3 object group to read (for example `1` binary input, `10` binary output status, `20` counter, `30` analog input, `40` analog output status), `0` to `255`. |
+| `variation` | `1` | Object variation, `0` to `255`. `0` lets the outstation choose its default, which is usually what is wanted. |
 | `startAddress`, `stopAddress` | `0`, `0` | Point range, `0` to `65535`, `startAddress <= stopAddress`. A range outside these limits is ignored with a log message. |
 | `period` | `0` | Seconds between scans. A scan with a period of `0` or less is not run. The first scan is attempted when the session starts, then one every period; a scan attempted while the link is down fails (logged at level 2) and is tried again at the next period. |
 
@@ -354,7 +355,8 @@ A measurement for which no tag exists is discarded, unless `autoCreateTags` is o
 | `10` | Binary output status (g10, g11) | `digital` | The state of an output, for feedback. |
 | `20` | Counter (g20, g22) | `analog` | |
 | `23` | Frozen counter (g21, g23) | `analog` | Filed under `23`, the event group, not under 21. |
-| `30` | Analog input (g30, g32) | `analog` | Frozen analog inputs are filed here too. |
+| `30` | Analog input (g30, g32) | `analog` | |
+| `31` | Frozen analog input (g31, g33) | `analog` | Kept apart from the running analog of the same index. |
 | `40` | Analog output status (g40, g42) | `analog` | The setpoint currently in effect. |
 | `12` | Control relay output block (g12) | `digital` | **Command** tag, see [Commands](#commands). |
 | `41` | Analog output block (g41) | `analog` | **Command** tag, see [Commands](#commands). |
@@ -384,8 +386,9 @@ For every measurement the driver updates `sourceDataUpdate` of the tag:
 | `transientAtSource` | A double-bit point is intermediate or indeterminate. |
 | `originator` | `DNP3\|<connection number>`. |
 
-Time stamps outside 2001-09-09 to 2033-05-18 are zeroed before they are written, as a guard
-against devices that report a wild clock.
+A device time stamp before 2001-09-09, or more than a year ahead of this machine's clock, is
+zeroed before it is written, as a guard against devices that report a wild clock. `timeTag`, the
+driver's own clock, is written as is.
 
 Values that are not finite numbers, or whose size exceeds 1e100, are skipped.
 
@@ -420,12 +423,16 @@ snapshot, so if a newer snapshot of the same point is waiting it replaces the ol
 When a connection's link goes down, the driver marks **every tag of the connection** `invalid:
 true` with the current `timeTag`. Valid data returns with the first values after reconnection.
 
+Going to standby stops the sessions but invalidates nothing: a node is deactivated because the
+other node has become active, and that node is writing the same tags.
+
 ## Automatic tag creation
 
 With `autoCreateTags: true`, the first time a point is seen that has no tag, the driver creates
 one. Tags already in the database are found at startup, so restarting the driver does not create
 duplicates. Creation happens in the same batch as the value write, so a new tag has its first
-value immediately.
+value immediately. A tag whose insert fails is tried again with the next value of its point; a
+duplicate key from a tag another node has just created is not a failure.
 
 For a point of family `G` at index `N` of connection `NAME`:
 
@@ -509,6 +516,7 @@ When the command is **cancelled** instead (never sent), `cancelReason` is set:
 | `expired` | The command is more than 10 seconds old. |
 | `unsupported_group` | `protocolSourceCommonAddress` is neither `12` nor `41`. |
 | `invalid_address` | The object address is outside `0` to `65535`. |
+| `value_out_of_range` | An analog setpoint the selected encoding cannot carry (below). |
 
 `resultDescription` on a sent command:
 
@@ -558,6 +566,10 @@ trip/close durations; a device that implements a single output needs the plain p
 | `2` | 16-bit integer |
 | `3` (and anything else) | single precision floating point |
 | `4` | double precision floating point |
+
+The integer encodings drop a fraction. A value outside the encoding's range (for example 40000 as
+a 16-bit integer), or one that is not a number, is not sent: the command is cancelled with
+`value_out_of_range` rather than wrapped onto a different setpoint.
 
 ## Time synchronisation
 
@@ -675,7 +687,8 @@ outstation or the driver. Reading one family on its own with a range scan gets a
   data processor decides what to do with repeated values.
 * **The timestamps come from the outstation.** A device that does not stamp its events produces
   `timeTagAtSource` of 1970; the data processor then uses `timeTag`.
-* **Frozen analog inputs** (groups 31 and 33) are delivered as analog inputs, family `30`.
+* **Frozen analog inputs** (groups 31 and 33) are filed under family `31`. Tags configured for
+  them under `30` must move to `31`.
 * **Octet strings are discarded.** Device attributes (group 0) and file transfer are not read.
 * **The driver does not filter peers.** A passive connection accepts any dialling outstation that
   speaks the right link addresses.

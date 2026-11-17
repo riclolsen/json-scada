@@ -68,6 +68,13 @@ type Iec61850Entry struct {
 	// self-publish flag, so the writer creates the tag. Entries preloaded
 	// from realtimeData already have a tag and never publish.
 	AutoPublish bool
+
+	// Parts are the sub-data objects of a composite data object (WYE, DEL,
+	// SEQ: phsA, phsB, ...), in the order its value carries them. Such an
+	// object has no value of its own: it is read or reported as one
+	// structure and each member becomes a point of its own. Set once, when
+	// the entry is registered by the browse, and never changed after.
+	Parts []*Iec61850Entry
 }
 
 // Iec61850Connection is a document of protocolConnections plus the runtime
@@ -195,6 +202,17 @@ func (c *Iec61850Connection) EntryHasReport(e *Iec61850Entry) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return e.RcbName != ""
+}
+
+// ResetEntryReports takes every entry out of the reports of a previous
+// association, so a point whose block cannot be enabled again is polled
+// rather than forgotten.
+func (c *Iec61850Connection) ResetEntryReports() {
+	c.mu.Lock()
+	for _, e := range c.Entries {
+		e.RcbName = ""
+	}
+	c.mu.Unlock()
 }
 
 // EntryNeedsChilds reports whether the child attribute names of an entry

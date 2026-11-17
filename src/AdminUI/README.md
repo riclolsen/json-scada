@@ -48,8 +48,9 @@ directory at the site root, so no separate web server or process is needed.
 - `src/pages/` — route-level pages
 - `src/plugins/` — Vuetify, router, i18n and other plugin setup
 - `src/styles/` — global and shared styles
-- `public/` — static assets, including the display images and the bundled
-  `sage-cepel-displays` set
+- `public/` — static files served at the site root: images, alarm sounds,
+  `conf/config_viewers.js` viewer overrides, the release notes and the ONVIF
+  `camera.html` page
 
 ## Related documentation
 

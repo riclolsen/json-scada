@@ -19,11 +19,12 @@
 // requests, takes model uploads, and queues study requests in cimStudyRequests.
 // The CIM-EMS driver (src/cim-ems, cim_ems/api.py) executes the requests on its
 // active node; this server never imports models or computes anything itself.
-// All routes need isAdmin (auth.routes.js); model, binding and artifact actions
-// also need a role with cimEngineering. Every write is logged as a user action.
+// All routes need a signed-in user (auth.routes.js); model, binding and artifact
+// actions also need a role with cimEngineering. Every write is logged as a user action.
 
 'use strict'
 
+const fs = require('fs')
 const path = require('path')
 const Log = require('../../simple-logger')
 const db = require('../models')
@@ -75,7 +76,7 @@ function mdb() {
 }
 
 function username(req) {
-  const ck = checkToken(req)
+  const ck = req.token || checkToken(req)
   return ck ? ck.username : ''
 }
 
@@ -88,6 +89,22 @@ function registerUserAction(req, actionName, properties) {
   })
 }
 
+// a zip file begins with the local file header signature PK\x03\x04
+async function startsLikeZip(upload) {
+  if (!upload?.tempFilePath) return false
+  let fh = null
+  try {
+    fh = await fs.promises.open(upload.tempFilePath, 'r')
+    const buf = Buffer.alloc(4)
+    const { bytesRead } = await fh.read(buf, 0, 4, 0)
+    return bytesRead === 4 && buf.readUInt32LE(0) === 0x04034b50
+  } catch (e) {
+    return false
+  } finally {
+    await fh?.close()
+  }
+}
+
 function positiveInt(v) {
   const n = Number(v)
   return Number.isInteger(n) && n > 0 ? n : null
@@ -96,6 +113,17 @@ function positiveInt(v) {
 function fail(res, status, msg) {
   res.status(status).send({ error: msg })
 }
+
+// unexpected errors: the details go to the log, not to the client
+function failInternal(res, err) {
+  if (err instanceof TooManyPendingError) return fail(res, 429, err.message)
+  fail(res, 200, 'CIM-EMS request failed, see the server log.')
+}
+
+// requests of one user waiting for the driver: anyone signed in may ask for a
+// rerun, so the queue must not grow without bound
+const MAX_PENDING_PER_USER = 20
+class TooManyPendingError extends Error {}
 
 function sanitizeBinding(b) {
   if (!b || typeof b !== 'object') return null
@@ -115,7 +143,20 @@ function sanitizeBinding(b) {
   return out
 }
 
+async function assertPendingRoom(req) {
+  const pending = await mdb()
+    .collection(REQUESTS)
+    .countDocuments({ status: 'pending', createdBy: username(req) })
+  if (pending >= MAX_PENDING_PER_USER)
+    throw new TooManyPendingError(
+      'Too many pending CIM-EMS requests (' +
+        MAX_PENDING_PER_USER +
+        '), wait for them to be processed!'
+    )
+}
+
 async function insertRequest(req, type, params) {
+  await assertPendingRoom(req)
   const doc = {
     type: type,
     params: params,
@@ -142,7 +183,7 @@ exports.listModels = async (req, res) => {
     })
   } catch (err) {
     Log.log('cimEms listModels: ' + err)
-    fail(res, 200, String(err))
+    failInternal(res, err)
   }
 }
 
@@ -195,7 +236,7 @@ exports.listBindings = async (req, res) => {
     })
   } catch (err) {
     Log.log('cimEms listBindings: ' + err)
-    fail(res, 200, String(err))
+    failInternal(res, err)
   }
 }
 
@@ -214,7 +255,7 @@ exports.listRuns = async (req, res) => {
     res.status(200).send({ runs: runs })
   } catch (err) {
     Log.log('cimEms listRuns: ' + err)
-    fail(res, 200, String(err))
+    failInternal(res, err)
   }
 }
 
@@ -230,7 +271,7 @@ exports.listRequests = async (req, res) => {
     res.status(200).send({ requests: requests })
   } catch (err) {
     Log.log('cimEms listRequests: ' + err)
-    fail(res, 200, String(err))
+    failInternal(res, err)
   }
 }
 
@@ -245,9 +286,11 @@ exports.uploadModel = async (req, res) => {
     if (!ZIP_NAME_RE.test(name)) return fail(res, 400, 'Invalid file name!')
     if (upload.truncated) return fail(res, 413, 'Model package too large!')
     if (!upload.size) return fail(res, 400, 'Empty model package!')
-    if (upload.data.length < 4 || upload.data.readUInt32LE(0) !== 0x04034b50)
+    // the upload is in a temporary file (removed when the response ends)
+    if (!(await startsLikeZip(upload)))
       return fail(res, 400, 'Not a zip file!')
 
+    await assertPendingRoom(req) // before storing anything
     const bucket = new GridFSBucket(mdb(), { bucketName: BUCKET })
     const artifactId = await new Promise((resolve, reject) => {
       const up = bucket.openUploadStream(name, {
@@ -255,7 +298,9 @@ exports.uploadModel = async (req, res) => {
       })
       up.once('error', reject)
       up.once('finish', () => resolve(up.id))
-      up.end(upload.data)
+      const src = fs.createReadStream(upload.tempFilePath)
+      src.once('error', reject)
+      src.pipe(up)
     })
     const id = await insertRequest(req, 'import', {
       modelId: modelId,
@@ -266,7 +311,7 @@ exports.uploadModel = async (req, res) => {
     res.status(200).send({ error: false, requestId: id })
   } catch (err) {
     Log.log('cimEms uploadModel: ' + err)
-    fail(res, 200, String(err))
+    failInternal(res, err)
   }
 }
 
@@ -309,6 +354,7 @@ exports.createRequest = async (req, res) => {
         if (!s) return fail(res, 400, 'Invalid binding entry!')
         clean.push(s)
       }
+      await assertPendingRoom(req) // before storing anything
       // the list can exceed the 16 MB document limit: keep it as an artifact
       const bucket = new GridFSBucket(mdb(), { bucketName: BUCKET })
       params.artifactId = await new Promise((resolve, reject) => {
@@ -334,7 +380,7 @@ exports.createRequest = async (req, res) => {
     res.status(200).send({ error: false, requestId: id })
   } catch (err) {
     Log.log('cimEms createRequest: ' + err)
-    fail(res, 200, String(err))
+    failInternal(res, err)
   }
 }
 
@@ -368,6 +414,6 @@ exports.downloadArtifact = async (req, res) => {
       .pipe(res)
   } catch (err) {
     Log.log('cimEms downloadArtifact: ' + err)
-    fail(res, 200, String(err))
+    failInternal(res, err)
   }
 }

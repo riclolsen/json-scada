@@ -114,6 +114,19 @@ func pointFromDoc(doc bson.M) *Point {
 // prevention), restricted to the topics when any are configured, and
 // without command points when commands are disabled.
 func selectPoints(ctx context.Context, collRTD *mongo.Collection, conn *ServerConnection) []*Point {
+	points, err := queryPoints(ctx, collRTD, conn)
+	if err != nil {
+		jslog.Fatal("Error reading realtime data - %v", err)
+	}
+	jslog.Log(jslog.LevelNoLog, "Points selected from realtimeData: %d", len(points))
+	if len(points) == 0 {
+		jslog.Log(jslog.LevelNoLog, "WARNING: no points matched the topics filter - server model will be empty.")
+	}
+	return points
+}
+
+// queryPoints reads the points selectPoints describes, sorted by _id.
+func queryPoints(ctx context.Context, collRTD *mongo.Collection, conn *ServerConnection) ([]*Point, error) {
 	filter := bson.M{
 		"_id":                            bson.M{"$gt": 0},
 		"protocolSourceConnectionNumber": bson.M{"$ne": conn.ProtocolConnectionNumber},
@@ -127,11 +140,11 @@ func selectPoints(ctx context.Context, collRTD *mongo.Collection, conn *ServerCo
 
 	cur, err := collRTD.Find(ctx, filter, options.Find().SetSort(bson.D{{Key: "_id", Value: 1}}))
 	if err != nil {
-		jslog.Fatal("Error reading realtime data - %v", err)
+		return nil, err
 	}
 	var docs []bson.M
 	if err := cur.All(ctx, &docs); err != nil {
-		jslog.Fatal("Error reading realtime data - %v", err)
+		return nil, err
 	}
 
 	points := make([]*Point, 0, len(docs))
@@ -145,10 +158,5 @@ func selectPoints(ctx context.Context, collRTD *mongo.Collection, conn *ServerCo
 	// The model layout depends on the order, and object references have to
 	// be stable across restarts.
 	sort.SliceStable(points, func(i, j int) bool { return points[i].ID < points[j].ID })
-
-	jslog.Log(jslog.LevelNoLog, "Points selected from realtimeData: %d", len(points))
-	if len(points) == 0 {
-		jslog.Log(jslog.LevelNoLog, "WARNING: no points matched the topics filter - server model will be empty.")
-	}
-	return points
+	return points, nil
 }

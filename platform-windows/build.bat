@@ -232,6 +232,9 @@ call %NPM% install
 cd %SRCPATH%\telegraf-listener
 call %NPM% install
 
+cd %SRCPATH%\process_pg_sql
+call %NPM% install
+
 cd %SRCPATH%\mqtt-sparkplug
 call %NPM% install
 

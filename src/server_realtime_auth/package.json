@@ -13,15 +13,14 @@
     "express": "^5.2.1",
     "express-fileupload": "^1.5.2",
     "express-http-proxy": "^2.1.2",
-    "graphql": "^16.14.2",
-    "graphql-tools": "^9.0.34",
-    "http-proxy-middleware": "^4.2.0",
+    "graphql": "^16.15.0",
+    "graphql-tools": "^10.0.9",
+    "http-proxy-middleware": "^4.2.2",
     "jsonwebtoken": "^9.0.3",
     "ldapts": "^9.0.0",
-    "mongodb": "^7.6.0",
-    "mongoose": "^9.9.3",
-    "pg": "^8.23.0",
-    "queue-fifo": "^0.2.6"
+    "mongodb": "^7.9.0",
+    "mongoose": "^9.12.2",
+    "pg": "^8.23.0"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

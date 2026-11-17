@@ -1,348 +1,477 @@
 <template>
-  <v-container fluid class="roles-management-tab">
-    <v-btn
-      color="primary"
-      size="small"
-      class="mt-0 me-2"
-      @click="openAddRoleDialog"
-    >
-      {{ $t('admin.rolesManagement.addRole') }}
-      <v-icon>mdi-plus</v-icon>
-    </v-btn>
+  <div class="roles-tab">
+    <AdminSummary v-model="tileFilter" :tiles="summaryTiles" />
 
+    <div class="admin-toolbar">
+      <v-btn color="primary" variant="flat" prepend-icon="mdi-shield-plus-outline" @click="openAddRoleDialog">
+        {{ $t('admin.rolesManagement.addRole') }}
+      </v-btn>
+      <v-text-field
+        v-model="search"
+        class="admin-search"
+        density="compact"
+        variant="outlined"
+        hide-details
+        clearable
+        prepend-inner-icon="mdi-magnify"
+        :label="$t('admin.rolesManagement.search')"
+      ></v-text-field>
+      <v-btn-toggle v-model="view" mandatory density="compact" variant="outlined" divided color="primary">
+        <v-btn value="list" size="small" prepend-icon="mdi-format-list-bulleted">{{ $t('admin.rolesManagement.viewList') }}</v-btn>
+        <v-btn value="matrix" size="small" prepend-icon="mdi-table-check">{{ $t('admin.rolesManagement.viewMatrix') }}</v-btn>
+      </v-btn-toggle>
+      <v-spacer></v-spacer>
+      <span class="admin-count">{{ $t('admin.common.results', { n: filteredRoles.length }) }}</span>
+      <v-btn icon variant="text" size="small" :title="$t('common.refresh')" :loading="loading" @click="refreshAll">
+        <v-icon>mdi-refresh</v-icon>
+      </v-btn>
+      <v-btn icon variant="text" size="small" :title="$t('admin.common.exportCsv')" @click="exportCsv">
+        <v-icon>mdi-file-delimited-outline</v-icon>
+      </v-btn>
+    </div>
+
+    <!-- list -->
     <v-data-table
+      v-if="view === 'list'"
+      v-model:items-per-page="itemsPerPage"
       :headers="headers"
-      :items="roles"
-      :items-per-page="5"
-      class="mt-4 elevation-1"
-      :load-children="fetchRoles"
+      :items="filteredRoles"
+      :items-per-page-options="[10, 25, 50, 100, -1]"
       :items-per-page-text="$t('common.itemsPerPageText')"
+      :sort-by="[{ key: 'name', order: 'asc' }]"
+      :loading="loading"
+      item-value="_id"
+      hover
+      density="compact"
+      class="admin-table"
     >
-      <template #[`item.actions`]="{ item }">
-        <v-icon size="small" class="me-2" @click="openEditRoleDialog(item)">
-          mdi-pencil
-        </v-icon>
-        <v-icon
-          v-if="item.name !== 'admin'"
-          size="small"
-          @click="openDeleteRoleDialog(item)"
+      <template #[`item.name`]="{ item }">
+        <div class="d-flex align-center ga-2">
+          <v-icon size="18" :color="item.isAdmin ? 'primary' : undefined">
+            {{ item.isAdmin ? 'mdi-shield-crown-outline' : 'mdi-shield-account-outline' }}
+          </v-icon>
+          <span class="font-weight-medium">{{ item.name }}</span>
+        </div>
+      </template>
+      <template #[`item.rightsCount`]="{ item }">
+        <div class="d-flex align-center ga-1 flex-wrap">
+          <v-icon
+            v-for="r in ROLE_RIGHTS"
+            :key="r.key"
+            size="16"
+            :color="item[r.key] ? 'success' : undefined"
+            :class="{ 'right-off': !item[r.key] }"
+            :title="$t('admin.rolesManagement.' + r.label) + (item[r.key] ? ' ✓' : ' ✕')"
+          >{{ r.icon }}</v-icon>
+          <span class="text-body-small text-medium-emphasis ms-1">{{ item.rightsCount }}/{{ ROLE_RIGHTS.length }}</span>
+        </div>
+      </template>
+      <template #[`item.group1Count`]="{ item }">
+        <span class="text-body-small" :title="(item.group1List || []).join(', ')">{{ scopeShort(item.group1List) }}</span>
+      </template>
+      <template #[`item.commandCount`]="{ item }">
+        <span class="text-body-small" :title="(item.group1CommandList || []).join(', ')">{{ scopeShort(item.group1CommandList) }}</span>
+      </template>
+      <template #[`item.displayCount`]="{ item }">
+        <span class="text-body-small" :title="(item.displayList || []).join(', ')">{{ scopeShort(item.displayList) }}</span>
+      </template>
+      <template #[`item.memberCount`]="{ item }">
+        <v-chip
+          size="x-small"
+          label
+          variant="tonal"
+          :color="item.memberCount ? 'primary' : undefined"
+          :title="(membersOf[item.name] || []).join(', ')"
+          @click="emit('show-users', item.name)"
         >
-          mdi-delete
-        </v-icon>
+          <v-icon start size="14">mdi-account-multiple-outline</v-icon>{{ item.memberCount }}
+        </v-chip>
+      </template>
+      <template #[`item.actions`]="{ item }">
+        <div class="admin-row-actions">
+          <v-btn icon variant="text" size="x-small" :title="$t('admin.rolesManagement.editRole')" @click="openEditRoleDialog(item)">
+            <v-icon size="18">mdi-pencil-outline</v-icon>
+          </v-btn>
+          <v-btn icon variant="text" size="x-small" :title="$t('admin.common.clone')" @click="openCloneRoleDialog(item)">
+            <v-icon size="18">mdi-content-duplicate</v-icon>
+          </v-btn>
+          <v-btn
+            icon
+            variant="text"
+            size="x-small"
+            color="error"
+            :disabled="item.name === 'admin' || item.memberCount > 0"
+            :title="deleteTitle(item)"
+            @click="openDeleteRoleDialog(item)"
+          >
+            <v-icon size="18">mdi-delete-outline</v-icon>
+          </v-btn>
+        </div>
       </template>
     </v-data-table>
-    <div>
-      <v-chip v-if="error" color="red darken-1">{{
-        $t('common.error')
-      }}</v-chip>
+
+    <!-- rights matrix: a click toggles the right of that role -->
+    <div v-else class="admin-table matrix-wrap">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th class="matrix-right">{{ $t('admin.rolesManagement.headers.rights') }}</th>
+            <th v-for="r in filteredRoles" :key="r._id" class="matrix-role">
+              <span :title="r.name">{{ r.name }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="right in ROLE_RIGHTS" :key="right.key">
+            <td class="matrix-right">
+              <v-icon size="16" class="me-2">{{ right.icon }}</v-icon>
+              <span :title="$t('admin.rolesManagement.' + right.label + 'Hint')">{{ $t('admin.rolesManagement.' + right.label) }}</span>
+            </td>
+            <td v-for="r in filteredRoles" :key="r._id" class="matrix-cell">
+              <v-btn
+                icon
+                variant="text"
+                size="small"
+                :loading="togglingCell === r._id + right.key"
+                :disabled="r.name === 'admin' && ['isAdmin', 'changePassword'].includes(right.key)"
+                :title="r.name + ' · ' + $t('admin.rolesManagement.' + right.label)"
+                @click="toggleRight(r, right.key)"
+              >
+                <v-icon :color="r[right.key] ? 'success' : undefined" :class="{ 'right-off': !r[right.key] }">
+                  {{ r[right.key] ? 'mdi-check-circle' : 'mdi-circle-outline' }}
+                </v-icon>
+              </v-btn>
+            </td>
+          </tr>
+          <tr class="matrix-scope">
+            <td class="matrix-right">{{ $t('admin.rolesManagement.headers.group1') }}</td>
+            <td v-for="r in filteredRoles" :key="r._id" class="matrix-cell text-body-small">{{ scopeShort(r.group1List) }}</td>
+          </tr>
+          <tr class="matrix-scope">
+            <td class="matrix-right">{{ $t('admin.rolesManagement.headers.displays') }}</td>
+            <td v-for="r in filteredRoles" :key="r._id" class="matrix-cell text-body-small">{{ scopeShort(r.displayList) }}</td>
+          </tr>
+          <tr class="matrix-scope">
+            <td class="matrix-right">{{ $t('admin.rolesManagement.headers.session') }}</td>
+            <td v-for="r in filteredRoles" :key="r._id" class="matrix-cell text-body-small">{{ r.maxSessionDays }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
-  </v-container>
 
-  <v-dialog v-model="addRoleDialog" scrollable max-width="600px">
-    <v-card>
-      <v-card-title>{{ $t('admin.rolesManagement.editRole') }}</v-card-title>
-      <v-card-text>
-        <v-text-field
-          v-model="newRole.name"
-          :label="$t('admin.rolesManagement.roleName')"
-          variant="outlined"
-          :disabled="newRole.name === 'admin' ? true : false"
-        ></v-text-field>
+    <!-- add / edit role -->
+    <v-dialog v-model="roleDialog" scrollable max-width="760px">
+      <v-card>
+        <v-card-title class="d-flex align-center ga-2">
+          <v-icon>{{ isNewRole ? 'mdi-shield-plus-outline' : 'mdi-shield-edit-outline' }}</v-icon>
+          {{ isNewRole ? $t('admin.rolesManagement.addRole') : $t('admin.rolesManagement.editRole') }}
+        </v-card-title>
+        <v-divider></v-divider>
+        <v-card-text>
+          <v-form ref="roleForm" @submit.prevent="saveRole">
+            <div class="admin-dialog-section">{{ $t('admin.rolesManagement.sectionGeneral') }}</div>
+            <div class="role-general">
+              <v-text-field
+                v-model="editedRole.name"
+                :label="$t('admin.rolesManagement.roleName')"
+                :rules="[rules.required]"
+                :disabled="!isNewRole && originalName === 'admin'"
+                prepend-inner-icon="mdi-shield-outline"
+                variant="outlined"
+                density="comfortable"
+              ></v-text-field>
+              <v-text-field
+                v-model.number="editedRole.maxSessionDays"
+                type="number"
+                min="0"
+                max="9999"
+                :label="$t('admin.rolesManagement.maxSessionDays')"
+                :hint="$t('admin.rolesManagement.maxSessionDaysHint')"
+                persistent-hint
+                prepend-inner-icon="mdi-timer-outline"
+                variant="outlined"
+                density="comfortable"
+              ></v-text-field>
+            </div>
 
-        <v-select
-          v-model="newRole.group1List"
-          :items="group1ListAll"
-          item-title="name"
-          variant="outlined"
-          chips
-          closable-chips
-          small-chips
-          :label="$t('admin.rolesManagement.canViewGroup1List')"
-          multiple
-        ></v-select>
+            <div class="admin-dialog-section mt-4">{{ $t('admin.rolesManagement.sectionPermissions') }}</div>
+            <div class="role-rights">
+              <label
+                v-for="r in ROLE_RIGHTS"
+                :key="r.key"
+                class="role-right"
+                :class="{ 'role-right-on': editedRole[r.key], 'role-right-locked': rightLocked(r.key) }"
+              >
+                <v-checkbox-btn
+                  v-model="editedRole[r.key]"
+                  color="primary"
+                  density="compact"
+                  :disabled="rightLocked(r.key)"
+                ></v-checkbox-btn>
+                <v-icon size="18" class="mx-1">{{ r.icon }}</v-icon>
+                <span>
+                  <span class="d-block text-body-medium font-weight-medium">{{ $t('admin.rolesManagement.' + r.label) }}</span>
+                  <span class="d-block text-body-small text-medium-emphasis">{{ $t('admin.rolesManagement.' + r.label + 'Hint') }}</span>
+                </span>
+              </label>
+            </div>
 
-        <v-select
-          v-model="newRole.group1CommandList"
-          :items="group1ListAll"
-          item-title="name"
-          variant="outlined"
-          chips
-          closable-chips
-          small-chips
-          :label="$t('admin.rolesManagement.canCommandGroup1List')"
-          multiple
-        ></v-select>
+            <div class="admin-dialog-section mt-4">{{ $t('admin.rolesManagement.sectionScope') }}</div>
+            <v-combobox
+              v-model="editedRole.group1List"
+              :items="group1ListAll"
+              :label="$t('admin.rolesManagement.canViewGroup1List')"
+              :hint="$t('admin.rolesManagement.scopeEmptyHint')"
+              persistent-hint
+              prepend-inner-icon="mdi-eye-outline"
+              variant="outlined"
+              density="comfortable"
+              chips
+              closable-chips
+              multiple
+              class="mb-2"
+            ></v-combobox>
+            <v-combobox
+              v-model="editedRole.group1CommandList"
+              :items="['$$', ...group1ListAll]"
+              :label="$t('admin.rolesManagement.canCommandGroup1List')"
+              :hint="$t('admin.rolesManagement.scopeCommandHint')"
+              persistent-hint
+              prepend-inner-icon="mdi-gesture-tap-button"
+              variant="outlined"
+              density="comfortable"
+              chips
+              closable-chips
+              multiple
+              class="mb-2"
+            ></v-combobox>
+            <v-combobox
+              v-model="editedRole.displayList"
+              :items="displayListAll"
+              :label="$t('admin.rolesManagement.canAccessDisplayList')"
+              :hint="$t('admin.rolesManagement.scopeEmptyHint')"
+              persistent-hint
+              prepend-inner-icon="mdi-monitor-dashboard"
+              variant="outlined"
+              density="comfortable"
+              chips
+              closable-chips
+              multiple
+            ></v-combobox>
+          </v-form>
+          <v-alert v-if="dialogError" type="error" variant="tonal" density="compact" class="mt-4">{{ dialogError }}</v-alert>
+        </v-card-text>
+        <v-divider></v-divider>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="roleDialog = false">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="primary" variant="flat" :loading="saving" @click="saveRole">{{ $t('common.save') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
-        <v-select
-          v-model="newRole.displayList"
-          :items="displayListAll"
-          item-title="name"
-          variant="outlined"
-          chips
-          closable-chips
-          small-chips
-          :label="$t('admin.rolesManagement.canAccessDisplayList')"
-          multiple
-        ></v-select>
+    <!-- delete role -->
+    <v-dialog v-model="deleteRoleDialog" max-width="420px">
+      <v-card>
+        <v-card-title class="d-flex align-center ga-2">
+          <v-icon color="error">mdi-shield-remove-outline</v-icon>
+          {{ $t('admin.rolesManagement.deleteRole') }}
+        </v-card-title>
+        <v-card-text>
+          {{ $t('admin.rolesManagement.deleteRoleConfirm') }}
+          <div class="mt-2 font-weight-medium">{{ roleToDelete.name }}</div>
+          <v-alert v-if="dialogError" type="error" variant="tonal" density="compact" class="mt-4">{{ dialogError }}</v-alert>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="deleteRoleDialog = false">{{ $t('common.cancel') }}</v-btn>
+          <v-btn color="error" variant="flat" :loading="saving" @click="deleteRole(roleToDelete)">{{ $t('common.delete') }}</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
-        <v-text-field
-          type="number"
-          min="0"
-          max="9999"
-          variant="outlined"
-          :label="
-            $t('admin.rolesManagement.maxSessionDays') +
-            ' - ' +
-            $t('admin.rolesManagement.maxSessionDaysHint')
-          "
-          hide-details="auto"
-          v-model="newRole.maxSessionDays"
-        ></v-text-field>
-
-        <v-checkbox
-          dense
-          v-model="newRole.isAdmin"
-          class="mt-n0"
-          :label="
-            $t('admin.rolesManagement.isAdmin') +
-            ' - ' +
-            $t('admin.rolesManagement.isAdminHint')
-          "
-          :disabled="newRole.name === 'admin' ? true : false"
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.changePassword"
-          class="my-n8"
-          :label="
-            $t('admin.rolesManagement.canChangePassword') +
-            ' - ' +
-            $t('admin.rolesManagement.canChangePasswordHint')
-          "
-          :disabled="newRole.name === 'admin' ? true : false"
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.sendCommands"
-          class="my-n8"
-          :label="
-            $t('admin.rolesManagement.sendCommands') +
-            ' - ' +
-            $t('admin.rolesManagement.sendCommandsHint')
-          "
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.enterAnnotations"
-          class="my-n8"
-          :label="
-            $t('admin.rolesManagement.enterAnnotations') +
-            ' - ' +
-            $t('admin.rolesManagement.enterAnnotationsHint')
-          "
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.enterNotes"
-          class="my-n8"
-          :label="
-            $t('admin.rolesManagement.enterNotes') +
-            ' - ' +
-            $t('admin.rolesManagement.enterNotesHint')
-          "
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.enterManuals"
-          class="my-n8"
-          :label="
-            $t('admin.rolesManagement.enterManuals') +
-            ' - ' +
-            $t('admin.rolesManagement.enterManualsHint')
-          "
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.enterLimits"
-          class="my-n8"
-          :label="
-            $t('admin.rolesManagement.enterLimits') +
-            ' - ' +
-            $t('admin.rolesManagement.enterLimitsHint')
-          "
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.substituteValues"
-          class="my-n8"
-          :label="
-            $t('admin.rolesManagement.substituteValues') +
-            ' - ' +
-            $t('admin.rolesManagement.substituteValuesHint')
-          "
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.ackEvents"
-          class="my-n8"
-          :label="
-            $t('admin.rolesManagement.ackEvents') +
-            ' - ' +
-            $t('admin.rolesManagement.ackEventsHint')
-          "
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.ackAlarms"
-          class="my-n8"
-          :label="
-            $t('admin.rolesManagement.ackAlarms') +
-            ' - ' +
-            $t('admin.rolesManagement.ackAlarmsHint')
-          "
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.disableAlarms"
-          class="mb-n4"
-          :label="
-            $t('admin.rolesManagement.disableAlarms') +
-            ' - ' +
-            $t('admin.rolesManagement.disableAlarmsHint')
-          "
-        >
-        </v-checkbox>
-
-        <v-checkbox
-          dense
-          v-model="newRole.cimEngineering"
-          class="mb-n4"
-          :label="
-            $t('admin.rolesManagement.cimEngineering') +
-            ' - ' +
-            $t('admin.rolesManagement.cimEngineeringHint')
-          "
-        >
-        </v-checkbox>
-      </v-card-text>
-      <v-card-actions>
-        <v-chip v-if="error" color="red darken-1">{{
-          $t('common.error')
-        }}</v-chip>
-        <v-spacer></v-spacer>
-        <v-btn
-          color="orange darken-1"
-          text
-          variant="tonal"
-          @click="closeAddRoleDialog"
-        >
-          {{ $t('common.cancel') }}
-        </v-btn>
-        <v-btn
-          color="blue darken-1"
-          text
-          variant="tonal"
-          @click="isNewRole ? createRole(newRole) : updateRole(newRole)"
-        >
-          {{ $t('common.save') }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
-  <v-dialog v-model="deleteRoleDialog" max-width="400px">
-    <v-card>
-      <v-card-title>{{ $t('admin.rolesManagement.deleteRole') }}</v-card-title>
-      <v-card-text>
-        {{ $t('admin.rolesManagement.deleteRoleConfirm') }}
-      </v-card-text>
-      <v-card-text>
-        {{ roleToDelete.name }}
-      </v-card-text>
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn
-          color="orange darken-1"
-          text
-          variant="tonal"
-          @click="closeDeleteRoleDialog"
-        >
-          {{ $t('common.cancel') }}
-        </v-btn>
-        <v-btn
-          color="red darken-1"
-          text
-          variant="tonal"
-          @click="confirmDeleteRole"
-        >
-          {{ $t('common.delete') }}
-        </v-btn>
-      </v-card-actions>
-      <v-chip v-if="error" color="red darken-1">{{
-        $t('common.error')
-      }}</v-chip>
-    </v-card>
-  </v-dialog>
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3500" location="bottom right">
+      {{ snackbar.text }}
+    </v-snackbar>
+  </div>
 </template>
 
 <script setup>
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { ref, computed, watch, onMounted } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import AdminSummary from './AdminSummary.vue'
+  import { postJson, toCsv, downloadText, fileStamp, loadPref, savePref } from '../lib/adminList'
+  import { ROLE_RIGHTS } from '../lib/roleRights'
 
+  const emit = defineEmits(['show-users'])
   const { t } = useI18n()
 
-  // Computed properties
-  const headers = computed(() => [
-    { title: '#', key: 'id', align: 'end' },
-    {
-      title: t('admin.rolesManagement.headers.name'),
-      align: 'start',
-      key: 'name',
-    },
-    {
-      title: t('admin.rolesManagement.headers.rights'),
-      key: 'rights',
-      sortable: false,
-    },
-    {
-      title: t('admin.rolesManagement.headers.actions'),
-      key: 'actions',
-      sortable: false,
-    },
-  ])
-
-  // Reactive variables
   const roles = ref([])
-  const error = ref(false)
-  const newRole = ref({})
-  const addRoleDialog = ref(false)
+  const users = ref([])
+  const loading = ref(false)
+  const saving = ref(false)
+  const search = ref('')
+  const tileFilter = ref(null)
+  const view = ref(loadPref('roles-view', 'list'))
+  watch(view, (v) => savePref('roles-view', v))
+  const itemsPerPage = ref(loadPref('roles-page-size', 25))
+  watch(itemsPerPage, (n) => savePref('roles-page-size', n))
   const displayListAll = ref([])
   const group1ListAll = ref([])
-  const deleteRoleDialog = ref(false)
-  const roleToDelete = ref({})
-  let isNewRole = ref(false)
 
-  // Constants
+  const headers = computed(() => [
+    { title: t('admin.rolesManagement.headers.name'), key: 'name' },
+    { title: t('admin.rolesManagement.headers.rights'), key: 'rightsCount' },
+    { title: t('admin.rolesManagement.headers.group1'), key: 'group1Count', align: 'end' },
+    { title: t('admin.rolesManagement.headers.commands'), key: 'commandCount', align: 'end' },
+    { title: t('admin.rolesManagement.headers.displays'), key: 'displayCount', align: 'end' },
+    { title: t('admin.rolesManagement.headers.session'), key: 'maxSessionDays', align: 'end' },
+    { title: t('admin.rolesManagement.headers.users'), key: 'memberCount', align: 'end' },
+    { title: '', key: 'actions', sortable: false, align: 'end', width: 120 },
+  ])
+
+  // users of each role (by name)
+  const membersOf = computed(() => {
+    const m = {}
+    for (const u of users.value)
+      for (const r of u.roles || []) {
+        const name = r?.name
+        if (name) (m[name] = m[name] || []).push(u.username)
+      }
+    return m
+  })
+
+  const rows = computed(() =>
+    roles.value.map((r) => ({
+      ...r,
+      rightsCount: ROLE_RIGHTS.filter((x) => r[x.key]).length,
+      group1Count: (r.group1List || []).length,
+      commandCount: (r.group1CommandList || []).length,
+      displayCount: (r.displayList || []).length,
+      memberCount: (membersOf.value[r.name] || []).length,
+    }))
+  )
+  const filteredRoles = computed(() => {
+    const q = (search.value || '').trim().toLowerCase()
+    return rows.value
+      .filter(
+        (r) =>
+          (!q || r.name.toLowerCase().includes(q)) &&
+          (tileFilter.value === null ||
+            (tileFilter.value === 'admin' && r.isAdmin) ||
+            (tileFilter.value === 'unused' && !r.memberCount))
+      )
+      .sort((a, b) => a.name.localeCompare(b.name))
+  })
+
+  const summaryTiles = computed(() => [
+    { key: 'total', icon: 'mdi-shield-account-outline', color: 'primary', value: roles.value.length, label: t('admin.rolesManagement.summary.total') },
+    { key: 'admin', filter: 'admin', icon: 'mdi-shield-crown-outline', color: 'primary', value: rows.value.filter((r) => r.isAdmin).length, label: t('admin.rolesManagement.summary.admin') },
+    { key: 'unused', filter: 'unused', icon: 'mdi-shield-off-outline', color: 'warning', value: rows.value.filter((r) => !r.memberCount).length, label: t('admin.rolesManagement.summary.unused') },
+  ])
+
+  const scopeShort = (list) =>
+    list && list.length
+      ? list.length <= 2
+        ? list.join(', ')
+        : t('admin.rolesManagement.scopeCount', { n: list.length })
+      : t('admin.rolesManagement.scopeAll')
+
+  function deleteTitle(item) {
+    if (item.name === 'admin') return t('admin.rolesManagement.protectedRole')
+    if (item.memberCount > 0) return t('admin.rolesManagement.inUse')
+    return t('admin.rolesManagement.deleteRole')
+  }
+
+  const snackbar = ref({ show: false, text: '', color: undefined })
+  function notify(text, color) {
+    snackbar.value = { show: true, text, color }
+  }
+
+  onMounted(async () => {
+    await refreshAll()
+    fetchDisplayList()
+    fetchGroup1List()
+  })
+
+  async function refreshAll() {
+    await Promise.all([fetchRoles(), fetchUsers()])
+  }
+
+  async function fetchRoles() {
+    loading.value = true
+    try {
+      const json = await (await fetch('/Invoke/auth/listRoles')).json()
+      if (json.error || !Array.isArray(json)) {
+        notify(t('common.error') + ' ' + (json.error || ''), 'error')
+        return
+      }
+      roles.value = json
+    } catch (err) {
+      notify(t('common.error') + ' ' + err.message, 'error')
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchUsers() {
+    try {
+      const json = await (await fetch('/Invoke/auth/listUsers')).json()
+      if (Array.isArray(json)) users.value = json
+    } catch (err) {
+      console.warn(err)
+    }
+  }
+
+  async function fetchDisplayList() {
+    try {
+      const json = await (await fetch('/Invoke/auth/listDisplays')).json()
+      if (Array.isArray(json)) displayListAll.value = json
+    } catch (err) {
+      console.warn(err)
+    }
+  }
+
+  async function fetchGroup1List() {
+    try {
+      const json = await (await fetch('/Invoke/auth/listGroup1')).json()
+      if (Array.isArray(json)) group1ListAll.value = json.filter((g) => typeof g === 'string' && g !== '').sort()
+    } catch (err) {
+      console.warn(err)
+    }
+  }
+
+  // ---- matrix: one right of one role ----
+  const togglingCell = ref('')
+  async function toggleRight(role, key) {
+    togglingCell.value = role._id + key
+    try {
+      const json = await postJson('/Invoke/auth/updateRole', { _id: role._id, [key]: !role[key] })
+      if (json.error) throw new Error(json.error)
+      await fetchRoles()
+    } catch (err) {
+      notify(t('common.error') + ' ' + err.message, 'error')
+    } finally {
+      togglingCell.value = ''
+    }
+  }
+
+  // ---- add / edit dialog ----
+  const roleDialog = ref(false)
+  const deleteRoleDialog = ref(false)
+  const isNewRole = ref(false)
+  const dialogError = ref('')
+  const roleForm = ref(null)
+  const originalName = ref('')
+  const editedRole = ref({})
+  const roleToDelete = ref({})
+  const rules = {
+    required: (v) => !!(v && String(v).trim()) || t('admin.common.required'),
+  }
+  // the admin role keeps admin rights
+  const rightLocked = (key) =>
+    !isNewRole.value && originalName.value === 'admin' && ['isAdmin', 'changePassword'].includes(key)
+
   const defaultRoleConfig = {
     name: '',
     group1List: [],
@@ -362,216 +491,171 @@
     cimEngineering: false,
     maxSessionDays: 3,
   }
+  const roleFields = Object.keys(defaultRoleConfig)
+  const copyOf = (r) => {
+    const out = {}
+    for (const k of roleFields) out[k] = Array.isArray(r[k]) ? [...r[k]] : r[k] ?? defaultRoleConfig[k]
+    return out
+  }
 
-  // Lifecycle hooks
-  onMounted(async () => {
-    await fetchRoles()
-    await fetchDisplayList()
-    await fetchGroup1List()
-    document.documentElement.style.overflowY = 'scroll'
-  })
+  function openDialog(role, isNew) {
+    isNewRole.value = isNew
+    dialogError.value = ''
+    fetchDisplayList()
+    fetchGroup1List()
+    roleDialog.value = true
+    editedRole.value = role
+  }
+  function openAddRoleDialog() {
+    originalName.value = ''
+    openDialog(copyOf(defaultRoleConfig), true)
+  }
+  function openEditRoleDialog(item) {
+    originalName.value = item.name
+    openDialog({ ...copyOf(item), _id: item._id }, false)
+  }
+  function openCloneRoleDialog(item) {
+    originalName.value = ''
+    openDialog({ ...copyOf(item), name: item.name + '_copy' }, true)
+  }
 
-  onUnmounted(async () => {
-    document.documentElement.style.overflowY = 'auto'
-  })
+  async function saveRole() {
+    const { valid } = (await roleForm.value?.validate()) || { valid: true }
+    if (!valid) return
+    saving.value = true
+    dialogError.value = ''
+    const body = copyOf(editedRole.value)
+    body.name = String(body.name).trim()
+    body.maxSessionDays = Number(body.maxSessionDays) || 0
+    try {
+      const json = isNewRole.value
+        ? await postJson('/Invoke/auth/createRole', body)
+        : await postJson('/Invoke/auth/updateRole', { ...body, _id: editedRole.value._id })
+      if (json.error) throw new Error(json.error)
+      roleDialog.value = false
+      notify(t('admin.common.saved'), 'success')
+    } catch (err) {
+      dialogError.value = err.message
+    } finally {
+      saving.value = false
+      refreshAll()
+    }
+  }
 
-  // Methods
-  const openDeleteRoleDialog = (role) => {
-    error.value = false
+  function openDeleteRoleDialog(role) {
+    dialogError.value = ''
     roleToDelete.value = role
     deleteRoleDialog.value = true
   }
 
-  const closeDeleteRoleDialog = () => {
-    error.value = false
-    deleteRoleDialog.value = false
-  }
-
-  const confirmDeleteRole = () => {
-    error.value = false
-    deleteRole(roleToDelete.value)
-  }
-
-  const openAddRoleDialog = async () => {
-    isNewRole.value = true
-    error.value = false
-    newRole.value = Object.assign({}, defaultRoleConfig)
-    addRoleDialog.value = true
-  }
-
-  const closeAddRoleDialog = () => {
-    error.value = false
-    isNewRole.value = false
-    addRoleDialog.value = false
-  }
-
-  const openEditRoleDialog = async (item) => {
-    await fetchRoles()
-    isNewRole.value = false
-    error.value = false
-    newRole.value = Object.assign({}, item)
-    addRoleDialog.value = true
-  }
-
-  // API calls
-  const deleteRole = async (role) => {
-    if (role.name === 'admin') {
-      return
+  async function deleteRole(role) {
+    if (role.name === 'admin') return
+    saving.value = true
+    dialogError.value = ''
+    try {
+      const json = await postJson('/Invoke/auth/deleteRole', { name: role.name, _id: role._id })
+      if (json.error) throw new Error(json.error)
+      deleteRoleDialog.value = false
+    } catch (err) {
+      dialogError.value = err.message
+    } finally {
+      saving.value = false
+      refreshAll()
     }
-    return await fetch('/Invoke/auth/deleteRole', {
-      method: 'post',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: role.name,
-        _id: role._id,
-      }),
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.error === false) {
-          fetchRoles() // refreshes roles
-          closeDeleteRoleDialog()
-        } else {
-          error.value = true
-        }
-      })
-      .catch((err) => {
-        error.value = true
-        console.warn(err)
-      })
   }
 
-  const createRole = async () => {
-    if (newRole.value.name === '') {
-      return
-    }
-    return await fetch('/Invoke/auth/createRole', {
-      method: 'post',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: newRole.value.name,
-      }),
-    })
-      .then((res) => res.json())
-      .then(async (json) => {
-        if (json.error === false) {
-          await updateRole(newRole)
-          addRoleDialog.value = false
-        } else {
-          error.value = true
-        }
-        await fetchRoles()
-      })
-      .catch((err) => {
-        error.value = true
-        console.warn(err)
-      })
+  function exportCsv() {
+    const cols = [
+      { title: 'name', value: (r) => r.name },
+      ...ROLE_RIGHTS.map((x) => ({ title: x.key, value: (r) => !!r[x.key] })),
+      { title: 'group1List', value: (r) => (r.group1List || []).join(' ') },
+      { title: 'group1CommandList', value: (r) => (r.group1CommandList || []).join(' ') },
+      { title: 'displayList', value: (r) => (r.displayList || []).join(' ') },
+      { title: 'maxSessionDays', value: (r) => r.maxSessionDays },
+      { title: 'users', value: (r) => (membersOf.value[r.name] || []).join(' ') },
+    ]
+    downloadText('roles_' + fileStamp() + '.csv', toCsv(filteredRoles.value, cols))
   }
 
-  const updateRole = async (role) => {
-    if (role.value) role = role.value
-    var roleDup = Object.assign({}, role)
-    if ('id' in roleDup) delete roleDup.id
-    if ('rights' in roleDup) delete roleDup.rights
-    if ('__v' in roleDup) delete roleDup.__v
-    return await fetch('/Invoke/auth/updateRole', {
-      method: 'post',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(roleDup),
-    })
-      .then((res) => res.json())
-      .then(async (json) => {
-        if (json.error === false) {
-          closeAddRoleDialog()
-        } else {
-          error.value = true
-        }
-        await fetchRoles() // refreshes roles
-      })
-      .catch((err) => {
-        error.value = true
-        console.warn(err)
-      })
-  }
-
-  const fetchDisplayList = async () => {
-    return await fetch('/Invoke/auth/listDisplays')
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.error) {
-          console.warn(json)
-          return
-        }
-        displayListAll.value.length = 0
-        displayListAll.value.push(...json)
-      })
-      .catch((err) => {
-        error.value = true
-        console.warn(err)
-      })
-  }
-
-  const fetchGroup1List = async () => {
-    return await fetch('/Invoke/auth/listGroup1')
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.error) {
-          console.warn(json)
-          return
-        }
-        group1ListAll.value.length = 0
-        group1ListAll.value.push(...json)
-      })
-      .catch((err) => {
-        error.value = true
-        console.warn(err)
-      })
-  }
-
-  const fetchRoles = async () => {
-    error.value = false
-    return await fetch('/Invoke/auth/listRoles')
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.error) {
-          console.warn(json)
-          return
-        }
-        for (let i = 0; i < json.length; i++) {
-          let rights = ''
-          for (const key in json[i]) {
-            if (json[i].hasOwnProperty(key)) {
-              if (typeof json[i][key] === 'boolean' && json[i][key]) {
-                rights += key + ', '
-              }
-            }
-          }
-          json[i].id = i + 1
-          json[i].rights = rights + '...'
-        }
-        roles.value.length = 0
-        roles.value.push(...json)
-      })
-      .catch((err) => {
-        error.value = true
-        console.warn(err)
-      })
-  }
-
-  defineExpose({ fetchRoles })
+  defineExpose({ fetchRoles: refreshAll })
 </script>
 
 <style scoped>
-  .v-checkbox :deep(.v-label) {
-    font-size: 0.8em;
+  .right-off {
+    opacity: 0.35;
+  }
+  .role-general {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+  }
+  .role-rights {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 6px;
+  }
+  .role-right {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .role-right-on {
+    border-color: rgba(var(--v-theme-primary), 0.6);
+    background: rgba(var(--v-theme-primary), 0.06);
+  }
+  .role-right-locked {
+    cursor: default;
+    opacity: 0.7;
+  }
+  .matrix-wrap {
+    overflow: auto;
+  }
+  .matrix {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.85rem;
+  }
+  .matrix th,
+  .matrix td {
+    border-bottom: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    padding: 2px 8px;
+  }
+  .matrix thead th {
+    font-weight: 600;
+    height: 40px;
+    position: sticky;
+    top: 0;
+    background: rgb(var(--v-theme-surface));
+  }
+  .matrix-right {
+    text-align: start;
+    white-space: nowrap;
+    position: sticky;
+    left: 0;
+    background: rgb(var(--v-theme-surface));
+  }
+  .matrix-role {
+    text-align: center;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .matrix-cell {
+    text-align: center;
+  }
+  .matrix tbody tr:hover td {
+    background: rgba(var(--v-theme-on-surface), 0.04);
+  }
+  .matrix-scope td {
+    opacity: 0.85;
+  }
+  @media (max-width: 600px) {
+    .role-general {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

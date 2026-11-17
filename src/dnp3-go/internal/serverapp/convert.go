@@ -22,6 +22,7 @@
 package serverapp
 
 import (
+	"math"
 	"time"
 
 	"dnp3-go/internal/dnp3util"
@@ -83,13 +84,16 @@ func scaled(v float64, dest Destination) float64 {
 // change event lands in a single atomic update and a master cannot read a torn
 // set.
 func ApplyValue(db *outstation.Database, doc bson.M, dest Destination, conn *Connection) {
+	if !dest.ValidAddress() {
+		return // reported at load by reportInvalidAddresses
+	}
 	ts := timestampFor(doc, dest, conn.HoursShift)
 	q := tagQuality(doc)
 	index := uint16(dest.ObjectAddress)
 	fam := familyOf(dest.CommonAddress)
 
 	logIt := func(value any) {
-		jslog.Log(jslog.LevelBasic, "Updating tag: %s %s Address: %d Group: %d Value: %v",
+		jslog.Log(jslog.LevelDetailed, "Updating tag: %s %s Address: %d Group: %d Value: %v",
 			jsmongo.FormatID(jsmongo.GetDouble(doc, "_id", 0)),
 			jsmongo.GetString(doc, "tag", ""),
 			dest.ObjectAddress, dest.CommonAddress, value)
@@ -123,8 +127,9 @@ func ApplyValue(db *outstation.Database, doc bson.M, dest Destination, conn *Con
 
 	case famCounter:
 		v := scaled(jsmongo.GetDouble(doc, "value", 0), dest)
+		c, clamped := counterValue(v)
 		db.UpdateCounter(index, dnp3.Counter{
-			Value: uint32(v), Flags: q.Flags(true, dnp3.Rollover), Time: ts,
+			Value: c, Flags: counterFlags(q, clamped), Time: ts,
 		})
 		logIt(v)
 
@@ -134,8 +139,9 @@ func ApplyValue(db *outstation.Database, doc bson.M, dest Destination, conn *Con
 		// families apart, so the point is written where it was sized
 		// (deviation D16).
 		v := scaled(jsmongo.GetDouble(doc, "value", 0), dest)
+		c, clamped := counterValue(v)
 		db.UpdateFrozenCounter(index, dnp3.FrozenCounter{
-			Value: uint32(v), Flags: q.Flags(true, dnp3.Rollover), Time: ts,
+			Value: c, Flags: counterFlags(q, clamped), Time: ts,
 		})
 		logIt(v)
 
@@ -166,6 +172,33 @@ func ApplyValue(db *outstation.Database, doc bson.M, dest Destination, conn *Con
 		})
 		logIt(v)
 	}
+}
+
+// counterValue converts a tag value to the 32-bit unsigned count a counter
+// carries. A value that does not fit — negative, NaN, or past 2^32-1 — is
+// clamped rather than converted: a plain conversion wraps (-1 would become
+// 4294967295, 2^32+5 would become 5), which a master would read as a real
+// count. clamped says the value was not representable.
+func counterValue(v float64) (uint32, bool) {
+	switch {
+	case math.IsNaN(v):
+		return 0, true
+	case v < 0:
+		return 0, true
+	case v > math.MaxUint32:
+		return math.MaxUint32, true
+	}
+	return uint32(v), false
+}
+
+// counterFlags adds DISCONTINUITY to a clamped counter: its value can no longer
+// be compared with the previous one, which is what the flag says.
+func counterFlags(q dnp3util.TagQuality, clamped bool) dnp3.Flags {
+	f := q.Flags(true, dnp3.Rollover)
+	if clamped {
+		f |= dnp3.Discontinuity
+	}
+	return f
 }
 
 // boolValue reads a digital tag's value, inverted when the destination asks

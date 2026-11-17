@@ -1,84 +1,275 @@
 <template>
-  <v-data-table-server
-    :headers="headers"
-    :items="tags"
-    :items-per-page="itemsPerPage"
-    :page="page"
-    :items-length="totalTags"
-    :loading="loading"
-    :items-per-page-options="[10, 25, 50, 100, 250, 500, 1000]"
-    @update:options="handleOptionsUpdate"
-    multi-sort
-    class="elevation-1"
-    density="compact"
-  >
-    <template v-slot:top>
-      <v-toolbar flat class="d-print-none">
-        <v-btn
-          color="blue"
-          size="small"
-          variant="flat"
-          @click="newTagOpenDialog"
-        >
-          <v-icon>mdi-plus</v-icon>
-          {{ $t('admin.tags.newTag') }}
-        </v-btn>
-        <v-btn color="primary" @click="fetchTags">
-          <v-icon>mdi-refresh</v-icon>
-        </v-btn>
-        <v-divider class="mx-4" inset vertical></v-divider>
-        <v-text-field
+  <div class="tags-tab">
+    <div class="admin-toolbar">
+      <v-btn color="primary" variant="flat" prepend-icon="mdi-plus" @click="newTagOpenDialog">
+        {{ $t('admin.tags.newTag') }}
+      </v-btn>
+      <v-text-field
+        v-model="searchTag"
+        class="admin-search"
+        density="compact"
+        variant="outlined"
+        hide-details
+        clearable
+        prepend-inner-icon="mdi-magnify"
+        :label="$t('admin.tags.searchTag')"
+        @keyup.enter="applyFilters"
+        @click:clear="clearAndApply('searchTag')"
+      ></v-text-field>
+      <v-text-field
+        v-model="searchDescription"
+        class="admin-search"
+        density="compact"
+        variant="outlined"
+        hide-details
+        clearable
+        prepend-inner-icon="mdi-text-search"
+        :label="$t('admin.tags.searchDescription')"
+        @keyup.enter="applyFilters"
+        @click:clear="clearAndApply('searchDescription')"
+      ></v-text-field>
+      <v-btn
+        variant="tonal"
+        :color="activeFilterCount ? 'primary' : undefined"
+        prepend-icon="mdi-filter-variant"
+        @click="showFilters = !showFilters"
+      >
+        {{ $t('admin.common.filters') }}
+        <v-badge v-if="activeFilterCount" :content="activeFilterCount" color="primary" inline></v-badge>
+      </v-btn>
+      <v-spacer></v-spacer>
+      <span class="admin-count">{{ $t('admin.common.results', { n: totalTags.toLocaleString() }) }}</span>
+      <v-btn icon variant="text" size="small" :title="$t('common.refresh')" @click="fetchTags">
+        <v-icon>mdi-refresh</v-icon>
+      </v-btn>
+      <v-btn
+        icon
+        variant="text"
+        size="small"
+        :color="autoRefresh ? 'primary' : undefined"
+        :title="$t('admin.common.autoRefresh')"
+        @click="autoRefresh = !autoRefresh"
+      >
+        <v-icon>{{ autoRefresh ? 'mdi-timer-sync-outline' : 'mdi-timer-off-outline' }}</v-icon>
+      </v-btn>
+      <v-menu :close-on-content-click="false" location="bottom end">
+        <template #activator="{ props }">
+          <v-btn icon variant="text" size="small" :title="$t('admin.common.columns')" v-bind="props">
+            <v-icon>mdi-view-column-outline</v-icon>
+          </v-btn>
+        </template>
+        <v-list density="compact" min-width="220">
+          <v-list-subheader>{{ $t('admin.common.columns') }}</v-list-subheader>
+          <v-list-item v-for="c in optionalColumns" :key="c.key" @click="toggleColumn(c.key)">
+            <template #prepend>
+              <v-checkbox-btn :model-value="visibleColumns.includes(c.key)" density="compact"></v-checkbox-btn>
+            </template>
+            <v-list-item-title>{{ c.title }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+      <v-btn
+        icon
+        variant="text"
+        size="small"
+        :loading="exporting"
+        :title="$t('admin.common.exportCsv')"
+        @click="exportCsv"
+      >
+        <v-icon>mdi-file-delimited-outline</v-icon>
+      </v-btn>
+    </div>
+
+    <v-expand-transition>
+      <div v-show="showFilters" class="admin-filters">
+        <v-select
+          v-model="filterTypes"
+          :items="typeItems"
+          :label="$t('admin.tags.filterType')"
+          multiple
+          chips
+          closable-chips
+          clearable
           density="compact"
-          v-model="searchTag"
-          v-on:keyup.enter="fetchTags"
-          append-icon="mdi-magnify"
-          :label="$t('admin.tags.searchTag')"
+          variant="outlined"
           hide-details
-        ></v-text-field>
-        <v-divider class="mx-4" inset vertical></v-divider>
-        <v-text-field
+          @update:model-value="applyFilters"
+        ></v-select>
+        <v-select
+          v-model="filterOrigins"
+          :items="originItems"
+          :label="$t('admin.tags.filterOrigin')"
+          multiple
+          chips
+          closable-chips
+          clearable
           density="compact"
-          v-model="searchDescription"
-          v-on:keyup.enter="fetchTags"
-          append-icon="mdi-magnify"
-          :label="$t('admin.tags.searchDescription')"
+          variant="outlined"
           hide-details
+          @update:model-value="applyFilters"
+        ></v-select>
+        <v-autocomplete
+          v-model="filterConnections"
+          :items="connectionItems"
+          :label="$t('admin.tags.filterConnection')"
+          multiple
+          chips
+          closable-chips
+          clearable
+          density="compact"
+          variant="outlined"
+          hide-details
+          @update:model-value="applyFilters"
+        ></v-autocomplete>
+        <v-text-field
+          v-model="filterGroup1"
+          :label="$t('admin.tags.filterGroup1')"
+          clearable
+          density="compact"
+          variant="outlined"
+          hide-details
+          @keyup.enter="applyFilters"
+          @click:clear="clearAndApply('filterGroup1')"
         ></v-text-field>
-        <v-divider class="mx-4" inset vertical></v-divider>
-      </v-toolbar>
-    </template>
+        <v-select
+          v-model="filterQuality"
+          :items="qualityItems"
+          :label="$t('admin.tags.filterQuality')"
+          density="compact"
+          variant="outlined"
+          hide-details
+          @update:model-value="applyFilters"
+        ></v-select>
+        <v-select
+          v-model="filterAlarm"
+          :items="alarmItems"
+          :label="$t('admin.tags.filterAlarm')"
+          density="compact"
+          variant="outlined"
+          hide-details
+          @update:model-value="applyFilters"
+        ></v-select>
+        <div class="d-flex align-center">
+          <v-btn variant="text" prepend-icon="mdi-filter-remove-outline" :disabled="!activeFilterCount" @click="clearFilters">
+            {{ $t('admin.common.clearFilters') }}
+          </v-btn>
+        </div>
+      </div>
+    </v-expand-transition>
 
-    <template #[`item.value`]="{ item }">
-      {{ item.value.toFixed(3) }}
-    </template>
-
-    <template #[`item.tag`]="{ item }">
-      <span class="text-caption">{{ item.tag }}</span>
-    </template>
-
-    <template #[`item.description`]="{ item }">
-      <span class="text-caption">{{ item.description }}</span>
-    </template>
-
-    <template #[`item.valueJson`]="{ item }">
-      <span class="text-caption">{{ item.valueJson }}</span>
-    </template>
-
-    <template #[`item.invalid`]="{ item }">
-        <v-icon v-if="item.invalid" color="red">mdi-close</v-icon>
-        <v-icon v-else color="green">mdi-check</v-icon>
+    <v-data-table-server
+      :headers="visibleHeaders"
+      :items="tags"
+      :items-per-page="itemsPerPage"
+      :page="page"
+      :items-length="totalTags"
+      :loading="loading"
+      :items-per-page-options="[10, 25, 50, 100, 250, 500, 1000]"
+      :items-per-page-text="$t('common.itemsPerPageText')"
+      @update:options="handleOptionsUpdate"
+      multi-sort
+      hover
+      class="admin-table"
+      density="compact"
+    >
+      <template #[`item.tag`]="{ item }">
+        <span class="admin-mono">{{ item.tag }}</span>
+        <v-chip v-if="item.commStatus" size="x-small" label class="ms-1" :title="$t('admin.tags.systemTagHint')">
+          {{ $t('admin.tags.system') }}
+        </v-chip>
+      </template>
+      <template #[`item._id`]="{ item }">
+        <span class="admin-mono">{{ item._id }}</span>
+      </template>
+      <template #[`item.protocolSourceConnectionNumber`]="{ item }">
+        <span v-if="item.protocolSourceConnectionNumber" class="text-body-small">
+          <span class="admin-mono">{{ item.protocolSourceConnectionNumber }}</span>
+          <span v-if="connectionName(item.protocolSourceConnectionNumber)" class="text-medium-emphasis">
+            · {{ connectionName(item.protocolSourceConnectionNumber) }}
+          </span>
+        </span>
+        <span v-else class="text-disabled">—</span>
+      </template>
+      <template #[`item.type`]="{ item }">
+        <v-chip size="x-small" label variant="tonal" :color="typeColor[item.type]">{{ item.type }}</v-chip>
+      </template>
+      <template #[`item.origin`]="{ item }">
+        <span class="text-body-small">{{ item.origin }}</span>
+      </template>
+      <template #[`item.description`]="{ item }">
+        <span class="text-body-small">{{ item.description }}</span>
+      </template>
+      <template #[`item.value`]="{ item }">
+        <span class="admin-mono tag-value" :class="{ 'text-disabled': item.invalid }" :title="valueTitle(item)">
+          {{ valueText(item) }}
+        </span>
+      </template>
+      <template #[`item.invalid`]="{ item }">
+        <div class="d-flex flex-wrap ga-1">
+          <v-chip v-if="item.invalid" size="x-small" label color="error" variant="tonal">{{ $t('admin.tags.qualityInvalid') }}</v-chip>
+          <v-chip v-else size="x-small" label color="success" variant="tonal">{{ $t('admin.tags.qualityValid') }}</v-chip>
+          <v-chip v-if="item.alarmed" size="x-small" label color="warning" variant="tonal">{{ $t('admin.tags.alarmed') }}</v-chip>
+          <v-chip v-if="item.frozen" size="x-small" label color="info" variant="tonal">{{ $t('admin.tags.frozen') }}</v-chip>
+          <v-chip v-if="item.substituted" size="x-small" label color="purple" variant="tonal">{{ $t('admin.tags.substituted') }}</v-chip>
+          <v-chip v-if="item.alarmDisabled" size="x-small" label variant="tonal">{{ $t('admin.tags.alarmDisabled') }}</v-chip>
+        </div>
+      </template>
+      <template #[`item.timeTag`]="{ item }">
+        <span class="text-body-small">{{ item.timeTag ? new Date(item.timeTag).toLocaleString() : '' }}</span>
+      </template>
+      <template #[`item.address`]="{ item }">
+        <span class="admin-mono">{{ addressText(item) }}</span>
       </template>
 
-    <template v-slot:[`item.Actions`]="{ item }">
-      <v-icon size="small" class="me-2" @click="editTagOpenDialog(item)"
-        >mdi-pencil</v-icon
-      >
-      <v-icon size="small" @click="deleteTagOpenDialog(item)"
-        >mdi-delete</v-icon
-      >
-    </template>
-  </v-data-table-server>
-  <v-chip v-if="error" color="red darken-1">{{ $t('common.error') }}</v-chip>
+      <template #[`item.Actions`]="{ item }">
+        <div class="admin-row-actions">
+          <v-btn icon variant="text" size="x-small" :title="$t('admin.tags.editTag')" @click="editTagOpenDialog(item)">
+            <v-icon size="18">mdi-pencil-outline</v-icon>
+          </v-btn>
+          <v-btn
+            v-if="item.type === 'analog'"
+            icon
+            variant="text"
+            size="x-small"
+            :title="$t('admin.common.openTrend')"
+            :href="trendHref(item)"
+            target="_blank"
+          >
+            <v-icon size="18">mdi-chart-line</v-icon>
+          </v-btn>
+          <v-menu location="bottom end">
+            <template #activator="{ props }">
+              <v-btn icon variant="text" size="x-small" v-bind="props"><v-icon size="18">mdi-dots-vertical</v-icon></v-btn>
+            </template>
+            <v-list density="compact">
+              <v-list-item prepend-icon="mdi-content-duplicate" :disabled="!!item.commStatus" @click="cloneTagOpenDialog(item)">
+                <v-list-item-title>{{ $t('admin.common.clone') }}</v-list-item-title>
+              </v-list-item>
+              <v-list-item prepend-icon="mdi-content-copy" @click="copyName(item.tag)">
+                <v-list-item-title>{{ $t('admin.common.copyName') }}</v-list-item-title>
+              </v-list-item>
+              <v-list-item prepend-icon="mdi-chart-line" :href="trendHref(item)" target="_blank" :disabled="item.type !== 'analog'">
+                <v-list-item-title>{{ $t('admin.common.openTrend') }}</v-list-item-title>
+              </v-list-item>
+              <v-divider></v-divider>
+              <v-list-item
+                prepend-icon="mdi-delete-outline"
+                base-color="error"
+                :disabled="!!item.commStatus"
+                @click="deleteTagOpenDialog(item)"
+              >
+                <v-list-item-title>{{ $t('common.delete') }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </div>
+      </template>
+    </v-data-table-server>
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3500" location="bottom right">
+      {{ snackbar.text }}
+    </v-snackbar>
+  </div>
 
   <v-dialog scrollable v-model="dialogDeleteTag" max-width="500px">
     <v-card>
@@ -234,41 +425,12 @@
                 :label="$t('admin.tags.editUnit')"
               ></v-text-field>
 
-              <v-text-field
-                variant="outlined"
-                type="number"
+              <CalculatedPointEditor
                 v-if="editedTag.origin === 'calculated'"
-                v-model="editedTag.formula"
-                min="0"
-                :label="$t('admin.tags.editFormula')"
-              ></v-text-field>
-
-              <v-row
-                v-if="
-                  editedTag.origin === 'calculated' && editedTag.formula > 0
-                "
-              >
-                <v-col>
-                  <v-select
-                    variant="outlined"
-                    v-model="editedTag.parcels"
-                    :items="editedTag.parcels"
-                    :label="$t('admin.tags.editParcels')"
-                    multiple
-                  ></v-select>
-                </v-col>
-                <v-col>
-                  <v-btn
-                    color="blue darken-1"
-                    text
-                    variant="tonal"
-                    @click="dialogAddParcel = true"
-                  >
-                    <v-icon dark> mdi-plus </v-icon>
-                    {{ $t('admin.tags.parcelAddNew') }}
-                  </v-btn>
-                </v-col>
-              </v-row>
+                v-model:formula="editedTag.formula"
+                v-model:parcels="editedTag.parcels"
+                :self-key="editedTag._id"
+              />
             </v-expansion-panel-text>
           </v-expansion-panel>
           <v-expansion-panel :title="$t('admin.tags.sectionProtocol')">
@@ -655,43 +817,19 @@
     </v-card>
   </v-dialog>
 
-  <v-dialog scrollable v-model="dialogAddParcel" max-width="400" class="pa-8">
-    <v-card>
-      <v-card-title class="headline">
-        {{ $t('admin.tags.parcelAddNew') }}
-      </v-card-title>
-
-      <v-card-text>
-        <v-text-field
-          :label="$t('admin.tags.parcelNew')"
-          type="number"
-          min="0"
-          v-model="newParcel"
-        ></v-text-field>
-      </v-card-text>
-
-      <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn
-          color="orange darken-1"
-          text
-          variant="tonal"
-          @click="dialogAddParcel = false"
-        >
-          {{ $t('common.cancel') }}
-        </v-btn>
-        <v-btn color="blue darken-1" text variant="tonal" @click="addNewParcel">
-          {{ $t('common.ok') }}
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
 </template>
 
 <script setup>
-  import { ref, reactive, computed, nextTick, onMounted } from 'vue'
+  import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import { postJson, fetchAllPages, toCsv, downloadText, fileStamp, loadPref, savePref, copyText } from '../lib/adminList'
+  import CalculatedPointEditor from './CalculatedPointEditor.vue'
 
+  const props = defineProps({
+    active: { type: Boolean, default: false },
+    // { n: <connection number> } from the Connections section
+    connectionFilter: { type: Object, default: null },
+  })
   const { t } = useI18n()
 
   const defaultTagValue = ref({
@@ -736,22 +874,19 @@
   const editedTag = ref({ ...defaultTagValue.value })
   const dialogEditTag = ref(false)
   const dialogDeleteTag = ref(false)
-  const dialogAddParcel = ref(false)
   const isNewTag = ref(false)
   const tags = ref([])
   const protocolConnections = ref([])
-  const protocolDriveNameByConnNumber = ref([])
+  const protocolDriveNameByConnNumber = ref({})
   const protocolConnectionsDestinations = ref([])
   const totalTags = ref(0)
   const searchTag = ref('')
   const searchDescription = ref('')
   const loading = ref(true)
-  const itemsPerPage = ref(10)
+  const itemsPerPage = ref(loadPref('tags-page-size', 25))
   const page = ref(1)
   const sortBy = ref([])
-  const sortDesc = ref([])
   const dialogAddProtocolDestination = ref(false)
-  const newParcel = ref(0)
   const error = ref(false)
   const newProtocolDestination = ref({
     protocolDestinationConnectionNumber: 0,
@@ -789,54 +924,260 @@
     },
   ])
 
-  const headers = computed(() => [
-    {
-      title: t('admin.tags.headers.tag'),
-      align: 'start',
-      sortable: true,
-      key: 'tag',
-    },
-    {
-      title: t('admin.tags.headers.id'),
-      sortable: true,
-      key: '_id',
-    },
+  // columns: `optional` ones can be hidden from the column menu (choice kept
+  // per browser); the tag name and actions are always shown
+  const allHeaders = computed(() => [
+    { title: t('admin.tags.headers.tag'), key: 'tag', sortable: true },
+    { title: t('admin.tags.headers.id'), key: '_id', sortable: true, align: 'end', optional: true },
     {
       title: t('admin.tags.headers.protocolSourceConnectionNumber'),
-      sortable: true,
       key: 'protocolSourceConnectionNumber',
-    },
-    {
-      title: t('admin.tags.headers.type'),
       sortable: true,
-      key: 'type',
+      optional: true,
     },
-    {
-      title: t('admin.tags.headers.group1'),
-      sortable: true,
-      key: 'group1',
-    },
-    {
-      title: t('admin.tags.headers.description'),
-      sortable: true,
-      key: 'description',
-    },
-    { title: t('admin.tags.headers.valueNumeric'), key: 'value', align: 'end' },
-    { title: t('admin.tags.headers.valueJson'), key: 'valueJson' },
-    { title: t('admin.tags.headers.valueString'), key: 'valueString' },
-    { title: t('admin.tags.headers.quality'), key: 'invalid' },
-    {
-      title: t('admin.tags.headers.actions'),
-      key: 'Actions',
-      sortable: false,
-    },
+    { title: t('admin.tags.headers.address'), key: 'address', sortable: false, optional: true },
+    { title: t('admin.tags.headers.type'), key: 'type', sortable: true, optional: true },
+    { title: t('admin.tags.headers.origin'), key: 'origin', sortable: true, optional: true },
+    { title: t('admin.tags.headers.group1'), key: 'group1', sortable: true, optional: true },
+    { title: t('admin.tags.headers.group2'), key: 'group2', sortable: true, optional: true },
+    { title: t('admin.tags.headers.group3'), key: 'group3', sortable: true, optional: true },
+    { title: t('admin.tags.headers.description'), key: 'description', sortable: true, optional: true },
+    { title: t('admin.tags.headers.value'), key: 'value', sortable: true, align: 'end', optional: true },
+    { title: t('admin.tags.headers.quality'), key: 'invalid', sortable: true, optional: true },
+    { title: t('admin.tags.headers.timeTag'), key: 'timeTag', sortable: true, optional: true },
+    { title: t('admin.tags.headers.priority'), key: 'priority', sortable: true, align: 'end', optional: true },
+    { title: '', key: 'Actions', sortable: false, align: 'end', width: 110 },
   ])
+  const defaultColumns = ['_id', 'protocolSourceConnectionNumber', 'type', 'group1', 'description', 'value', 'invalid']
+  const visibleColumns = ref(loadPref('tags-columns', defaultColumns))
+  const optionalColumns = computed(() => allHeaders.value.filter((h) => h.optional))
+  const visibleHeaders = computed(() =>
+    allHeaders.value.filter((h) => !h.optional || visibleColumns.value.includes(h.key))
+  )
+  function toggleColumn(key) {
+    const v = visibleColumns.value
+    visibleColumns.value = v.includes(key) ? v.filter((k) => k !== key) : [...v, key]
+    savePref('tags-columns', visibleColumns.value)
+  }
+
+  // list filters (sent to listTags as a field filter)
+  const showFilters = ref(false)
+  const filterTypes = ref([])
+  const filterOrigins = ref([])
+  const filterConnections = ref([])
+  const filterGroup1 = ref('')
+  const filterQuality = ref('all')
+  const filterAlarm = ref('all')
+  const typeItems = ['analog', 'digital', 'string', 'json']
+  const originItems = ['supervised', 'calculated', 'command', 'manual']
+  const typeColor = { analog: 'primary', digital: 'teal', string: 'deep-purple', json: 'orange' }
+  const qualityItems = computed(() => [
+    { title: t('admin.common.all'), value: 'all' },
+    { title: t('admin.tags.qualityValid'), value: 'valid' },
+    { title: t('admin.tags.qualityInvalid'), value: 'invalid' },
+  ])
+  const alarmItems = computed(() => [
+    { title: t('admin.common.all'), value: 'all' },
+    { title: t('admin.tags.alarmed'), value: 'alarmed' },
+    { title: t('admin.tags.notAlarmed'), value: 'normal' },
+  ])
+  const connectionItems = computed(() => [
+    { title: '0 · ' + t('admin.tags.noConnection'), value: 0 },
+    ...protocolConnections.value.map((c) => ({
+      title: c.protocolConnectionNumber + ' · ' + c.name,
+      value: c.protocolConnectionNumber,
+    })),
+  ])
+  const activeFilterCount = computed(
+    () =>
+      [filterTypes.value.length, filterOrigins.value.length, filterConnections.value.length].filter((n) => n > 0)
+        .length +
+      (filterGroup1.value?.trim() ? 1 : 0) +
+      (filterQuality.value !== 'all' ? 1 : 0) +
+      (filterAlarm.value !== 'all' ? 1 : 0)
+  )
+
+  function buildFilter() {
+    const filter = {}
+    const re = (v) => ({ $regex: v.trim(), $options: 'i' })
+    if (searchTag.value?.trim()) filter.tag = re(searchTag.value)
+    if (searchDescription.value?.trim()) filter.description = re(searchDescription.value)
+    if (filterGroup1.value?.trim()) filter.group1 = re(filterGroup1.value)
+    if (filterTypes.value.length) filter.type = { $in: filterTypes.value }
+    if (filterOrigins.value.length) filter.origin = { $in: filterOrigins.value }
+    if (filterConnections.value.length) filter.protocolSourceConnectionNumber = { $in: filterConnections.value }
+    if (filterQuality.value !== 'all') filter.invalid = filterQuality.value === 'invalid'
+    if (filterAlarm.value !== 'all') filter.alarmed = filterAlarm.value === 'alarmed'
+    return filter
+  }
+  function applyFilters() {
+    // a page change makes the table ask for the list (update:options)
+    if (page.value !== 1) page.value = 1
+    else fetchTags()
+  }
+  function clearAndApply(name) {
+    const refs = { searchTag, searchDescription, filterGroup1 }
+    refs[name].value = ''
+    applyFilters()
+  }
+  function clearFilters() {
+    filterTypes.value = []
+    filterOrigins.value = []
+    filterConnections.value = []
+    filterGroup1.value = ''
+    filterQuality.value = 'all'
+    filterAlarm.value = 'all'
+    applyFilters()
+  }
+
+  // the Connections section asks for the tags of one connection (also before
+  // this section was first shown: then the table's first request uses it)
+  let isMounted = false
+  watch(
+    () => props.connectionFilter,
+    (f) => {
+      if (!f) return
+      filterConnections.value = [f.n]
+      showFilters.value = true
+      if (isMounted) applyFilters()
+    },
+    { immediate: true }
+  )
+
+  const connectionName = (n) => protocolDriveNameByConnNumber.value[n] || ''
+
+  function valueText(item) {
+    switch (item.type) {
+      case 'digital': {
+        const on = !!item.value
+        const txt = on ? item.stateTextTrue : item.stateTextFalse
+        return (txt ? txt + ' ' : '') + '(' + (on ? 1 : 0) + ')'
+      }
+      case 'analog': {
+        const v = Number(item.value)
+        if (!Number.isFinite(v)) return String(item.value ?? '')
+        const s = Math.abs(v) >= 1e6 || (v !== 0 && Math.abs(v) < 1e-3) ? v.toExponential(3) : v.toFixed(3)
+        return item.unit ? s + ' ' + item.unit : s
+      }
+      case 'json': {
+        const s = item.valueJson !== undefined ? JSON.stringify(item.valueJson) : item.valueString || ''
+        return s.length > 60 ? s.slice(0, 60) + '…' : s
+      }
+      default: {
+        const s = String(item.valueString ?? '')
+        return s.length > 60 ? s.slice(0, 60) + '…' : s
+      }
+    }
+  }
+  function valueTitle(item) {
+    if (item.type === 'json' && item.valueJson !== undefined) return JSON.stringify(item.valueJson, null, 2)
+    if (item.type === 'string') return String(item.valueString ?? '')
+    return ''
+  }
+  function addressText(item) {
+    return [item.protocolSourceCommonAddress, item.protocolSourceObjectAddress]
+      .filter((v) => v !== undefined && v !== null && v !== '')
+      .join(' / ')
+  }
+  const trendHref = (item) => '/#/trend-viewer?point=' + encodeURIComponent(item._id)
+
+  const snackbar = ref({ show: false, text: '', color: undefined })
+  function notify(text, color) {
+    snackbar.value = { show: true, text, color }
+  }
+  async function copyName(name) {
+    if (await copyText(name)) notify(t('admin.common.copied'))
+  }
+
+  // copy of the tag configuration as a new tag: the server gives the next
+  // free point key; runtime fields (value, quality, times) are left out
+  const runtimeFields = [
+    '_id', 'value', 'valueString', 'valueJson', 'valueDefault', 'timeTag', 'timeTagAtSource', 'timeTagAtSourceOk',
+    'timeTagAlarm', 'timeTagAlarmRange', 'alarmed', 'alarmRange', 'invalid', 'overflow', 'transient', 'frozen',
+    'substituted', 'sourceDataUpdate', 'beepType', 'beepGroup', 'updatesCnt', 'commStatus', 'id',
+  ]
+  const cloneTagOpenDialog = async (item) => {
+    const copy = JSON.parse(JSON.stringify(item))
+    for (const f of runtimeFields) delete copy[f]
+    copy.tag = (item.tag || '') + '_copy'
+    copy.value = 0
+    copy.valueString = ''
+    copy.invalid = true
+    isNewTag.value = true
+    editedTag.value = { ...defaultTagValue.value, ...copy, _id: 0 }
+    await fetchProtocolConnections()
+    dialogEditTag.value = true
+  }
+
+  // CSV of every tag that matches the filters, in the visible columns
+  const exporting = ref(false)
+  const EXPORT_MAX = 100000
+  async function exportCsv() {
+    exporting.value = true
+    try {
+      const { items, truncated } = await fetchAllPages(
+        '/Invoke/auth/listTags',
+        { sortBy: sortBy.value, filter: buildFilter() },
+        'tags',
+        EXPORT_MAX
+      )
+      const cols = visibleHeaders.value
+        .filter((h) => h.key !== 'Actions')
+        .flatMap((h) => {
+          switch (h.key) {
+            case 'value':
+              return [
+                { title: 'value', value: (r) => r.value },
+                { title: 'valueString', value: (r) => r.valueString },
+                { title: 'unit', value: (r) => r.unit },
+              ]
+            case 'invalid':
+              return [
+                { title: 'invalid', value: (r) => !!r.invalid },
+                { title: 'alarmed', value: (r) => !!r.alarmed },
+              ]
+            case 'address':
+              return [
+                { title: 'protocolSourceCommonAddress', value: (r) => r.protocolSourceCommonAddress },
+                { title: 'protocolSourceObjectAddress', value: (r) => r.protocolSourceObjectAddress },
+              ]
+            case 'timeTag':
+              return [{ title: 'timeTag', value: (r) => (r.timeTag ? new Date(r.timeTag).toISOString() : '') }]
+            default:
+              return [{ title: h.key, value: (r) => r[h.key] }]
+          }
+        })
+      if (!cols.some((c) => c.title === 'tag')) cols.unshift({ title: 'tag', value: (r) => r.tag })
+      downloadText('tags_' + fileStamp() + '.csv', toCsv(items, cols))
+      if (truncated) notify(t('admin.common.exportLimited', { n: EXPORT_MAX.toLocaleString() }), 'warning')
+    } catch (err) {
+      setError(err)
+    } finally {
+      exporting.value = false
+    }
+  }
+
+  // live values: the page is read again every 5 s while the section is shown
+  const autoRefresh = ref(false)
+  let refreshTimer = null
+  watch(
+    [autoRefresh, () => props.active],
+    ([on, active]) => {
+      clearInterval(refreshTimer)
+      refreshTimer = null
+      if (on && active)
+        refreshTimer = setInterval(() => {
+          if (!document.hidden && !loading.value && !dialogEditTag.value) fetchTags(true)
+        }, 5000)
+    }
+  )
+  onUnmounted(() => clearInterval(refreshTimer))
 
   const handleOptionsUpdate = (newOptions) => {
     page.value = newOptions.page
     itemsPerPage.value = newOptions.itemsPerPage
     sortBy.value = newOptions.sortBy
-    sortDesc.value = newOptions.sortDesc
+    savePref('tags-page-size', newOptions.itemsPerPage)
     fetchTags()
   }
 
@@ -945,42 +1286,38 @@
     fetchTags()
   }
 
-  const fetchTags = async () => {
-    let filter = {}
-
-    if (searchTag.value.trim() !== '')
-      filter.tag = { $regex: searchTag.value, $options: 'i' }
-    if (searchDescription.value.trim() !== '')
-      filter.description = { $regex: searchDescription.value, $options: 'i' }
-
-    loading.value = true
+  // `quiet`: auto refresh, without the loading bar; answers of older requests
+  // (filters changed meanwhile) are dropped
+  let fetchSeq = 0
+  const fetchTags = async (quiet = false) => {
+    const seq = ++fetchSeq
+    if (quiet !== true) loading.value = true
     try {
-      const response = await fetch('/Invoke/auth/listTags', {
-        method: 'post',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          itemsPerPage: itemsPerPage.value,
-          sortBy: sortBy.value,
-          sortDesc: sortDesc.value,
-          page: page.value,
-          filter: filter,
-        }),
+      const json = await postJson('/Invoke/auth/listTags', {
+        itemsPerPage: itemsPerPage.value,
+        sortBy: sortBy.value,
+        page: page.value,
+        filter: buildFilter(),
       })
-      const json = await response.json()
-      tags.value = json.tags
-      totalTags.value = json.countTotal
+      if (seq !== fetchSeq) return
+      if (json.error) {
+        setError(json)
+        return
+      }
+      tags.value = json.tags || []
+      totalTags.value = json.countTotal || 0
     } catch (err) {
       setError(err)
     } finally {
-      loading.value = false
+      if (seq === fetchSeq) loading.value = false
     }
   }
 
+  // the table asks for the first page itself (update:options); the connection
+  // names label the connection column and filter
   onMounted(() => {
-    fetchTags()
+    isMounted = true
+    fetchProtocolConnections()
   })
 
   const fetchProtocolConnections = async () => {
@@ -1000,7 +1337,7 @@
         ) {
           protocolConnectionsDestinations.value.push(item)
         }
-        protocolDriveNameByConnNumber[item.protocolConnectionNumber] = item.name
+        protocolDriveNameByConnNumber.value[item.protocolConnectionNumber] = item.name
       })
     } catch (err) {
       setError(err)
@@ -1027,14 +1364,10 @@
     dialogAddProtocolDestination.value = false
   }
 
-  const addNewParcel = async () => {
-    editedTag.value.parcels.push(newParcel.value)
-    dialogAddParcel.value = false
-  }
-
   const setError = (err) => {
     error.value = true
     console.warn(err)
+    notify(t('common.error') + ' ' + (err?.error || err?.message || ''), 'error')
     setTimeout(() => {
       error.value = false
     }, 2000)
@@ -1042,3 +1375,9 @@
 
   defineExpose({ fetchTags })
 </script>
+
+<style scoped>
+  .tag-value {
+    white-space: nowrap;
+  }
+</style>

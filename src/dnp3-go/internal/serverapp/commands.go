@@ -25,6 +25,7 @@ package serverapp
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"dnp3-go/internal/dnp3util"
@@ -35,6 +36,7 @@ import (
 	dnp3 "github.com/dscsystems/go-dnp3"
 	"github.com/dscsystems/go-dnp3/outstation"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 // commandHandler answers the control function codes for one connection.
@@ -189,10 +191,17 @@ func (h *commandHandler) lookup(digital bool, index uint16, what string) (bson.M
 			"protocolDestinationObjectAddress":    int(index),
 		}},
 	}).Decode(&doc)
-	if err != nil {
+	if errors.Is(err, mongo.ErrNoDocuments) {
 		jslog.Log(jslog.LevelBasic, "%s - Tag not found in the database for %s index: %d",
 			h.conn.Name, what, index)
 		return nil, dnp3.CommandNotSupported
+	}
+	if err != nil {
+		// The database could not answer, which says nothing about whether the
+		// output exists. NOT_SUPPORTED would tell the master it never will.
+		jslog.Log(jslog.LevelBasic, "%s - Cannot look up the tag for %s index: %d - %v",
+			h.conn.Name, what, index, err)
+		return nil, dnp3.CommandDownstreamFail
 	}
 	if !jsmongo.GetBool(doc, "enabled", true) {
 		jslog.Log(jslog.LevelBasic, "%s - Tag disabled in the database for %s index: %d",

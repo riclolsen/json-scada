@@ -176,6 +176,8 @@ cd ../alarm_beep
 npm install
 cd ../telegraf-listener
 npm install
+cd ../process_pg_sql
+npm install
 cd ../mqtt-sparkplug
 npm install
 cd ../OPC-UA-Server

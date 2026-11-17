@@ -52,6 +52,10 @@ module.exports = {
 
     // Default role for LDAP users (should match a role name defined in your MongoDB)
     defaultRole: 'user',
+    // Longest session of an LDAP user, in hours. The directory is consulted only
+    // at sign-in: a disabled account or a changed group keeps its session until
+    // it ends, so keep this short.
+    maxSessionHours: 12,
     tlsOptions: {
       rejectUnauthorized: true, // Set to true if you want to reject unauthorized certificates
       minVersion: 'TLSv1.2', // Minimum TLS version to accept

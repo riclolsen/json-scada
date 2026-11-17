@@ -59,6 +59,11 @@ func buildTLS(conn *Iec61850Connection) (*tls.Config, error) {
 		if pinned, err = jstls.LoadPinned(conn.PeerCertFilesPaths); err != nil {
 			return nil, err
 		}
+		// Pinning with nothing to pin to would otherwise switch every
+		// check off and accept any peer: refuse the configuration instead.
+		if len(pinned) == 0 {
+			return nil, fmt.Errorf("allowOnlySpecificCertificates is set but peerCertFilesPaths lists no certificate")
+		}
 	}
 
 	// Go's own verification is bypassed whenever the connection does not

@@ -52,6 +52,7 @@ const commandExpiry = 10 * time.Second
 
 // commandsLoop watches commandsQueue for inserted commands.
 func commandsLoop(ctx context.Context, cfg jsconfig.Config, conns []*Iec61850Connection) {
+	workers := startCommandWorkers(ctx, conns)
 	for ctx.Err() == nil {
 		cli, _, err := jsmongo.ConnectAndPing(cfg)
 		if err != nil {
@@ -63,7 +64,7 @@ func commandsLoop(ctx context.Context, cfg jsconfig.Config, conns []*Iec61850Con
 		db := cli.Database(cfg.MongoDatabaseName)
 		collCmds := db.Collection(jsmongo.CommandsQueueCollectionName)
 
-		if err := watchCommands(ctx, db, collCmds, conns); err != nil && ctx.Err() == nil {
+		if err := watchCommands(ctx, db, collCmds, workers); err != nil && ctx.Err() == nil {
 			jslog.Log(jslog.LevelNoLog, "Exception MongoCmd")
 			jslog.Log(jslog.LevelNoLog, "%v", err)
 			time.Sleep(3 * time.Second)
@@ -72,7 +73,7 @@ func commandsLoop(ctx context.Context, cfg jsconfig.Config, conns []*Iec61850Con
 	}
 }
 
-func watchCommands(ctx context.Context, db *mongo.Database, collCmds *mongo.Collection, conns []*Iec61850Connection) error {
+func watchCommands(ctx context.Context, db *mongo.Database, collCmds *mongo.Collection, workers map[int]chan commandJob) error {
 	if err := jsmongo.Ping(db, 1*time.Second); err != nil {
 		return err
 	}
@@ -94,15 +95,64 @@ func watchCommands(ctx context.Context, db *mongo.Database, collCmds *mongo.Coll
 			jslog.Log(jslog.LevelDetailed, "MongoDB CMD CS - decode: %v", err)
 			continue
 		}
-		if !redundancy.Active() {
+		if !redundancy.Active() || ev.FullDocument == nil {
 			continue
 		}
-		handleCommand(ctx, collCmds, conns, ev.FullDocument)
+		connNumber := jsmongo.GetInt(ev.FullDocument, "protocolSourceConnectionNumber", 0)
+		w := workers[connNumber]
+		if w == nil {
+			continue // not for a connection of this driver instance
+		}
+		select {
+		case w <- commandJob{collCmds, ev.FullDocument}:
+		default:
+			jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - connection %d command queue full", connNumber)
+			cancelCommand(ctx, collCmds, ev.FullDocument["_id"], "command queue full")
+		}
 	}
 	if err := cs.Err(); err != nil {
 		return err
 	}
 	return errors.New("command change stream closed")
+}
+
+// commandJob is one command for a connection's worker, with the collection
+// to acknowledge it in.
+type commandJob struct {
+	coll *mongo.Collection
+	doc  bson.M
+}
+
+// commandQueueDepth bounds the commands waiting for one connection.
+const commandQueueDepth = 64
+
+// startCommandWorkers starts one worker per connection. Commands of a
+// connection run in order, but a control waiting on a slow IED (select,
+// operate, command termination) no longer holds up the change stream, so the
+// commands of the other connections do not expire behind it. The workers run
+// for the life of the driver, across change stream reconnections; a command
+// whose collection's client was closed meanwhile is executed but its
+// acknowledgement fails, which is logged.
+func startCommandWorkers(ctx context.Context, conns []*Iec61850Connection) map[int]chan commandJob {
+	workers := map[int]chan commandJob{}
+	for _, c := range conns {
+		if _, dup := workers[c.ProtocolConnectionNumber]; dup {
+			continue
+		}
+		ch := make(chan commandJob, commandQueueDepth)
+		workers[c.ProtocolConnectionNumber] = ch
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case job := <-ch:
+					handleCommand(ctx, job.coll, conns, job.doc)
+				}
+			}
+		}()
+	}
+	return workers
 }
 
 // handleCommand validates one queued command and dispatches it.
@@ -140,7 +190,7 @@ func handleCommand(ctx context.Context, collCmds *mongo.Collection, conns []*Iec
 		}
 	}
 
-	entry := conn.Entry(objAddr + commonAddr)
+	entry := conn.Entry(entryKey(objAddr, parseFCOrST(commonAddr)))
 	cli := conn.Client()
 	connected := cli != nil && cli.State() == mms.StateConnected
 

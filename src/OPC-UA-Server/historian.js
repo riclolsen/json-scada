@@ -58,6 +58,15 @@ function validateTsField(v) {
   return v === 'timeTagAtSource' ? 'timeTagAtSource' : 'timeTag'
 }
 
+// Convert a number to an integer within [min, max]: rounds to the nearest
+// integer and saturates at the limits (node-opcua rejects out-of-range
+// values). NaN becomes 0.
+function toIntRange(value, min, max) {
+  const n = Math.round(Number(value))
+  if (!Number.isFinite(n)) return Number.isNaN(n) ? 0 : n > 0 ? max : min
+  return Math.min(max, Math.max(min, n))
+}
+
 // -------------------------------------------------------------------------
 // Scalar value conversion shared by the live path (convertValueVariant in
 // index.js delegates here) and the historical path so the two cannot drift.
@@ -114,7 +123,7 @@ function convertHistValue(type, asdu, value, valueString) {
           break
         case 'statuscode':
           dataType = DataType.StatusCode
-          outValue = parseInt(value) & 0xffffffff
+          outValue = toIntRange(value, 0, 0xffffffff)
           break
         case 'float':
           dataType = DataType.Float
@@ -122,35 +131,35 @@ function convertHistValue(type, asdu, value, valueString) {
           break
         case 'int16':
           dataType = DataType.Int16
-          outValue = parseInt(value) & 0xffff
+          outValue = toIntRange(value, -32768, 32767)
           break
         case 'uint16':
           dataType = DataType.UInt16
-          outValue = parseInt(value) & 0xffff
+          outValue = toIntRange(value, 0, 65535)
           break
         case 'int32':
           dataType = DataType.Int32
-          outValue = parseInt(value) & 0xffffffff
+          outValue = toIntRange(value, -2147483648, 2147483647)
           break
         case 'uint32':
           dataType = DataType.UInt32
-          outValue = parseInt(value) & 0xffffffff
+          outValue = toIntRange(value, 0, 4294967295)
           break
         case 'int64':
           dataType = DataType.Int64
-          outValue = parseInt(value)
+          outValue = toIntRange(value, -9007199254740991, 9007199254740991)
           break
         case 'uint64':
           dataType = DataType.UInt64
-          outValue = parseInt(value)
+          outValue = toIntRange(value, 0, 9007199254740991)
           break
         case 'byte':
           dataType = DataType.Byte
-          outValue = parseInt(value) & 0xff
+          outValue = toIntRange(value, 0, 255)
           break
         case 'sbyte':
           dataType = DataType.SByte
-          outValue = parseInt(value) & 0xff
+          outValue = toIntRange(value, -128, 127)
           break
         case 'boolean':
           dataType = DataType.Boolean
@@ -397,14 +406,25 @@ class JsonScadaVariableHistorian {
     if (isUnbounded(startTime)) startTime = null
     if (isUnbounded(endTime)) endTime = null
 
+    // node-opcua normalizes a reverse request (endTime < startTime) by swapping
+    // the times and passing reverseDataValue=true (isReversed is only true when
+    // there is no start time). Either way the client wants the newest values
+    // first, so query newest-first: with the cap applied this keeps the newest
+    // chunk of a large range, and the rows already come in the client's order
+    // (no further reversal needed).
+    const newestFirst = !!(isReversed || reverseDataValue)
+
     const limit =
       maxNumberToExtract > 0
         ? Math.min(maxNumberToExtract, this.cap)
         : this.cap
+    // when the client did not bound the count (or asked for more than the cap)
+    // rows beyond the cap are cut off: detect it by fetching one extra row
+    const capApplies = !(maxNumberToExtract > 0 && maxNumberToExtract <= this.cap)
 
     this.backend.readRange(
       this.tag,
-      { startTime, endTime, limit, reverse: isReversed },
+      { startTime, endTime, limit: limit + 1, reverse: newestFirst },
       (err, rows) => {
         if (err) {
           this.Log.log(
@@ -416,12 +436,27 @@ class JsonScadaVariableHistorian {
           )
           return callback(err)
         }
-        let dataValues = []
+        if (rows.length > limit) {
+          rows = rows.slice(0, limit)
+          if (capApplies && details) {
+            // read by the wrapper installed in installTagHistory, which reports
+            // GoodMoreData so the client knows the result is incomplete
+            details.__jsonscadaTruncated = true
+            this.Log.log(
+              'Historian - result for tag ' +
+                this.tag +
+                ' truncated at ' +
+                this.cap +
+                ' values (historyMaxReturnDataValues)',
+              2
+            )
+          }
+        }
+        const dataValues = []
         for (const row of rows) {
           const dv = this._rowToDataValue(row)
           if (dv) dataValues.push(dv)
         }
-        if (reverseDataValue) dataValues = dataValues.reverse()
         callback(null, dataValues)
       }
     )
@@ -542,6 +577,40 @@ function installTagHistoryLite(addressSpace, namespace, node, historian, Log) {
   }
 }
 
+// Wrap the node's HistoryRead raw handler so a result cut off at the
+// historyMaxReturnDataValues cap is reported as GoodMoreData (instead of Good
+// with silently missing values). The historian flags the request details.
+function wrapHistoryReadRaw(node) {
+  const original = node._historyReadRaw
+  if (typeof original !== 'function' || original.__jsonscadaWrapped) return
+  const wrapped = function (context, details, indexRange, dataEncoding, cont, callback) {
+    return original.call(
+      this,
+      context,
+      details,
+      indexRange,
+      dataEncoding,
+      cont,
+      (err, result) => {
+        if (
+          !err &&
+          result &&
+          details &&
+          details.__jsonscadaTruncated &&
+          !result.continuationPoint &&
+          result.statusCode &&
+          result.statusCode.isGood()
+        ) {
+          result.statusCode = StatusCodes.GoodMoreData
+        }
+        callback(err, result)
+      }
+    )
+  }
+  wrapped.__jsonscadaWrapped = true
+  node._historyReadRaw = wrapped
+}
+
 // -------------------------------------------------------------------------
 // Install history on a single created UA variable node.
 // -------------------------------------------------------------------------
@@ -579,6 +648,7 @@ function installTagHistory(
   } else {
     installTagHistoryLite(addressSpace, namespace, node, historian, Log)
   }
+  wrapHistoryReadRaw(node)
 }
 
 module.exports = {

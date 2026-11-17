@@ -1,37 +1,16 @@
 <template>
-  <v-container fluid class="pa-0 fill-height">
-    <v-row no-gutters class="fill-height">
-      <v-col cols="12" class="fill-height">
-        <iframe
-          src="/nodered"
-          width="100%"
-          height="100%"
-          frameborder="0"
-          style="
-            position: absolute;
-            top: 120;
-            left: 0;
-            width: 100%;
-            height: 100%;
-          "
-        ></iframe>
-      </v-col>
-    </v-row>
-  </v-container>
+  <iframe src="/nodered" class="app-frame"></iframe>
 </template>
 
 <script setup>
-  // No additional setup needed for this component
+  // Page of a separately served tool, framed full height beside the side panel
 </script>
 
 <style scoped>
-  .fill-height {
-    height: 100%;
-  }
-</style>
-
-<style>
-  html {
-    overflow-y: hidden;
+  .app-frame {
+    display: block;
+    width: 100%;
+    height: 100vh;
+    border: 0;
   }
 </style>

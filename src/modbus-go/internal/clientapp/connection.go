@@ -19,6 +19,7 @@ import (
 	"math"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -86,7 +87,17 @@ type Connection struct {
 
 	endpointIndex int
 	lastGi        time.Time
+	// polled is the block list the poll loop last used; only the poll
+	// goroutine touches it.
+	polled []*Block
 }
+
+// silentBlocks is how many blocks in a row may time out, with nothing
+// answered yet in the cycle, before the cycle ends and the link counts as lost.
+const silentBlocks = 3
+
+// commandQueueSize bounds the commands waiting for execution.
+const commandQueueSize = 256
 
 // NewConnection prepares a connection; Start runs it.
 func NewConnection(cfg Config, sink Sink) *Connection {
@@ -141,6 +152,9 @@ func (c *Connection) SetBindings(docs []bson.M) {
 	blocks := PlanReads(bindings, Limits{
 		MaxReadRegisters: c.Cfg.MaxReadRegisters, MaxReadCoils: c.Cfg.MaxReadCoils, MaxAddressGap: c.Cfg.MaxAddressGap,
 	})
+	for _, b := range blocks {
+		b.sig = blockSig(b)
+	}
 	c.mu.Lock()
 	c.bindings, c.byID, c.blocks = bindings, byID, blocks
 	c.mu.Unlock()
@@ -175,17 +189,48 @@ func (c *Connection) Start() {
 		defer close(done)
 		var wg sync.WaitGroup
 		if c.Cfg.CommandsEnabled && c.Commands != nil {
-			wg.Add(1)
+			// Commands run one at a time, in arrival order, so two commands to
+			// the same point reach the device in the order they were issued.
+			queue := make(chan bson.M, commandQueueSize)
+			wg.Add(2)
 			go func() {
 				defer wg.Done()
 				c.Commands.Watch(ctx, c.Cfg.ProtocolConnectionNumber, func(doc bson.M) {
-					go c.HandleCommand(ctx, doc)
+					select {
+					case queue <- doc:
+					case <-ctx.Done():
+					}
 				})
+			}()
+			go func() {
+				defer wg.Done()
+				c.runCommands(ctx, queue)
 			}()
 		}
 		c.run(ctx)
 		wg.Wait()
 	}()
+}
+
+// runCommands executes queued commands until ctx ends; the ones still queued
+// then are acknowledged "connection down".
+func (c *Connection) runCommands(ctx context.Context, queue chan bson.M) {
+	for {
+		select {
+		case doc := <-queue:
+			c.HandleCommand(ctx, doc)
+			continue
+		case <-ctx.Done():
+		}
+		for {
+			select {
+			case doc := <-queue:
+				c.ack(ctx, doc, false, "connection down")
+			default:
+				return
+			}
+		}
+	}
 }
 
 // Stop ends the connection and waits for it.
@@ -232,6 +277,9 @@ func msDur(ms float64) time.Duration {
 
 // run is the link lifecycle: connect, poll until the link fails, back off
 // (1 s doubling to 30 s), move to the next address of ipAddresses, repeat.
+// The status turns "connected", and the back-off resets, only once the device
+// has answered: a peer that accepts the connection and stays silent is a lost
+// link.
 func (c *Connection) run(ctx context.Context) {
 	backoff := time.Second
 	invalidated := false
@@ -253,16 +301,17 @@ func (c *Connection) run(ctx context.Context) {
 			continue
 		}
 		jslog.Log(jslog.LevelBasic, "%s: connected to %s", c.Cfg.Name, desc)
-		c.stat(func(s *Stats) { s.Status = "connected" })
-		backoff = time.Second
-		invalidated = false
 		c.lastGi = time.Time{}
 		c.clientMu.Lock()
 		c.client = cl
 		c.clientMu.Unlock()
 		c.connected.Store(true)
 
-		reason := c.pollLoop(ctx, cl)
+		reason, answered := c.pollLoop(ctx, cl)
+		if answered {
+			backoff = time.Second
+			invalidated = false
+		}
 
 		c.connected.Store(false)
 		c.clientMu.Lock()
@@ -285,13 +334,12 @@ func (c *Connection) run(ctx context.Context) {
 	c.stat(func(s *Stats) { s.Status = "stopped"; s.ConnectedTo = "" })
 }
 
-// linkDown marks every tag invalid once per outage and moves to the next
-// endpoint.
+// linkDown marks every tag invalid once per outage (again on the next attempt
+// when the write failed) and moves to the next endpoint.
 func (c *Connection) linkDown(ctx context.Context, invalidated *bool) {
 	c.stat(func(s *Stats) { s.Status = "disconnected" })
 	if !*invalidated {
-		*invalidated = true
-		c.publishAllInvalid(ctx)
+		*invalidated = c.publishAllInvalid(ctx)
 	}
 	n := len(c.Cfg.IPAddresses)
 	if n < 1 {
@@ -300,7 +348,8 @@ func (c *Connection) linkDown(ctx context.Context, invalidated *bool) {
 	c.endpointIndex = (c.endpointIndex + 1) % n
 }
 
-func (c *Connection) publishAllInvalid(ctx context.Context) {
+// publishAllInvalid marks every tag invalid; false when the write failed.
+func (c *Connection) publishAllInvalid(ctx context.Context) bool {
 	c.mu.Lock()
 	ids := make([]any, 0, len(c.bindings))
 	for _, b := range c.bindings {
@@ -308,7 +357,7 @@ func (c *Connection) publishAllInvalid(ctx context.Context) {
 	}
 	c.mu.Unlock()
 	if len(ids) == 0 {
-		return
+		return true
 	}
 	u := NewUpdater(c.Cfg.ProtocolConnectionNumber)
 	u.QueueInvalid(ids)
@@ -316,7 +365,9 @@ func (c *Connection) publishAllInvalid(ctx context.Context) {
 	defer cancel()
 	if err := u.Flush(wctx, c.sink); err != nil {
 		jslog.Log(jslog.LevelBasic, "%s: invalidate error: %v", c.Cfg.Name, err)
+		return false
 	}
+	return true
 }
 
 // Endpoint describes where the next connection attempt goes.
@@ -558,31 +609,79 @@ func isException(err error) bool {
 	return errors.As(err, &ex)
 }
 
-// pollLoop polls until ctx ends or a whole cycle fails at the transport level
-// (no answer at all, and at least one link error), which is how a lost link
-// shows through go-modbus.
-func (c *Connection) pollLoop(ctx context.Context, cl *modbus.Client) string {
+// pollLoop polls until ctx ends or a whole cycle gets no answer (every block
+// read failed by timeout or transport error), which is how a lost link shows
+// through go-modbus: it redials by itself, and a silent peer only times out.
+// answered reports whether the device answered at least once.
+func (c *Connection) pollLoop(ctx context.Context, cl *modbus.Client) (reason string, answered bool) {
 	interval := msDur(c.Cfg.PollingIntervalMs)
 	for ctx.Err() == nil {
 		start := time.Now()
-		answered, linkErrs, lastLinkErr := c.pollCycle(ctx, cl)
+		n, failed, lastErr, empty := c.pollCycle(ctx, cl)
 		if ctx.Err() != nil {
-			return "stopped"
+			return "stopped", answered
 		}
-		if answered == 0 && linkErrs > 0 {
-			return lastLinkErr
+		if n == 0 && failed > 0 {
+			return lastErr, answered
 		}
-		if !sleepCtx(ctx, interval-time.Since(start)) {
-			return "stopped"
+		if !answered && (n > 0 || empty) {
+			answered = true
+			c.stat(func(s *Stats) { s.Status = "connected" })
+		}
+		wait := interval - time.Since(start)
+		if empty && wait < time.Second {
+			wait = time.Second // nothing to poll: do not spin
+		}
+		if !sleepCtx(ctx, wait) {
+			return "stopped", answered
 		}
 	}
-	return "stopped"
+	return "stopped", answered
 }
 
-func (c *Connection) pollCycle(ctx context.Context, cl *modbus.Client) (answered, linkErrs int, lastLinkErr string) {
+// blockSig identifies what a block reads and how its tags are decoded, so a
+// block re-planned identically keeps its change cache.
+func blockSig(b *Block) string {
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "%d|%s|%d|%d", b.Unit, b.Area, b.Start, b.Count)
+	for _, s := range b.Slices {
+		bd := s.B
+		str := ""
+		if bd.Asdu.Str != nil {
+			str = fmt.Sprintf("%d/%s/%s", bd.Asdu.Str.Bytes, bd.Asdu.Str.Encoding, bd.Asdu.Str.RegOrder)
+		}
+		fmt.Fprintf(&sb, ";%s|%d|%s|%s|%s|%d|%v|%v", drv.AnyString(bd.ID), s.RelStart, bd.Asdu.Type, bd.Asdu.ByteOrder, str, bd.Bit, bd.Kconv1, bd.Kconv2)
+	}
+	return sb.String()
+}
+
+// adoptBlocks moves the change cache of the blocks polled so far to an
+// identical block of a new plan. Only the poll goroutine calls it.
+func (c *Connection) adoptBlocks(blocks []*Block) {
+	if len(blocks) == len(c.polled) && (len(blocks) == 0 || blocks[0] == c.polled[0]) {
+		return
+	}
+	old := make(map[string]*Block, len(c.polled))
+	for _, b := range c.polled {
+		old[b.sig] = b
+	}
+	for _, b := range blocks {
+		if o := old[b.sig]; o != nil && b.sig != "" {
+			b.lastRaw, b.invalidPublished = o.lastRaw, o.invalidPublished
+		}
+	}
+	c.polled = blocks
+}
+
+// pollCycle reads every block once. answered counts the blocks the device
+// answered (an exception included), failed the ones that timed out or hit a
+// transport error; empty means there was nothing to read.
+func (c *Connection) pollCycle(ctx context.Context, cl *modbus.Client) (answered, failed int, lastErr string, empty bool) {
 	c.mu.Lock()
 	blocks := c.blocks
 	c.mu.Unlock()
+	c.adoptBlocks(blocks)
+	empty = len(blocks) == 0
 	start := time.Now()
 	jslog.Log(jslog.LevelDebug, "%s: poll cycle start (%d blocks)", c.Cfg.Name, len(blocks))
 	isGi := c.lastGi.IsZero() || time.Since(c.lastGi) >= time.Duration(c.Cfg.GiIntervalS*float64(time.Second))
@@ -595,18 +694,21 @@ func (c *Connection) pollCycle(ctx context.Context, cl *modbus.Client) (answered
 		if ctx.Err() != nil {
 			return
 		}
-		ok, linkErr := c.readBlock(ctx, cl, b, u, isGi)
+		ok, msg, transport := c.readBlock(ctx, cl, b, u, isGi)
 		if ok {
 			answered++
-		} else if linkErr != "" {
-			linkErrs++
-			lastLinkErr = linkErr
-			if answered == 0 {
-				// Nothing answered yet and the link failed: every further block
-				// would only redial and fail the same way. End the cycle so the
-				// connection fails over now.
-				break
-			}
+			continue
+		}
+		if msg == "" {
+			continue // stopped
+		}
+		failed++
+		lastErr = msg
+		if answered == 0 && (transport || failed >= silentBlocks) {
+			// Nothing answered yet and the link failed, or the device stays
+			// silent: every further block would fail the same way. End the
+			// cycle so the connection fails over now.
+			break
 		}
 	}
 	jslog.Log(jslog.LevelDebug, "%s: poll cycle done in %d ms, %d tag update(s)%s", c.Cfg.Name,
@@ -614,7 +716,12 @@ func (c *Connection) pollCycle(ctx context.Context, cl *modbus.Client) (answered
 	wctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
 	if err := u.Flush(wctx, c.sink); err != nil {
-		jslog.Log(jslog.LevelDetailed, "%s: poll error: %v", c.Cfg.Name, err)
+		jslog.Log(jslog.LevelBasic, "%s: realtimeData write error, values will be written again: %v", c.Cfg.Name, err)
+		// Forget what was written so the next cycle writes every value, and
+		// every invalidation, again.
+		for _, b := range blocks {
+			b.lastRaw, b.invalidPublished = nil, false
+		}
 	}
 	return
 }
@@ -625,8 +732,9 @@ func readRequestPDU(fc, start, count int) []byte {
 }
 
 // readBlock reads one block. ok means the device answered (an exception
-// counts: the link is alive); linkErr names a transport failure.
-func (c *Connection) readBlock(ctx context.Context, cl *modbus.Client, b *Block, u *Updater, isGi bool) (ok bool, linkErr string) {
+// counts: the link is alive); otherwise msg names the failure (empty when
+// stopped) and transport tells a transport error from a timeout.
+func (c *Connection) readBlock(ctx context.Context, cl *modbus.Client, b *Block, u *Updater, isGi bool) (ok bool, msg string, transport bool) {
 	var raw []byte
 	unit := uint8(b.Unit)
 	addr, qty := uint16(b.Start), uint16(b.Count)
@@ -668,9 +776,9 @@ func (c *Connection) readBlock(ctx context.Context, cl *modbus.Client, b *Block,
 	})
 	if err != nil {
 		if ctx.Err() != nil {
-			return false, ""
+			return false, "", false
 		}
-		msg := ErrText(err)
+		msg = ErrText(err)
 		switch {
 		case isException(err):
 			c.stat(func(s *Stats) { s.Exceptions++ })
@@ -679,7 +787,7 @@ func (c *Connection) readBlock(ctx context.Context, cl *modbus.Client, b *Block,
 			c.stat(func(s *Stats) { s.Timeouts++ })
 		default:
 			c.stat(func(s *Stats) { s.Errors++ })
-			linkErr = msg
+			transport = true
 		}
 		c.stat(func(s *Stats) { s.LastError = msg })
 		jslog.Log(jslog.LevelDetailed, "%s: read failed unit=%d %s:%d x%d - %s", c.Cfg.Name, b.Unit, b.Area, b.Start, b.Count, msg)
@@ -692,7 +800,10 @@ func (c *Connection) readBlock(ctx context.Context, cl *modbus.Client, b *Block,
 			b.invalidPublished = true
 			b.lastRaw = nil
 		}
-		return ok, linkErr
+		if ok {
+			msg = ""
+		}
+		return ok, msg, transport
 	}
 	changed := b.lastRaw == nil || !bytesEqual(raw, b.lastRaw) || isGi
 	if c.log.DebugEnabled() {
@@ -707,7 +818,7 @@ func (c *Connection) readBlock(ctx context.Context, cl *modbus.Client, b *Block,
 		c.decodeAndQueue(b, raw, u, isGi)
 		b.lastRaw = raw
 	}
-	return true, ""
+	return true, "", false
 }
 
 func bytesEqual(a, b []byte) bool {
@@ -720,6 +831,19 @@ func bytesEqual(a, b []byte) bool {
 		}
 	}
 	return true
+}
+
+// registerWord is the 16-bit register at rel, with a 2-byte order applied
+// (the ASDU of a bool has none).
+func registerWord(raw []byte, rel int, perm mbcore.Perm) int {
+	if perm.Width == 2 {
+		c := perm.ToCanonical(raw, 2*rel)
+		return int(c[0])<<8 | int(c[1])
+	}
+	if 2*rel+1 >= len(raw) {
+		return 0
+	}
+	return int(raw[2*rel])<<8 | int(raw[2*rel+1])
 }
 
 func (c *Connection) decodeAndQueue(b *Block, raw []byte, u *Updater, isGi bool) {
@@ -746,10 +870,15 @@ func (c *Connection) decodeAndQueue(b *Block, raw []byte, u *Updater, isGi bool)
 				v = mbcore.Bool(bit == 1)
 			}
 		case bd.Bit >= 0:
-			var dec mbcore.DecodeResult
-			dec, err = mbcore.Decode(mbcore.TypeUint16, raw, s.RelStart, bd.Asdu.Perm, nil)
-			word := int(dec.Value.Num)
+			word := registerWord(raw, s.RelStart, bd.Asdu.Perm)
 			v = mbcore.Bool((word>>bd.Bit)&1 == 1)
+		case bd.Asdu.Type == mbcore.TypeBool:
+			// a whole register read as a boolean: any non-zero value is ON
+			on := registerWord(raw, s.RelStart, bd.Asdu.Perm) != 0
+			if bd.Kconv1 == -1 {
+				on = !on
+			}
+			v = mbcore.Bool(on)
 		default:
 			var dec mbcore.DecodeResult
 			dec, err = mbcore.Decode(bd.Asdu.Type, raw, s.RelStart, bd.Asdu.Perm, bd.Asdu.Str)

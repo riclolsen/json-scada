@@ -24,10 +24,13 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/riclolsen/json-scada/src/go-common/jscommands"
@@ -48,6 +51,9 @@ const commandExpiry = jscommands.DefaultExpiry
 
 // commandTimeout is the TimeoutHint the C# driver puts on the write.
 const commandTimeout = 10 * time.Second
+
+// commandQueueSize bounds the commands waiting for one connection.
+const commandQueueSize = 256
 
 // commandsLoop watches commandsQueue for inserted commands.
 func commandsLoop(ctx context.Context, cfg jsconfig.Config, conns []*OPCUAConnection) {
@@ -85,6 +91,16 @@ func watchCommands(ctx context.Context, db *mongo.Database, collCmds *mongo.Coll
 
 	jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - Start listening for commands via changestream...")
 
+	// deviation D33: each connection runs its commands on its own worker, in
+	// arrival order. One slow or dead server used to hold this loop for up to
+	// 20 s per command while every other connection's commands aged past the
+	// expiry.
+	workers := map[*OPCUAConnection]chan bson.M{}
+	var running sync.WaitGroup
+	wctx, stopWorkers := context.WithCancel(ctx)
+	defer running.Wait() // runs after stopWorkers: let in-flight commands report
+	defer stopWorkers()
+
 	for cs.Next(ctx) {
 		var ev struct {
 			FullDocument bson.M `bson:"fullDocument"`
@@ -97,7 +113,33 @@ func watchCommands(ctx context.Context, db *mongo.Database, collCmds *mongo.Coll
 		if !redundancy.Active() {
 			continue
 		}
-		handleCommand(ctx, collCmds, conns, ev.FullDocument)
+		conn := connByNumber(conns, jsmongo.GetInt(ev.FullDocument, "protocolSourceConnectionNumber", 0))
+		if conn == nil {
+			continue // not a connection of this driver instance
+		}
+		queue, ok := workers[conn]
+		if !ok {
+			queue = make(chan bson.M, commandQueueSize)
+			workers[conn] = queue
+			running.Add(1)
+			go func() {
+				defer running.Done()
+				for {
+					select {
+					case <-wctx.Done():
+						return
+					case doc := <-queue:
+						handleCommand(ctx, collCmds, conns, doc)
+					}
+				}
+			}()
+		}
+		select {
+		case queue <- ev.FullDocument:
+		default:
+			jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s - too many commands waiting, refusing one", conn.Name)
+			cancelCommand(ctx, collCmds, ev.FullDocument["_id"], "busy")
+		}
 	}
 	if err := cs.Err(); err != nil {
 		return err
@@ -172,7 +214,7 @@ func callMethod(ctx context.Context, collCmds *mongo.Collection, conn *OPCUAConn
 			return err
 		}
 
-		args, err := methodArguments(valueString)
+		args, err := typedMethodArguments(valueString, methodInputTypes(ctx, cli, methodID))
 		if err != nil {
 			return err
 		}
@@ -241,10 +283,67 @@ func methodParent(ctx context.Context, cli *opcua.Client, methodID *ua.NodeID) (
 	return ua.NewNodeIDFromExpandedNodeID(resp.Results[0].References[0].NodeID), nil
 }
 
-// methodArguments types the optional input arguments, given as a JSON array
-// in valueString. Typing is best effort, the same ladder the C# driver uses:
-// bool, then integer, then float, then string.
+// methodInputTypes reads the data types of a method's input arguments from
+// its InputArguments property (best effort: nil when the server does not say).
+func methodInputTypes(ctx context.Context, cli *opcua.Client, methodID *ua.NodeID) []uint32 {
+	readCtx, cancel := context.WithTimeout(ctx, commandTimeout)
+	defer cancel()
+
+	resp, err := cli.Browse(readCtx, &ua.BrowseRequest{
+		View: &ua.ViewDescription{ViewID: ua.NewTwoByteNodeID(0)},
+		NodesToBrowse: []*ua.BrowseDescription{{
+			NodeID:          methodID,
+			BrowseDirection: ua.BrowseDirectionForward,
+			ReferenceTypeID: ua.NewNumericNodeID(0, id.HasProperty),
+			IncludeSubtypes: true,
+			NodeClassMask:   uint32(ua.NodeClassVariable),
+			ResultMask:      uint32(ua.BrowseResultMaskAll),
+		}},
+	})
+	if err != nil || len(resp.Results) == 0 {
+		return nil
+	}
+	for _, ref := range resp.Results[0].References {
+		if ref.BrowseName == nil || ref.BrowseName.Name != "InputArguments" {
+			continue
+		}
+		v, err := cli.Node(ua.NewNodeIDFromExpandedNodeID(ref.NodeID)).Value(readCtx)
+		if err != nil || v == nil {
+			return nil
+		}
+		list, ok := v.Value().([]*ua.ExtensionObject)
+		if !ok {
+			return nil
+		}
+		types := make([]uint32, len(list))
+		for i, eo := range list {
+			if eo == nil {
+				continue
+			}
+			if a, ok := eo.Value.(*ua.Argument); ok && a != nil && a.DataType != nil &&
+				a.DataType.Namespace() == 0 && a.ValueRank < 0 {
+				types[i] = a.DataType.IntID()
+			}
+		}
+		return types
+	}
+	return nil
+}
+
+// methodArguments is typedMethodArguments without knowing the types.
 func methodArguments(valueString string) ([]*ua.Variant, error) {
+	return typedMethodArguments(valueString, nil)
+}
+
+// typedMethodArguments builds the optional input arguments, given as a JSON
+// array in valueString.
+//
+// deviation D34: when the server declares the argument types, each element
+// is converted to its declared type (a whole number for an Int32 parameter
+// must not travel as an Int64, which servers refuse). Without a declared
+// type, or for types not handled here, typing is best effort, the ladder the
+// C# driver used: bool, then integer, then float, then string.
+func typedMethodArguments(valueString string, types []uint32) ([]*ua.Variant, error) {
 	if strings.TrimSpace(valueString) == "" {
 		return nil, nil
 	}
@@ -256,9 +355,17 @@ func methodArguments(valueString string) ([]*ua.Variant, error) {
 	}
 
 	args := make([]*ua.Variant, 0, len(raw))
-	for _, el := range raw {
+	for i, el := range raw {
 		var v *ua.Variant
 		var err error
+		if i < len(types) && types[i] != 0 {
+			if tv, handled, terr := typedArgument(el, types[i]); terr != nil {
+				return nil, fmt.Errorf("argument %d: %w", i, terr)
+			} else if handled {
+				args = append(args, tv)
+				continue
+			}
+		}
 		switch t := el.(type) {
 		case bool:
 			v, err = ua.NewVariant(t)
@@ -279,6 +386,91 @@ func methodArguments(valueString string) ([]*ua.Variant, error) {
 		args = append(args, v)
 	}
 	return args, nil
+}
+
+// typedArgument converts one JSON element to the built-in type with the given
+// namespace-0 id. handled is false for types this does not cover.
+func typedArgument(el any, typeID uint32) (v *ua.Variant, handled bool, err error) {
+	num := func() (float64, error) {
+		switch t := el.(type) {
+		case float64:
+			return t, nil
+		case bool:
+			if t {
+				return 1, nil
+			}
+			return 0, nil
+		case string:
+			return strconv.ParseFloat(t, 64)
+		}
+		return 0, fmt.Errorf("%v is not a number", el)
+	}
+	if typeID == id.Boolean {
+		switch t := el.(type) {
+		case bool:
+			v, err = ua.NewVariant(t)
+		default:
+			f, nerr := num()
+			if nerr != nil {
+				return nil, true, nerr
+			}
+			v, err = ua.NewVariant(f != 0)
+		}
+		return v, true, err
+	}
+	if typeID == id.String {
+		s, isString := el.(string)
+		if !isString {
+			s = fmt.Sprint(el)
+		}
+		v, err = ua.NewVariant(s)
+		return v, true, err
+	}
+	if typeID == id.ByteString {
+		s, isString := el.(string)
+		if !isString {
+			return nil, true, fmt.Errorf("%v is not a base64 string", el)
+		}
+		b, derr := base64.StdEncoding.DecodeString(s)
+		if derr != nil {
+			return nil, true, derr
+		}
+		v, err = ua.NewVariant(b)
+		return v, true, err
+	}
+
+	switch typeID {
+	case id.SByte, id.Byte, id.Int16, id.UInt16, id.Int32, id.UInt32, id.Int64, id.UInt64, id.Float, id.Double:
+	default:
+		return nil, false, nil
+	}
+	f, nerr := num()
+	if nerr != nil {
+		return nil, true, nerr
+	}
+	switch typeID {
+	case id.SByte:
+		v, err = variantOf(toInteger[int8](f, "SByte", -128, 128))
+	case id.Byte:
+		v, err = variantOf(toInteger[uint8](f, "Byte", 0, 256))
+	case id.Int16:
+		v, err = variantOf(toInteger[int16](f, "Int16", -32768, 32768))
+	case id.UInt16:
+		v, err = variantOf(toInteger[uint16](f, "UInt16", 0, 65536))
+	case id.Int32:
+		v, err = variantOf(toInteger[int32](f, "Int32", -2147483648, 2147483648))
+	case id.UInt32:
+		v, err = variantOf(toInteger[uint32](f, "UInt32", 0, 4294967296))
+	case id.Int64:
+		v, err = variantOf(toInteger[int64](f, "Int64", -9223372036854775808, 9223372036854775808))
+	case id.UInt64:
+		v, err = variantOf(toInteger[uint64](f, "UInt64", 0, 18446744073709551616))
+	case id.Float:
+		v, err = variantOf(toFloat32(f))
+	case id.Double:
+		v, err = ua.NewVariant(f)
+	}
+	return v, true, err
 }
 
 // writeValue converts the command to the type the node expects and writes
@@ -379,14 +571,61 @@ func commandVariant(asdu string, value float64, valueString string) (v *ua.Varia
 		// Acquisition publishes datetimes as Unix milliseconds; convert
 		// back the same way.
 		v, err = variantOf(toDateTime(value))
-	case "string", "bytestring", "localizedtext", "qualifiedname",
-		"nodeid", "guid", "expandednodeid", "xmlelement":
+	case "string":
 		v, err = ua.NewVariant(valueString)
+	case "xmlelement":
+		v, err = ua.NewVariant(ua.XMLElement(valueString))
+	case "bytestring", "localizedtext", "qualifiedname", "nodeid", "guid", "expandednodeid":
+		// deviation D34: sent as the type the ASDU names, in the textual form
+		// acquisition publishes (base64, "ns:Name", a node id string). A
+		// String variant is refused by servers with BadTypeMismatch.
+		v, err = stringFamilyVariant(strings.ToLower(strings.TrimSpace(asdu)), valueString)
 	case "extensionobject", "numericrange", "variant", "diagnosticinfo", "datavalue":
 		// There is no way to build these from a plain number or string.
 		return nil, "", fmt.Errorf("writing complex type '%s' is not supported", asdu)
 	}
 	return v, "", err
+}
+
+// stringFamilyVariant builds the variant of a scalar whose command value is a
+// string: the inverse of what convertOPCValue publishes.
+func stringFamilyVariant(asdu, s string) (*ua.Variant, error) {
+	switch asdu {
+	case "bytestring":
+		b, err := base64.StdEncoding.DecodeString(s)
+		if err != nil {
+			return nil, fmt.Errorf("not valid base64: %w", err)
+		}
+		return ua.NewVariant(b)
+	case "nodeid":
+		n, err := ua.ParseNodeID(s)
+		if err != nil {
+			return nil, err
+		}
+		return ua.NewVariant(n)
+	case "expandednodeid":
+		n, err := ua.ParseNodeID(s)
+		if err != nil {
+			return nil, err
+		}
+		return ua.NewVariant(ua.NewExpandedNodeID(n, "", 0))
+	case "guid":
+		g := ua.NewGUID(s)
+		if g == nil {
+			return nil, fmt.Errorf("%q is not a GUID", s)
+		}
+		return ua.NewVariant(g)
+	case "localizedtext":
+		return ua.NewVariant(&ua.LocalizedText{EncodingMask: ua.LocalizedTextText, Text: s})
+	default: // qualifiedname, published as "ns:Name" (just "Name" for ns 0)
+		ns, name := uint16(0), s
+		if i := strings.Index(s, ":"); i > 0 {
+			if n, err := strconv.ParseUint(s[:i], 10, 16); err == nil {
+				ns, name = uint16(n), s[i+1:]
+			}
+		}
+		return ua.NewVariant(&ua.QualifiedName{NamespaceIndex: ns, Name: name})
+	}
 }
 
 // arrayVariant converts a JSON array in valueString to an array of the

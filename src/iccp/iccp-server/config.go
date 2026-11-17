@@ -28,6 +28,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -92,7 +93,6 @@ type protocolConnection struct {
 	RootCertFilePath             string                 `bson:"rootCertFilePath"`
 	ChainValidation              bool                   `bson:"chainValidation"`
 	Password                     string                 `bson:"password"`
-	HoursShift                   float64                `bson:"hoursShift"`
 	Stats                        map[string]interface{} `bson:"stats"`
 }
 
@@ -105,6 +105,9 @@ type rtData struct {
 	ValueString                    string      `bson:"valueString"`
 	ValueJson                      string      `bson:"valueJson"`
 	Invalid                        bool        `bson:"invalid"`
+	Transient                      bool        `bson:"transient"`
+	Frozen                         bool        `bson:"frozen"`
+	Substituted                    bool        `bson:"substituted"`
 	IsEvent                        bool        `bson:"isEvent"`
 	Description                    string      `bson:"description"`
 	UngroupedDescription           string      `bson:"ungroupedDescription"`
@@ -332,14 +335,23 @@ func readTuningSignedInt(envName string, configured, defaultValue int) int {
 	return defaultValue
 }
 
-// processRedundancy handles active/passive node switching for high availability.
+// Redundancy state. isActive and keepRunningWhileInactive are read from the
+// association, command and change-stream goroutines, so they are atomic.
 var (
 	countKeepAliveUpdates          = 0
 	countKeepAliveUpdatesLimit     = 4
 	lastActiveNodeKeepAliveTimeTag time.Time
-	isActive                       bool
+	isActive                       atomic.Bool
+	keepRunningWhileInactive       atomic.Bool
 )
 
+// protocolRunning reports whether this node serves ICCP associations: it is
+// the active node, or the instance has keepProtocolRunningWhileInactive set.
+func protocolRunning() bool {
+	return isActive.Load() || keepRunningWhileInactive.Load()
+}
+
+// processRedundancy handles active/passive node switching for high availability.
 func processRedundancy(collectionInstances *mongo.Collection, id bson.ObjectID, cfg configData) {
 	var instance protocolDriverInstance
 	filter := bson.D{{Key: "_id", Value: id}}
@@ -352,31 +364,31 @@ func processRedundancy(collectionInstances *mongo.Collection, id bson.ObjectID, 
 	if len(instance.NodeNames) > 0 && !contains(instance.NodeNames, cfg.NodeName) {
 		log.Fatalf("Redundancy - This node name not in the list of nodes from driver instance!")
 	}
+	keepRunningWhileInactive.Store(instance.KeepProtocolRunningWhileInactive)
 
 	if instance.ActiveNodeName == cfg.NodeName {
-		if !isActive {
+		if !isActive.Load() {
 			LogMsg(LogLevelMin, "Redundancy - ACTIVATING this Node!")
 		}
-		isActive = true
+		isActive.Store(true)
 	} else {
-		if isActive {
+		if isActive.Load() {
 			LogMsg(LogLevelMin, "Redundancy - DEACTIVATING this Node (other node active)!")
 			countKeepAliveUpdates = 0
-			isActive = false
+			isActive.Store(false)
 			time.Sleep(1 * time.Second)
 		}
-		isActive = false
 		if lastActiveNodeKeepAliveTimeTag == instance.ActiveNodeKeepAliveTimeTag {
 			countKeepAliveUpdates++
 		}
 		lastActiveNodeKeepAliveTimeTag = instance.ActiveNodeKeepAliveTimeTag
 		if countKeepAliveUpdates > countKeepAliveUpdatesLimit {
 			LogMsg(LogLevelMin, "Redundancy - ACTIVATING this Node!")
-			isActive = true
+			isActive.Store(true)
 		}
 	}
 
-	if isActive {
+	if isActive.Load() {
 		_, err := collectionInstances.UpdateOne(
 			context.TODO(),
 			bson.M{"_id": bson.M{"$eq": id}},

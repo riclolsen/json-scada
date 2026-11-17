@@ -19,7 +19,8 @@ Node.js command-line utility for JSON-SCADA user accounts: creates a user or res
 ## Work Guidance
 
 - Usage: `node updateUser.js username password [email] [config file name]`
-- Creates the user with an empty `roles` array when missing; updates password (and email when given) otherwise
+- Creates the user with an empty `roles` array when missing; updates password (and email when given) otherwise, incrementing `tokenVersion` (ends the user's earlier sessions)
+- Follows the server's password rules (`server_realtime_auth` `auth.controller.js`): minimum 8 characters, bcrypt cost 10; refuses LDAP users; exit code 1 on failure
 - Operates directly on the `users` collection
 - Reports that an administrator must assign a role before the new user can log in
 

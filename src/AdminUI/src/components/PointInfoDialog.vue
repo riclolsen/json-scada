@@ -3,7 +3,7 @@
     <!-- Point Info dialog -->
     <v-dialog v-model="open" max-width="520" scrollable :content-class="cornerClass" :persistent="anchor !== null">
       <v-card v-if="info.point">
-        <v-card-title class="text-subtitle-1">
+        <v-card-title class="text-body-large">
           {{ info.point.key }} : {{ info.point.tag }}
         </v-card-title>
         <v-card-subtitle>{{ info.point.station }} - {{ info.point.descr }}</v-card-subtitle>
@@ -34,7 +34,7 @@
             </v-radio-group>
           </template>
 
-          <div v-if="info.commandBlocked" class="text-error text-caption mt-1">
+          <div v-if="info.commandBlocked" class="text-error text-body-small mt-1">
             {{ $t('tabularViewer.dlg.blockedByAnnotation') }}
           </div>
         </v-card-text>
@@ -60,10 +60,10 @@
     <!-- Command dialog -->
     <v-dialog v-model="command.open" max-width="440" scrollable :content-class="cmdContentClass" :persistent="anchor !== null">
       <v-card v-if="command.point">
-        <v-card-title class="text-subtitle-1">{{ $t('tabularViewer.cmd.title') }}</v-card-title>
+        <v-card-title class="text-body-large">{{ $t('tabularViewer.cmd.title') }}</v-card-title>
         <v-card-subtitle>{{ command.point.station }} - {{ command.point.descr }}</v-card-subtitle>
         <v-card-text>
-          <div class="mb-2 text-caption">{{ command.cmdTag }}</div>
+          <div class="mb-2 text-body-small">{{ command.cmdTag }}</div>
           <template v-if="command.cmdType === 'digital'">
             <v-radio-group v-model="command.value" hide-details density="compact">
               <v-radio :label="command.stateTextTrue" :value="1"></v-radio>
@@ -76,7 +76,7 @@
           <template v-else>
             <v-text-field v-model="command.value" :label="$t('tabularViewer.cmd.value')" density="compact" variant="outlined" hide-details></v-text-field>
           </template>
-          <div class="mt-2 text-caption">{{ $t('tabularViewer.cmd.ackStatus') }}: <b>{{ command.ackText }}</b></div>
+          <div class="mt-2 text-body-small">{{ $t('tabularViewer.cmd.ackStatus') }}: <b>{{ command.ackText }}</b></div>
         </v-card-text>
         <v-card-actions>
           <v-btn color="error" variant="tonal" :disabled="!userHasRight('sendCommands') || commandCooldown || (command.cmdType === 'digital' && command.value === undefined)" @click="executeCommand">
@@ -336,7 +336,11 @@ function logCommand(point, value) {
 }
 
 function openTrend(p) {
-  window.open('/trend.html?NPONTO=' + p.key, 'Trend ' + p.key, 'height=400,width=700,resizable=yes')
+  window.open(
+    '/#/trend-viewer?point=' + p.key + '&embed=1',
+    'trend' + p.key,
+    'height=480,width=900,resizable=yes'
+  )
 }
 function openCurves(p) {
   const url =

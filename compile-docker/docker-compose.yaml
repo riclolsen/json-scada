@@ -87,6 +87,7 @@ services:
                      cd /src/camera-onvif && npm install &&
                      cd /src/oshmi2json && npm install &&
                      cd /src/telegraf-listener && npm install &&
+                     cd /src/process_pg_sql && npm install &&
                      cd /src/OPC-UA-Server && npm install &&
                      cd /src/mqtt-sparkplug && npm install &&
                      cd /src/mcp-json-scada-db && npm install && npm run build &&

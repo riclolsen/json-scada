@@ -265,15 +265,16 @@ func (s ChannelSpec) BuildChannel(allowedRemoteIPs []string) (channel.Channel, *
 		inners = []channel.Channel{inner}
 	}
 
-	opts := CountOptions{Name: s.Name}
+	// Every mode retries here. An active inner channel is built with NoRetry so
+	// that each attempt surfaces here, where it can be counted and the real
+	// error logged. A passive one blocks on accept and only fails when it
+	// cannot listen at all — the port still held by a previous process, the
+	// bind address not up yet at boot. That failure must be retried too: the
+	// bus treats a connect error as fatal, and an outstation whose bus has died
+	// keeps the process alive without ever listening again.
+	opts := CountOptions{Name: s.Name, Retry: DefaultRetry}
 	if s.IsPassive() {
-		// A passive channel blocks on accept rather than failing, so it needs
-		// no backoff; the allowed-address list is what it does need.
 		opts.AllowedRemoteIPs = allowedRemoteIPs
-	} else {
-		// The inner channel is built with NoRetry so that each attempt surfaces
-		// here, where it can be counted and the real error logged.
-		opts.Retry = DefaultRetry
 	}
 	if s.Mode == ModeSerial && s.AsyncOpenDelayMs > 0 {
 		opts.OpenDelay = time.Duration(s.AsyncOpenDelayMs) * time.Millisecond

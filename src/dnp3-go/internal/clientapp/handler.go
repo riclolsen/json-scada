@@ -133,6 +133,18 @@ func (h *soeHandler) HandleAnalog(info master.HeaderInfo, values []dnp3.Indexed[
 	}
 }
 
+// HandleFrozenAnalog files frozen analog inputs (groups 31 and 33) under
+// common address 31. Delivered through HandleAnalog they landed on the running
+// analog of the same index, so a device reporting both overwrote the live
+// value with the frozen one on every poll.
+func (h *soeHandler) HandleFrozenAnalog(info master.HeaderInfo, values []dnp3.Indexed[dnp3.Analog]) {
+	h.logHeader("FrozenAnalog", info, len(values))
+	for _, v := range values {
+		h.push(info, dnp3util.GroupFrozenAnalogInput, v.Index, v.Value.Value,
+			formatFloat(v.Value.Value), v.Value.Time, dnp3util.AnalogQuality(v.Value.Flags))
+	}
+}
+
 func (h *soeHandler) HandleCounter(info master.HeaderInfo, values []dnp3.Indexed[dnp3.Counter]) {
 	h.logHeader("Counter", info, len(values))
 	for _, v := range values {

@@ -196,6 +196,9 @@ call %NPM% update
 cd %SRCPATH%\telegraf-listener
 call %NPM% i --package-lock-only
 call %NPM% update
+cd %SRCPATH%\process_pg_sql
+call %NPM% i --package-lock-only
+call %NPM% update
 cd %SRCPATH%\mqtt-sparkplug
 call %NPM% i --package-lock-only
 call %NPM% update

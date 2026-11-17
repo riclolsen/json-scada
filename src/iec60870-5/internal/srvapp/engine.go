@@ -40,9 +40,13 @@ import (
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 )
 
-// TimeToExpireCommandsWithTime is the validity window in seconds for
-// time-tagged commands received by the servers (C# parity).
+// TimeToExpireCommandsWithTime is the validity window for time-tagged
+// commands received by the servers, in both directions of the clock.
 const TimeToExpireCommandsWithTime = 20 * time.Second
+
+// DefaultMaxQueueSize bounds the spontaneous out-queue of a connection when
+// maxQueueSize is not configured.
+const DefaultMaxQueueSize = 5000
 
 type queuedInfo struct {
 	obj *conv.InfoObject
@@ -57,13 +61,17 @@ type infoQueue struct {
 	limit int
 }
 
-func (q *infoQueue) push(it queuedInfo) {
+// push appends an entry, dropping the oldest when full; reports the drop.
+func (q *infoQueue) push(it queuedInfo) (dropped bool) {
 	q.mu.Lock()
+	defer q.mu.Unlock()
 	if q.limit > 0 && len(q.items) >= q.limit {
+		q.items[0] = queuedInfo{}
 		q.items = q.items[1:] // drop oldest
+		dropped = true
 	}
 	q.items = append(q.items, it)
-	q.mu.Unlock()
+	return dropped
 }
 
 // popBatch pops the head plus following entries with the same TypeID and
@@ -80,7 +88,9 @@ func (q *infoQueue) popBatch(max int) []queuedInfo {
 		q.items[cnt].obj.TypeID == head.obj.TypeID && q.items[cnt].ca == head.ca {
 		cnt++
 	}
-	batch := q.items[:cnt]
+	batch := make([]queuedInfo, cnt)
+	copy(batch, q.items[:cnt])
+	clear(q.items[:cnt])
 	q.items = q.items[cnt:]
 	return batch
 }
@@ -90,17 +100,44 @@ type Conn struct {
 	Cfg model.ConnCfg
 	// Endpoint is the protocol server object; Send broadcasts/buffers.
 	Endpoint asdu.Connect
+	// Sessions, when set, lists the links spontaneous data goes to, each
+	// sent with its own flow control (104: one per master). When nil the
+	// data goes to Endpoint (101).
+	Sessions func() []asdu.Connect
 	// HasSession reports whether at least one master is connected/activated.
 	HasSession func() bool
 	// OriginatorIP returns the remote endpoint(s) string for command records.
 	OriginatorIP func() string
 
-	outQ infoQueue
+	outQ    infoQueue
+	dropped atomic.Int64 // spontaneous objects dropped on a full out-queue
+
+	selMu   sync.Mutex
+	selLink asdu.Connect // link (session) that selected
+	selKey  float64      // _id of the selected point, 0 when none
+	selAt   time.Time
+}
+
+// NewConn creates the state of one served connection, its spontaneous
+// out-queue bounded by maxQueueSize (DefaultMaxQueueSize when unset).
+func NewConn(cfg model.ConnCfg) *Conn {
+	c := &Conn{Cfg: cfg}
+	c.outQ.limit = int(cfg.MaxQueueSize)
+	if c.outQ.limit <= 0 {
+		c.outQ.limit = DefaultMaxQueueSize
+	}
+	return c
 }
 
 // EnqueueInfo queues one spontaneous information object for sending.
 func (c *Conn) EnqueueInfo(obj *conv.InfoObject, ca int) {
-	c.outQ.push(queuedInfo{obj: obj, ca: ca})
+	if c.outQ.push(queuedInfo{obj: obj, ca: ca}) {
+		// log the first drop and then every 1000th, not every one
+		if n := c.dropped.Add(1); n%1000 == 1 {
+			jslog.Log(jslog.LevelBasic, "%s - Spontaneous queue full (%d), %d oldest objects dropped so far",
+				c.Cfg.Name, c.outQ.limit, n)
+		}
+	}
 }
 
 // Engine is the shared server-driver engine.
@@ -113,6 +150,8 @@ type Engine struct {
 	db          *mongo.Database
 	dbMu        sync.Mutex
 	IsMongoLive atomic.Bool
+
+	flow flowControl
 }
 
 // New creates the engine and opens its MongoDB handle.
@@ -202,37 +241,46 @@ func (e *Engine) RunStatusLoop(instanceNumber int, version string) {
 }
 
 // RunDequeueLoop drains the per-connection out-queues, assembling
-// multi-object spontaneous ASDUs (port of DequeueIecInfo).
+// multi-object spontaneous ASDUs (port of DequeueIecInfo). Each connection
+// runs in its own goroutine, so a master that is slow to acknowledge holds
+// back only its own connection. Blocks forever.
 func (e *Engine) RunDequeueLoop() {
+	for _, srv := range e.Conns {
+		go e.dequeueConn(srv)
+	}
+	select {}
+}
+
+func (e *Engine) dequeueConn(srv *Conn) {
 	for {
-		sentSomething := false
-		for _, srv := range e.Conns {
-			// single-redundancy-group emulation: hold events while no
-			// master is connected (lib60870 buffers in this mode)
-			if !srv.Cfg.MultiActiveVal() && srv.HasSession != nil && !srv.HasSession() {
-				continue
-			}
-			batch := srv.outQ.popBatch(30)
-			if len(batch) == 0 {
-				continue
-			}
-			sentSomething = true
-			objs := make([]*conv.InfoObject, 0, len(batch))
-			for _, it := range batch {
-				objs = append(objs, it.obj)
-			}
-			coa := asdu.CauseOfTransmission{Cause: asdu.Spontaneous}
-			err := conv.SendInfoBatch(srv.Endpoint, coa, asdu.CommonAddr(batch[0].ca), batch[0].obj.TypeID, objs)
+		// single-redundancy-group emulation: hold events while no
+		// master is connected (lib60870 buffers in this mode)
+		if !srv.Cfg.MultiActiveVal() && srv.HasSession != nil && !srv.HasSession() {
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+		batch := srv.outQ.popBatch(30)
+		if len(batch) == 0 {
+			time.Sleep(200 * time.Millisecond)
+			continue
+		}
+		objs := make([]*conv.InfoObject, 0, len(batch))
+		for _, it := range batch {
+			objs = append(objs, it.obj)
+		}
+		targets := []asdu.Connect{srv.Endpoint}
+		if srv.Sessions != nil {
+			targets = srv.Sessions()
+		}
+		coa := asdu.CauseOfTransmission{Cause: asdu.Spontaneous}
+		for _, t := range targets {
+			err := conv.SendInfoBatch(e.reply(t), coa, asdu.CommonAddr(batch[0].ca), batch[0].obj.TypeID, objs)
 			if err != nil {
 				jslog.Log(jslog.LevelDetailed, "%s - Error sending spontaneous data: %s", srv.Cfg.Name, err.Error())
-			} else {
-				jslog.Log(jslog.LevelBasic, "%s - Spont ASDU Type: %d with %d objects",
-					srv.Cfg.Name, batch[0].obj.TypeID, len(batch))
 			}
 		}
-		if !sentSomething {
-			time.Sleep(200 * time.Millisecond)
-		}
+		jslog.Log(jslog.LevelBasic, "%s - Spont ASDU Type: %d with %d objects",
+			srv.Cfg.Name, batch[0].obj.TypeID, len(batch))
 	}
 }
 
@@ -310,14 +358,11 @@ func (e *Engine) processPointUpdate(doc *model.RtDataPoint) {
 	if doc.ProtocolDestinations == nil {
 		return
 	}
-	for _, dst := range doc.ProtocolDestinations {
+	for i := range doc.ProtocolDestinations {
+		dst := &doc.ProtocolDestinations[i]
 		for _, srv := range e.Conns {
 			if int(dst.ConnectionNumber) != int(srv.Cfg.ProtocolConnectionNumber) {
 				continue
-			}
-			quality := conv.Quality{
-				Invalid:     doc.Invalid || doc.Overflow || doc.Transient,
-				Substituted: doc.Substituted,
 			}
 			var timeTag *time.Time
 			if doc.TimeTagAtSource != nil {
@@ -327,11 +372,7 @@ func (e *Engine) processPointUpdate(doc *model.RtDataPoint) {
 				// timeTagAtSourceOk is false; go-iecp5 does not expose the
 				// IV bit on encoding, the timestamp is sent as-is
 			}
-			// C# parity: spontaneous distribution does NOT apply the
-			// destination kconv1/kconv2 factors (BuildInfoObj is called
-			// with default conversion in MongoChangeStream.cs)
-			io := conv.BuildInfoObj(int(dst.ASDU), int(dst.ObjectAddress), doc.Value,
-				false, 0, quality, timeTag, 1, 0, false)
+			io := destInfoObj(doc, dst, int(dst.ASDU), timeTag)
 			if io != nil {
 				srv.EnqueueInfo(io, int(dst.CommonAddress))
 				jslog.Log(jslog.LevelDetailed, "%s - Spont Tag:%s Value:%s Key:%v TI:%d CA:%d",
@@ -339,4 +380,25 @@ func (e *Engine) processPointUpdate(doc *model.RtDataPoint) {
 			}
 		}
 	}
+}
+
+// destInfoObj builds the information object sent for a point on one of its
+// destinations. Spontaneous data, interrogation and read replies all use it,
+// so a master sees the same value whichever way it gets it: the destination
+// kconv1/kconv2 apply (kconv1 -1 inverts digitals), and the point's invalid,
+// substituted and overflow flags become the quality. A transient point is
+// sent as an indeterminate double point or a transient step position; the
+// other types have no way to carry it.
+func destInfoObj(p *model.RtDataPoint, dst *model.ProtocolDestination, asduNum int, timeTag *time.Time) *conv.InfoObject {
+	quality := conv.Quality{
+		Invalid:     p.Invalid,
+		Substituted: p.Substituted,
+		Overflow:    p.Overflow,
+	}
+	kconv1 := dst.KConv1
+	if kconv1 == 0 {
+		kconv1 = 1 // missing field
+	}
+	return conv.BuildInfoObj(asduNum, int(dst.ObjectAddress), p.Value,
+		false, 0, quality, timeTag, kconv1, dst.KConv2, p.Transient)
 }

@@ -320,7 +320,7 @@ func TestExistingTagIsMatchedByReferenceNotName(t *testing.T) {
 	conn.InsertedTags[pointKey("DemoProtCtrl/Obj1XCBR1.Pos", "ST")] = true
 
 	iv.CommonAddress = "st" // the FC case of a value does not matter
-	if m := maybeInsertTag(context.Background(), nil, []*Iec61850Connection{conn}, iv); m != nil {
+	if m, _, _ := maybeInsertTag(context.Background(), nil, []*Iec61850Connection{conn}, iv); m != nil {
 		t.Error("a point that already has a tag was inserted again")
 	}
 }

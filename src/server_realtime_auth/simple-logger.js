@@ -27,7 +27,14 @@ const Log = {
   log: function (msg, level = 1) {
     if (level <= this.levelCurrent) {
       let dt = new Date()
-      console.log(dt.toISOString() + ' - ' + msg)
+      // messages carry request data (user names, tags, file names): a line
+      // break in them must not start what looks like another log entry, so
+      // continuation lines are indented and other control characters dropped
+      const text = String(msg)
+        .replace(/\r\n|\r|\n/g, '\n    ')
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '')
+      console.log(dt.toISOString() + ' - ' + text)
     }
   },
 }

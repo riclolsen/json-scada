@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -104,6 +105,17 @@ type rtData struct {
 	ProtocolSourceCommonAddress    interface{}   `bson:"protocolSourceCommonAddress"`
 	ProtocolSourceCommandDuration  float64       `bson:"protocolSourceCommandDuration"`
 	ProtocolSourceCommandUseSBO    bool          `bson:"protocolSourceCommandUseSBO"`
+	SourceDataUpdate               *sourceData   `bson:"sourceDataUpdate"`
+}
+
+// sourceData is the part of realtimeData.sourceDataUpdate the client reads
+// back at startup, so a tag can be invalidated (keeping its last raw value)
+// even when no value has been received since the driver started.
+type sourceData struct {
+	ValueAtSource       *float64 `bson:"valueAtSource"`
+	ValueStringAtSource string   `bson:"valueStringAtSource"`
+	ValueJsonAtSource   string   `bson:"valueJsonAtSource"`
+	InvalidAtSource     bool     `bson:"invalidAtSource"`
 }
 
 // commandQueueEntry mirrors the commandsQueue collection document.
@@ -139,6 +151,7 @@ type dataUpdate struct {
 	valueJson                      string
 	asdu                           string
 	invalid                        bool
+	transient                      bool
 	notTopical                     bool
 	substituted                    bool
 	timeTag                        time.Time
@@ -307,6 +320,10 @@ func getTagsForConnection(collectionRtData *mongo.Collection, connNumber int) ([
 		{Key: "protocolSourceConnectionNumber", Value: 1},
 		{Key: "protocolSourceObjectAddress", Value: 1},
 		{Key: "protocolSourceASDU", Value: 1},
+		{Key: "sourceDataUpdate.valueAtSource", Value: 1},
+		{Key: "sourceDataUpdate.valueStringAtSource", Value: 1},
+		{Key: "sourceDataUpdate.valueJsonAtSource", Value: 1},
+		{Key: "sourceDataUpdate.invalidAtSource", Value: 1},
 	}
 
 	cursor, err := collectionRtData.Find(context.TODO(), filter, options.Find().SetProjection(projection))
@@ -334,14 +351,23 @@ func readTuningInt(envName string, configured, defaultValue int) int {
 	return defaultValue
 }
 
-// processRedundancy handles active/passive node switching for high availability.
+// Redundancy state. isActive and keepRunningWhileInactive are read from the
+// protocol, report and change-stream goroutines, so they are atomic.
 var (
 	countKeepAliveUpdates          = 0
 	countKeepAliveUpdatesLimit     = 4
 	lastActiveNodeKeepAliveTimeTag time.Time
-	isActive                       bool
+	isActive                       atomic.Bool
+	keepRunningWhileInactive       atomic.Bool
 )
 
+// protocolRunning reports whether this node keeps ICCP associations up: it is
+// the active node, or the instance has keepProtocolRunningWhileInactive set.
+func protocolRunning() bool {
+	return isActive.Load() || keepRunningWhileInactive.Load()
+}
+
+// processRedundancy handles active/passive node switching for high availability.
 func processRedundancy(collectionInstances *mongo.Collection, id bson.ObjectID, cfg configData) {
 	var instance protocolDriverInstance
 	filter := bson.D{{Key: "_id", Value: id}}
@@ -354,31 +380,31 @@ func processRedundancy(collectionInstances *mongo.Collection, id bson.ObjectID, 
 	if len(instance.NodeNames) > 0 && !contains(instance.NodeNames, cfg.NodeName) {
 		log.Fatalf("Redundancy - This node name not in the list of nodes from driver instance!")
 	}
+	keepRunningWhileInactive.Store(instance.KeepProtocolRunningWhileInactive)
 
 	if instance.ActiveNodeName == cfg.NodeName {
-		if !isActive {
+		if !isActive.Load() {
 			LogMsg(LogLevelMin, "Redundancy - ACTIVATING this Node!")
 		}
-		isActive = true
+		isActive.Store(true)
 	} else {
-		if isActive {
+		if isActive.Load() {
 			LogMsg(LogLevelMin, "Redundancy - DEACTIVATING this Node (other node active)!")
 			countKeepAliveUpdates = 0
-			isActive = false
+			isActive.Store(false)
 			time.Sleep(1 * time.Second)
 		}
-		isActive = false
 		if lastActiveNodeKeepAliveTimeTag == instance.ActiveNodeKeepAliveTimeTag {
 			countKeepAliveUpdates++
 		}
 		lastActiveNodeKeepAliveTimeTag = instance.ActiveNodeKeepAliveTimeTag
 		if countKeepAliveUpdates > countKeepAliveUpdatesLimit {
 			LogMsg(LogLevelMin, "Redundancy - ACTIVATING this Node!")
-			isActive = true
+			isActive.Store(true)
 		}
 	}
 
-	if isActive {
+	if isActive.Load() {
 		_, err := collectionInstances.UpdateOne(
 			context.TODO(),
 			bson.M{"_id": bson.M{"$eq": id}},

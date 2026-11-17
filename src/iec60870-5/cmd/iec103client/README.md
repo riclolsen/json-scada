@@ -141,7 +141,7 @@ Parameters needed only for TLS-encrypted TCP connections:
 - _**localCertFilePath**_ [String] - Path to the local certificate file presented on the TCP transport. A `*.pfx`/`*.p12` (with _passphrase_) or a PEM file containing the certificate and key. **Optional parameter**.
 - _**passphrase**_ [String] - Password for the local `*.pfx` certificate file. **Optional parameter**.
 - _**peerCertFilesPaths**_ [Array of Strings] - Certificate files used to verify the peer when _allowOnlySpecificCertificates=true_. **Optional parameter**.
-- _**rootCertFilePath**_ [String] - CA certificate file to validate the peer chain when _chainValidation=true_. **Optional parameter**.
+- _**rootCertFilePath**_ [String] - CA certificate file to validate the peer chain when _chainValidation=true_. Without _rootCertFilePath_ the system root certificates are used. **Optional parameter**.
 - _**allowOnlySpecificCertificates**_ [Boolean] - Accept only the certificates listed in _peerCertFilesPaths_. Default: false. **Optional parameter**.
 - _**chainValidation**_ [Boolean] - Perform X.509 chain validation against the CA certificate. Default: false. **Optional parameter**.
 

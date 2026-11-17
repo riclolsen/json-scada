@@ -71,7 +71,7 @@ Each instance for this driver can have many client connection defined that must 
 - _**description**_ [String] - Description for the purpose of a connection. Just documental. **Optional parameter**.
 - _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 - _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
-- _**portName**_ [String] - Comm port name, e.g. "COM1", "/dev/ttyS0". **Mandatory parameter**.
+- _**portName**_ [String] - Comm port name, e.g. "COM1", "/dev/ttyS0", or `host:port` (numeric port) to carry the FT1.2 frames over TCP. **Mandatory parameter**.
 - _**baudRate**_ [Double] - Comm port baud rate. **Mandatory parameter**.
 - _**parity**_ [String] - Comm port parity Even|None|Odd|Mark|Space. **Mandatory parameter**.
 - _**stopBits**_ [String] - Comm port number of stop bits One|One5|Two. **Mandatory parameter**.

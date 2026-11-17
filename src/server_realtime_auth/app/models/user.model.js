@@ -15,6 +15,8 @@ const User = mongoose.model(
     isLDAPUser: { type: Boolean, default: false },
     ldapDN: { type: String, default: '' }, // Distinguished Name from LDAP
     lastLDAPSync: { type: Date, default: null }, // Last time user was synced with LDAP
+    // incremented on password change: tokens carrying an older version are refused
+    tokenVersion: { type: Number, default: 0 },
   }),
   'users'
 )

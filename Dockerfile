@@ -333,6 +333,7 @@ RUN cd src/cs_data_processor && npm install \
     && cd ../camera-onvif && npm install \
     && cd ../oshmi2json && npm install \
     && cd ../telegraf-listener && npm install \
+    && cd ../process_pg_sql && npm install \
     && cd ../OPC-UA-Server && npm install \
     && cd ../mqtt-sparkplug && npm install \
     && cd ../mcp-json-scada-db && npm install && npm run build \
@@ -461,7 +462,7 @@ RUN mkdir -p /app/json-scada/conf/node-red
 COPY ./sql/ /app/json-scada/sql/
 
 # The sql dir must be writable by the jsonscada service user: cs_data_processor
-# writes pg_*.sql files there and process_pg_*.sh removes them after loading.
+# writes pg_*.sql files there and src/process_pg_sql removes them after loading.
 # This must run after the COPY above, which resets ownership/perms to root:root.
 RUN chown -R jsonscada /app/json-scada/sql \
     && chmod u+rwx /app/json-scada/sql

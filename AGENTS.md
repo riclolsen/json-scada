@@ -89,7 +89,7 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 
 - [src/AdminUI/](src/AdminUI/AGENTS.md) — Vue.js web admin interface SPA
 - [src/mcp-json-scada-db/](src/mcp-json-scada-db/AGENTS.md) — MCP server for AI tooling (data, commands, configuration, operation, health/log diagnosis, displays, calculated and system tags, custom developments, CIM-EMS control)
-- [src/dnp3-go/](src/dnp3-go/AGENTS.md) — DNP3 client/server (Go, drop-in alternative)
+- [src/dnp3-go/](src/dnp3-go/AGENTS.md) — DNP3 client/server (Go, drop-in replacement; the services run it)
 - [src/modbus-go/](src/modbus-go/AGENTS.md) — Modbus client/server (Go, drop-in replacement; the services run it)
 - [src/mqtt-sparkplug/](src/mqtt-sparkplug/AGENTS.md) — MQTT/Sparkplug B (Node.js)
 - [src/server_realtime_auth/](src/server_realtime_auth/AGENTS.md) — Realtime WebSocket server (Node.js)
@@ -99,6 +99,7 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 - [src/cs_custom_processor/](src/cs_custom_processor/AGENTS.md) — Custom processor (TypeScript)
 - [src/cs_data_processor/](src/cs_data_processor/AGENTS.md) — Data processor (Node.js)
 - [src/cs_data_processor-go/](src/cs_data_processor-go/AGENTS.md) — Data processor (Go, drop-in alternative)
+- [src/process_pg_sql/](src/process_pg_sql/AGENTS.md) — PostgreSQL loader of the SQL files queued in `sql/` (Node.js)
 - [src/OPC-UA-Client-Go/](src/OPC-UA-Client-Go/AGENTS.md) — OPC UA client (Go)
 - [src/OPC-UA-Server/](src/OPC-UA-Server/AGENTS.md) — OPC UA server (Node.js)
 - [src/OPC-DA-Client/](src/OPC-DA-Client/AGENTS.md) — OPC DA client (.NET Core)

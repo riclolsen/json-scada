@@ -195,3 +195,132 @@ func TestListenAllInterfacesByDefault(t *testing.T) {
 		t.Error("SetListenAddress(host name) succeeded, want error")
 	}
 }
+
+func TestBuildModel(t *testing.T) {
+	conns := []protocolConnection{
+		{ProtocolConnectionNumber: 50, CommandsEnabled: true, Topics: []string{"Sub Station 1"}},
+	}
+	tags := []rtData{
+		// group1 with spaces is sanitized into a valid domain name
+		{ID: 1, Tag: "B-POINT", Type: "analog", Group1: "Sub Station 1"},
+		{ID: 2, Tag: "A-POINT", Type: "digital", Group1: "Sub Station 1"},
+		// collides with A-POINT after sanitizing: not exposed
+		{ID: 3, Tag: "A_POINT", Type: "analog", Group1: "Sub Station 1"},
+		// command tag in a commandable domain: control point, even if blocked
+		{ID: 4, Tag: "CMD-1", Type: "digital", Origin: "command", Group1: "Sub Station 1", CommandBlocked: true},
+		// command tag no connection may operate: not exposed at all
+		{ID: 5, Tag: "CMD-2", Type: "digital", Origin: "command", Group1: "OTHER"},
+		// acquired by this instance's own connection: not served back
+		{ID: 6, Tag: "OWN", Type: "analog", Group1: "OTHER", ProtocolSourceConnectionNumber: 50},
+		// not a standard ICCP type
+		{ID: 7, Tag: "TEXT", Type: "string", Group1: "OTHER"},
+	}
+	m := buildModel(tags, conns, 0)
+
+	if got := m.dataModel.GetDomains(); len(got) != 1 || got[0] != "Sub_Station_1" {
+		t.Errorf("domains = %v, want [Sub_Station_1]", got)
+	}
+	if len(m.ipByTag) != 2 || m.ipByTag["A-POINT"] == nil || m.ipByTag["B-POINT"] == nil {
+		t.Errorf("indication points = %v, want A-POINT and B-POINT", m.ipByTag)
+	}
+	if m.ipByTag["A_POINT"] != nil || m.tagByKey["Sub_Station_1/A_POINT"] != "A-POINT" {
+		t.Errorf("collision: A_POINT exposed or key owner %q, want A-POINT (first by name)", m.tagByKey["Sub_Station_1/A_POINT"])
+	}
+	if ref := m.cpRefByTag["CMD-1"]; ref.Domain != "Sub_Station_1" || ref.Item != "CMD_1" {
+		t.Errorf("control point = %+v, want Sub_Station_1/CMD_1", ref)
+	}
+	if _, ok := m.cpRefByTag["CMD-2"]; ok {
+		t.Error("CMD-2 exposed, want hidden (no connection may operate it)")
+	}
+	if len(m.datasetDefs) != 1 {
+		t.Fatalf("datasets = %+v, want 1", m.datasetDefs)
+	}
+	ds := m.datasetDefs[0]
+	if ds.domain != "Sub_Station_1" || ds.name != "Sub_Station_1/Sub_Station_1_DataSet" ||
+		len(ds.items) != 2 || ds.items[0].Item != "A_POINT" || ds.items[1].Item != "B_POINT" {
+		t.Errorf("dataset = %+v, want sorted A_POINT, B_POINT", ds)
+	}
+}
+
+func TestTopicAllowsDomain(t *testing.T) {
+	if !topicAllowsDomain(nil, "ANY") || !topicAllowsDomain([]string{" "}, "ANY") {
+		t.Error("no topics must allow every domain")
+	}
+	if !topicAllowsDomain([]string{"Sub Station 1"}, "Sub_Station_1") {
+		t.Error("topic must match its sanitized domain name")
+	}
+	if topicAllowsDomain([]string{"SUB_A"}, "SUB_B") {
+		t.Error("SUB_B allowed by topic SUB_A")
+	}
+}
+
+func TestTopicsOf(t *testing.T) {
+	got := topicsOf([]protocolConnection{{Topics: []string{"B", "A"}}, {Topics: []string{"A"}}})
+	if len(got) != 2 || got[0] != "A" || got[1] != "B" {
+		t.Errorf("topicsOf = %v, want [A B]", got)
+	}
+	if got := topicsOf([]protocolConnection{{Topics: []string{"A"}}, {}}); got != nil {
+		t.Errorf("topicsOf with an unrestricted connection = %v, want nil (no filter)", got)
+	}
+}
+
+func TestTagQuality(t *testing.T) {
+	cases := []struct {
+		tag              rtData
+		validity, source string
+	}{
+		{rtData{}, tase2.QualityValid, tase2.SourceTelemetered},
+		{rtData{Invalid: true, Transient: true}, tase2.QualityInvalid, tase2.SourceTelemetered},
+		{rtData{Transient: true, Frozen: true}, tase2.QualitySuspect, tase2.SourceTelemetered},
+		{rtData{Frozen: true}, tase2.QualityHeld, tase2.SourceTelemetered},
+		{rtData{Substituted: true}, tase2.QualityValid, tase2.SourceEntered},
+		{rtData{Origin: "manual"}, tase2.QualityValid, tase2.SourceEntered},
+		{rtData{Origin: "calculated"}, tase2.QualityValid, tase2.SourceCalculated},
+	}
+	for i, c := range cases {
+		q := tagQuality(c.tag)
+		if q.Validity != c.validity || q.Source != c.source {
+			t.Errorf("case %d: quality = %s/%s, want %s/%s", i, q.Validity, q.Source, c.validity, c.source)
+		}
+	}
+}
+
+func TestCommandTarget(t *testing.T) {
+	tags := []rtData{
+		{ID: 1, Tag: "CMD-OK", Type: "digital", Origin: "command", Group1: "SUB_A"},
+		{ID: 2, Tag: "CMD-BLOCKED", Type: "digital", Origin: "command", Group1: "SUB_A", CommandBlocked: true},
+	}
+	conn := protocolConnection{Name: "C", ProtocolConnectionNumber: 60, CommandsEnabled: true, Topics: []string{"SUB_A"}}
+	m := buildModel(tags, []protocolConnection{conn}, 0)
+	populateRtDataCache(tags, m.tagByKey)
+
+	isActive.Store(true)
+	defer isActive.Store(false)
+
+	if tag, ok := commandTarget(conn, "Operate", "SUB_A", "CMD_OK"); !ok || tag != "CMD-OK" {
+		t.Errorf("CMD_OK = %q, %v; want CMD-OK allowed", tag, ok)
+	}
+	if _, ok := commandTarget(conn, "Operate", "SUB_A", "CMD_BLOCKED"); ok {
+		t.Error("blocked command allowed")
+	}
+	if _, ok := commandTarget(protocolConnection{Name: "D"}, "Operate", "SUB_A", "CMD_OK"); ok {
+		t.Error("command allowed on a connection with commands disabled")
+	}
+	if _, ok := commandTarget(protocolConnection{Name: "E", CommandsEnabled: true, Topics: []string{"SUB_B"}},
+		"Operate", "SUB_A", "CMD_OK"); ok {
+		t.Error("command allowed outside the connection topics")
+	}
+
+	// commandBlocked set at runtime (change stream) is honoured.
+	blocked := tags[0]
+	blocked.CommandBlocked = true
+	updateRtDataCache(blocked)
+	if _, ok := commandTarget(conn, "Operate", "SUB_A", "CMD_OK"); ok {
+		t.Error("command blocked at runtime still allowed")
+	}
+
+	isActive.Store(false)
+	if _, ok := commandTarget(conn, "Operate", "SUB_A", "CMD_BLOCKED"); ok {
+		t.Error("command allowed on an inactive node")
+	}
+}

@@ -29,8 +29,7 @@ import org.bson.Document;
 
 /**
  * Converts PLC4X values to the JSON-SCADA value tuple (double, string, json, array, bad).
- * Port of the Go extractValue() with its known bugs fixed (string types, time types,
- * consistent endianness handling for all multi-byte types).
+ * Endianness handling is consistent for all multi-byte types.
  *
  * The switch is done on PlcValueType names (strings) so the code is resilient to
  * enum-constant differences between PLC4J versions.
@@ -270,6 +269,9 @@ public final class ValueExtractor {
           StringBuilder sb = new StringBuilder("[");
           for (int i = 0; i < list.size(); i++) {
             ExtractedValue ev = extract(list.get(i), endianness, connName, plc4xTagName);
+            if (ev.bad) {
+              r.bad = true;
+            }
             r.valArrDbl.add(ev.valDbl);
             if (i == 0) {
               r.valDbl = ev.valDbl;
@@ -390,6 +392,14 @@ public final class ValueExtractor {
   }
 
   private static void setNumFloat(ExtractedValue r) {
+    if (Double.isNaN(r.valDbl) || Double.isInfinite(r.valDbl)) {
+      // NaN/Infinity are not valid JSON nor usable analog values: report as bad
+      r.valStr = String.valueOf(r.valDbl);
+      r.valDbl = 0;
+      r.valJson = "null";
+      r.bad = true;
+      return;
+    }
     r.valStr = String.format(Locale.US, "%f", r.valDbl);
     r.valJson = String.valueOf(r.valDbl);
   }

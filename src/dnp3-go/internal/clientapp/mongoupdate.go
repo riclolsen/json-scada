@@ -23,6 +23,7 @@ package clientapp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -36,19 +37,18 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-// The window outside which a timestamp is discarded, in milliseconds since the
-// epoch: 2001-09-09 to 2033-05-18.
-//
-// parity: this is the C++ driver's guard against a device reporting a wild
-// time. It also silently zeroes any legitimate timestamp outside that window,
-// which will matter in 2033 (quirk Q2).
+// A device's timestamp is discarded when it is before 2001-09-09 or more than
+// maxFutureSkew ahead of this machine's clock: a guard against a device
+// reporting a wild time (an unset clock reads 1970, a corrupt one anything).
+// The C++ driver's upper bound was the fixed date 2033-05-18, which would have
+// discarded every legitimate time from then on; it is relative now (D33).
 const (
 	minSaneTimeMs = 1000000000000
-	maxSaneTimeMs = 2000000000000
+	maxFutureSkew = 366 * 24 * time.Hour
 )
 
-func sanitizeTime(ms int64) int64 {
-	if ms < minSaneTimeMs || ms > maxSaneTimeMs {
+func sanitizeTime(ms int64, now time.Time) int64 {
+	if ms < minSaneTimeMs || ms > now.Add(maxFutureSkew).UnixMilli() {
 		return 0
 	}
 	return ms
@@ -94,12 +94,18 @@ func (e *Engine) drainLoop(ctx context.Context, db *mongo.Database) {
 				"processMongo: %d event value(s) coalesced under load; %d values in this batch",
 				squashed, len(batch))
 		}
+		// A batch that could not be written goes back on the queue rather than
+		// being dropped: it holds events, and the auto-created tags of points
+		// seen for the first time. Writing it again is harmless, since every
+		// update sets the same fields to the same values.
 		if !jsmongo.IsLive(db) {
 			jslog.Log(jslog.LevelDetailed, "processMongo: MongoDB connection lost, reconnecting...")
+			e.queue.Requeue(batch)
 			return
 		}
 		if err := e.writeBatch(ctx, rtd, batch); err != nil {
 			jslog.Log(jslog.LevelNoLog, "Exception Mongo: %v", err)
+			e.queue.Requeue(batch)
 			return
 		}
 	}
@@ -113,6 +119,7 @@ func (e *Engine) drainLoop(ctx context.Context, db *mongo.Database) {
 func (e *Engine) writeBatch(ctx context.Context, rtd *mongo.Collection, batch []Dnp3Value) error {
 	var (
 		inserts []any
+		created []newTag
 		writes  []mongo.WriteModel
 	)
 	// Points already written in this batch, so the bulk write can be ordered
@@ -129,15 +136,18 @@ func (e *Engine) writeBatch(ctx context.Context, rtd *mongo.Collection, batch []
 
 		conn := e.connByNumber(iv.ConnNumber)
 		if conn != nil {
-			if docs := autoCreateFor(ctx, conn, rtd, iv); len(docs) > 0 {
-				inserts = append(inserts, docs...)
+			for _, t := range autoCreateFor(ctx, conn, rtd, iv) {
+				inserts = append(inserts, t.doc)
+				created = append(created, t)
 			}
 		}
 
-		serverTime := sanitizeTime(iv.ServerTimestamp)
+		// The server time is this process's own clock and is written as is;
+		// only a device's time is checked for sanity.
+		serverTime := iv.ServerTimestamp
 		sourceTime := int64(0)
 		if iv.HasSourceTimestamp {
-			sourceTime = sanitizeTime(iv.SourceTimestamp)
+			sourceTime = sanitizeTime(iv.SourceTimestamp, time.Now())
 		}
 
 		jslog.Log(jslog.LevelDetailed, "Mongo: Writing conn=%d addr=%d group=%d val=%v",
@@ -186,10 +196,8 @@ func (e *Engine) writeBatch(ctx context.Context, rtd *mongo.Collection, batch []
 		tctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		_, err := rtd.InsertMany(tctx, inserts, options.InsertMany().SetOrdered(false))
 		cancel()
-		if err != nil {
-			// A duplicate key here means another node created the tag first,
-			// which is not fatal.
-			jslog.Log(jslog.LevelDetailed, "Mongo: insert_many error (possible duplicate): %v", err)
+		if err := settleInserts(ctx, rtd, created, err); err != nil {
+			return err
 		}
 	}
 	if len(writes) > 0 {
@@ -213,6 +221,55 @@ func (e *Engine) writeBatch(ctx context.Context, rtd *mongo.Collection, batch []
 		}
 	}
 	return nil
+}
+
+// settleInserts decides, after the tag inserts of a batch, which of the new
+// addresses really have a tag now.
+//
+// autoCreateFor marks an address as created when it builds the document, so
+// the same point is not built twice in one batch. A document the server did
+// not take must be unmarked, or the point never gets a tag until the driver
+// restarts. A failure of the whole call (the server unreachable, a timeout)
+// unmarks every document and is returned, so the batch is retried. A failed
+// document is one of two things: a duplicate key because the tag exists —
+// another node created it, which is fine — or anything else, a key collision
+// included. Which one is settled by looking for the point itself.
+func settleInserts(ctx context.Context, rtd *mongo.Collection, created []newTag, err error) error {
+	if err == nil {
+		return nil
+	}
+	var bwe mongo.BulkWriteException
+	if !errors.As(err, &bwe) || bwe.WriteConcernError != nil || len(bwe.WriteErrors) == 0 {
+		for _, t := range created {
+			t.unmark()
+		}
+		return fmt.Errorf("inserting new tags: %w", err)
+	}
+	for _, we := range bwe.WriteErrors {
+		if we.Index < 0 || we.Index >= len(created) {
+			continue
+		}
+		t := created[we.Index]
+		if tagExists(ctx, rtd, t) {
+			continue
+		}
+		jslog.Log(jslog.LevelBasic, "%s - Tag for group %d address %d not created: %v",
+			t.conn.Name, t.key[0], t.key[1], we.Message)
+		t.unmark()
+	}
+	return nil
+}
+
+// tagExists reports whether the point a new tag was for already has one.
+func tagExists(ctx context.Context, rtd *mongo.Collection, t newTag) bool {
+	tctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	n, err := rtd.CountDocuments(tctx, bson.M{
+		"protocolSourceConnectionNumber": t.conn.ProtocolConnectionNumber,
+		"protocolSourceCommonAddress":    t.key[0],
+		"protocolSourceObjectAddress":    t.key[1],
+	})
+	return err == nil && n > 0
 }
 
 // invalidatePoints marks every point of a connection invalid after its link

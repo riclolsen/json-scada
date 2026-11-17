@@ -33,22 +33,31 @@ const SUPERVISOR_SERVER =
   process.env.JS_SUPERVISOR_SERVER || 'http://admin:jsonscada@127.0.0.1:9000'
 const OPCAPI_AP = '/Invoke/' // mimic of webhmi from OPC reference app https://github.com/OPCFoundation/UA-.NETStandard/tree/demo/webapi/SampleApplications/Workshop/Reference
 const GETFILE_AP = '/GetFile' // API Access point for requesting mongodb files (gridfs)
+const SAFE_GETFILE_MIME_RE =
+  /^(image\/(png|jpe?g|gif|webp|bmp|avif)|video\/[a-z0-9.+-]+|audio\/[a-z0-9.+-]+|text\/(plain|csv)|application\/(pdf|json|octet-stream))$/
+const ALLOW_FRAMING = (process.env.JS_ALLOW_FRAMING || '').toLowerCase() === 'true'
 const QUERYJSON_AP = '/queryJSON' // API Access point for special custom queries returning JSON
 const COLL_REALTIME = 'realtimeData'
 const COLL_SOE = 'soeData'
 const COLL_COMMANDS = 'commandsQueue'
 const COLL_ACTIONS = 'userActions'
+const GRAPHQL_AP = process.env.JS_GRAPHQL_AP || '/apollo' // same as graphql-server.js
 const LoadConfig = require('./load-config')
 const Log = require('./simple-logger')
 const express = require('express')
 const fileUpload = require('express-fileupload')
 const path = require('path')
+const fs = require('fs')
+const os = require('os')
+// temporary files of multipart uploads (removed after each request)
+const UPLOAD_TMP_DIR = path.join(os.tmpdir(), 'json-scada-uploads')
 const cors = require('cors')
 const app = express()
 const cookieParser = require('cookie-parser')
-const { MongoClient, ObjectId, Double, GridFSBucket } = require('mongodb')
+const crypto = require('crypto')
+const { ObjectId, Double, GridFSBucket } = require('mongodb')
 const opc = require('./opc_codes.js')
-const { Pool } = require('pg')
+const { getPgPool } = require('./pg-pool')
 const UserActionsQueue = require('./userActionsQueue')
 const {
   createNoderedProxy,
@@ -65,6 +74,14 @@ const initGQLServer = require('./graphql-server.js')
 const config = require('./app/config/auth.config.js')
 // set env variables for config when found
 if (process.env.JS_JWT_SECRET) config.secret = process.env.JS_JWT_SECRET
+// The default secret is public (it is in the repository): never sign tokens with it.
+// Without a configured secret use a random one, valid until the next restart.
+if (config.secret === 'json-scada-secret-key') {
+  config.secret = crypto.randomBytes(48).toString('hex')
+  Log.log(
+    'WARNING: JS_JWT_SECRET is not set. Using a random secret: users will have to sign in again after each restart.'
+  )
+}
 if (process.env.JS_LDAP_ENABLED)
   config.ldap.enabled = process.env.JS_LDAP_ENABLED.toLowerCase() == 'true'
 if (process.env.JS_LDAP_URL) config.ldap.url = process.env.JS_LDAP_URL
@@ -117,6 +134,12 @@ if (process.env.JS_LDAP_GROUP_MAPPING) {
   }
 }
 
+if (process.env.JS_LDAP_MAX_SESSION_HOURS) {
+  const h = parseFloat(process.env.JS_LDAP_MAX_SESSION_HOURS)
+  if (Number.isFinite(h) && h > 0) config.ldap.maxSessionHours = h
+  else Log.log('Invalid JS_LDAP_MAX_SESSION_HOURS, ignored')
+}
+
 Log.log('LDAP enabled: ' + config.ldap.enabled)
 if (config.ldap.enabled && !config.ldap.url.startsWith('ldaps')) {
   Log.log('LDAP authentication - Not Encrypted!')
@@ -132,11 +155,72 @@ config.ldap.groupMapping = Object.keys(config.ldap.groupMapping).reduce(
 
 const dbAuth = require('./app/models')
 const { authJwt } = require('./app/middlewares')
-const { canSendCommands } = require('./app/middlewares/authJwt.js')
+const UserRights = require('./app/services/user-rights')
+const { clientAddress } = require('./app/services/client-address')
+const { propertyProblem, finiteNumber } = require('./app/services/point-properties')
+const {
+  findCommandPoint,
+  commandRefusal,
+  canSeeCommand,
+} = require('./app/services/command-guard')
 
-process.on('uncaughtException', (err) =>
+// A point id names a point key (_id) only when it is a number or a string of
+// digits: '22KV_BRK' is a tag name, not key 22 (parseInt would say 22).
+function asPointKey(id) {
+  if (typeof id === 'number') return Number.isFinite(id) ? id : null
+  if (typeof id === 'string' && /^-?\d+$/.test(id.trim())) return Number(id.trim())
+  return null
+}
+
+// errors of writes nobody waits for (events, range checks) must not go unhandled
+function logBgError(e) {
+  Log.log('Background write error: ' + (e?.message || e))
+}
+
+// last chance to store the queued user actions when the process ends
+let flushOnExit = async () => {}
+let httpServerRef = null // set once listening
+const ShutdownGraceMs = 5000 // time given to requests in progress on a stop
+let exiting = false
+async function exitAfterFlush(code, graceful = false) {
+  if (exiting) return
+  exiting = true
+  // a stop: no new connections, the requests in progress may finish
+  if (graceful && httpServerRef) {
+    const closed = new Promise((resolve) => httpServerRef.close(() => resolve()))
+    httpServerRef.closeIdleConnections?.()
+    await Promise.race([
+      closed,
+      new Promise((resolve) => setTimeout(resolve, ShutdownGraceMs)),
+    ])
+  }
+  try {
+    await Promise.race([
+      flushOnExit(),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ])
+  } catch (e) {
+    /* exiting anyway */
+  }
+  process.exit(code)
+}
+
+// After an uncaught exception the process state is unknown: log it and exit, the
+// process manager (supervisor/nssm) restarts the server.
+process.on('uncaughtException', (err) => {
   Log.log('Uncaught Exception:' + err.message + ' ' + err.stack)
-)
+  setTimeout(() => process.exit(1), 4000).unref()
+  exitAfterFlush(1)
+})
+// a rejected promise nobody handled is an I/O error, the process state is intact
+process.on('unhandledRejection', (reason) => {
+  Log.log('Unhandled rejection: ' + (reason?.stack || reason))
+})
+for (const sig of ['SIGTERM', 'SIGINT'])
+  process.on(sig, () => {
+    Log.log('Received ' + sig + ', exiting')
+    exitAfterFlush(0, true)
+  })
 
 const DoInsertCommandAsSOE = true
 const CommandSentAsSOESymbol = '⚙️➡️'
@@ -145,13 +229,44 @@ const opcIdTypeString = 1
 const beepPointKey = -1
 const EventsRemoveGuardSeconds = 20 // guard not to remove events recently added
 const MaxHistoryRowsPerNode = 10000 // max historian rows returned per requested tag
+const MaxHistoryNodes = 1000 // max NodesToRead in a historian (values) read
+const MaxHistorySamples = 200000 // max samples in one historian read response
+const MaxEventRows = 100000 // max rows returned by an events (soeData) query
+const UserActionsFlushMs = 1000 // interval to write the queued user actions to mongodb
+const UserActionsBatch = 500 // user actions written per insert
+const MaxFilteredReadRows = 100000 // max points returned by a ContentFilter read
+// nodes of one write request (commands, acks, property writes); the clients
+// write one at a time, a larger batch is a script or a flood of commands
+const MaxWriteNodes = 100
+// fields of the points returned by a ContentFilter read
+const FilteredReadFields = Object.fromEntries(
+  ['_id', 'tag', 'type', 'value', 'valueString', 'valueDefault', 'invalid',
+    'timeTag', 'timeTagAtSource', 'timeTagAtSourceOk', 'timeTagAlarm',
+    'alarmed', 'alarmRange', 'alarmState', 'alarmDisabled', 'frozen', 'isEvent',
+    'transit', 'group1', 'group2', 'group3', 'description',
+    'ungroupedDescription', 'hiLimit', 'loLimit', 'hysteresis',
+    'stateTextTrue', 'stateTextFalse', 'unit', 'annotation', 'notes',
+    'commandOfSupervised', 'supervisedOfCommand', 'origin', 'priority'].map(
+    (f) => [f, 1]
+  )
+)
+// fields of a point read before a property write (the rest is not needed)
+const PropertyWriteFields = Object.fromEntries(
+  ['_id', 'tag', 'type', 'group1', 'value', 'description', 'unit', 'priority',
+    'annotation', 'notes', 'alarmDisabled', 'loLimit', 'hiLimit', 'hysteresis',
+    'eventTextTrue', 'eventTextFalse'].map((f) => [f, 1])
+)
 
 const jsConfig = LoadConfig()
 let HintMongoIsConnected = true
 
-let db = null
-let clientMongo = null
+let db = null // native db handle of the mongoose connection (set once connected)
 let pool = null
+
+// credentials of a connection string must not reach the log
+function maskConnectionString(cs) {
+  return String(cs).replace(/\/\/[^@/]*@/, '//***@')
+}
 
 ;(async () => {
   // reverse proxy for the node-red editor (mounted on /nodered, ws upgrade below)
@@ -167,36 +282,113 @@ let pool = null
   const supervisorProxy = createSupervisorProxy(SUPERVISOR_SERVER)
 
   // JWT Auth Mongo Express https://bezkoder.com/node-js-mongodb-auth-jwt/
+  Log.log('Connecting to ' + maskConnectionString(jsConfig.mongoConnectionString))
   dbAuth.mongoose
     .connect(jsConfig.mongoConnectionString, jsConfig.MongoConnectionOptions)
     .then(() => {
       Log.log('Successfully connect to MongoDB (via mongoose).')
-      // initial();
+      // one connection pool for everything: the native handle of mongoose
+      db = dbAuth.mongoose.connection.db
+      HintMongoIsConnected = true
+      ensureUniqueNameIndexes(db).catch(logBgError)
     })
     .catch((err) => {
       console.error('Connection error', err)
-      process.exit()
+      process.exit(1) // a failure: the process manager restarts the server
     })
 
+  const PROXIED_PREFIXES = ['/grafana', '/metabase', '/nodered', '/n8n', '/log-io', '/supervisor']
+  app.disable('x-powered-by')
+  // security headers of the pages and data of this server (proxied apps such
+  // as Grafana keep their own framing policy); JS_ALLOW_FRAMING=true lets
+  // other sites embed the pages in frames
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    res.setHeader('Referrer-Policy', 'same-origin')
+    if (
+      !ALLOW_FRAMING &&
+      !PROXIED_PREFIXES.some((p) => req.path === p || req.path.startsWith(p + '/'))
+    )
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN')
+    next()
+  })
   app.use(cookieParser())
   app.options(OPCAPI_AP, cors()) // enable pre-flight request
-  // enable files upload
+
+  // Request bodies are buffered in memory, so the size limit is small by default.
+  // Only the routes that really carry big bodies get a big limit, and only for
+  // callers holding a valid token (checked before anything is buffered).
+  const UPLOAD_ROUTES = [
+    OPCAPI_AP + 'auth/importProject', // project zip
+    OPCAPI_AP + 'auth/cimEms/uploadModel', // CGMES zip
+  ]
+  const BIG_BODY_ROUTES = [
+    ...UPLOAD_ROUTES,
+    OPCAPI_AP + 'auth/saveDisplay', // svg display
+    OPCAPI_AP + 'auth/cimEms/request', // binding sets
+  ]
+  const BigBodyLimit = '100mb'
+  const SmallBodyLimit = '2mb'
+  const jsonSmall = express.json({ limit: SmallBodyLimit })
+  const jsonBig = express.json({ limit: BigBodyLimit })
+  const urlSmall = express.urlencoded({ limit: SmallBodyLimit, extended: true })
+  const urlBig = express.urlencoded({ limit: BigBodyLimit, extended: true })
+  const requireValidToken = (req, res, next) => {
+    if (authJwt.checkToken(req) === false)
+      return res
+        .status(401)
+        .send({ ok: false, message: 'Access not allowed. No token provided' })
+    next()
+  }
+  // multipart uploads (the file size limit is enforced by express-fileupload).
+  // Files go to temporary files, not memory (several 100 MB uploads at once
+  // would use that much RAM); whatever a handler did not move away is removed
+  // when the response ends.
+  const removeUploadTempFiles = (req, res, next) => {
+    let done = false
+    const cleanup = () => {
+      if (done) return
+      done = true
+      for (const f of Object.values(req.files || {}).flat())
+        if (f?.tempFilePath)
+          fs.unlink(f.tempFilePath, (e) => {
+            if (e && e.code !== 'ENOENT')
+              Log.log('Could not remove upload ' + f.tempFilePath + ': ' + e.message)
+          })
+    }
+    res.on('finish', cleanup)
+    res.on('close', cleanup)
+    next()
+  }
   app.use(
+    UPLOAD_ROUTES,
+    requireValidToken,
+    removeUploadTempFiles,
     fileUpload({
       createParentPath: true,
+      useTempFiles: true,
+      tempFileDir: UPLOAD_TMP_DIR,
       limits: {
         fileSize: 100 * 1024 * 1024,
-        fieldSize: 100 * 1024 * 1024,
+        fieldSize: 1024 * 1024,
       },
     })
   )
-  app.use(express.json({ limit: '100mb' }))
-  app.use(
-    express.urlencoded({
-      limit: '100mb',
-      extended: true,
-    })
-  )
+  app.use((req, res, next) => {
+    // the GraphQL endpoint has its own body parser; the reverse proxied apps get
+    // their request streams untouched
+    if (
+      [GRAPHQL_AP, ...PROXIED_PREFIXES].some(
+        (p) => req.path === p || req.path.startsWith(p + '/')
+      )
+    )
+      return next()
+    const big = BIG_BODY_ROUTES.includes(req.path)
+    if (big && authJwt.checkToken(req) === false) return requireValidToken(req, res, next)
+    const json = big ? jsonBig : jsonSmall
+    const url = big ? urlBig : urlSmall
+    json(req, res, (err) => (err ? next(err) : url(req, res, next)))
+  })
   initGQLServer(app, dbAuth, true).catch((err) =>
     Log.log('Error starting GraphQL server: ' + err.message)
   )
@@ -204,6 +396,7 @@ let pool = null
   const httpServer = app.listen(HTTP_PORT, IP_BIND, () => {
     Log.log('listening on ' + HTTP_PORT)
   })
+  httpServerRef = httpServer
 
   // websocket upgrades do not pass through the express middlewares, proxy them here
   attachNoderedUpgrade(httpServer, noderedProxy)
@@ -211,37 +404,7 @@ let pool = null
   attachLogioUpgrade(httpServer, logioProxy)
 
   // if env variables defined use them, if not set local defaults
-  let pgopt = {}
-  if ('PGHOST' in process.env || 'PGHOSTADDR' in process.env) pgopt = null
-  else
-    pgopt = {
-      host: '127.0.0.1',
-      database: 'json_scada',
-      user: 'json_scada',
-      password: 'json_scada',
-      port: 5432,
-    }
-
-  if (pool == null) {
-    Log.log('Postgresql - Trying to connect')
-    pool = new Pool(pgopt)
-    pool.on('connect', (client) => {
-      Log.log('Postgresql - connection open')
-    })
-    pool.on('error', (err, client) => {
-      Log.log('Postgresql - ' + err)
-      setTimeout(() => {
-        pool = null
-      }, 5000)
-    })
-    pool.connect((err, client, done) => {
-      if (err) {
-        Log.log('Postgresql - connection error: ' + err)
-        pool = null
-        done()
-      }
-    })
-  }
+  if (pool == null) pool = getPgPool() // shared with the GraphQL server
 
   require('./app/routes/auth.routes')(app, OPCAPI_AP)
   require('./app/routes/user.routes')(
@@ -260,8 +423,19 @@ let pool = null
     n8nProxy
   )
 
+  // Last error handler: a JSON answer without internals (no stack traces)
+  app.use((err, req, res, next) => {
+    const status = Number(err?.status || err?.statusCode) || 500
+    if (status >= 500) Log.log('Request error ' + req.originalUrl + ': ' + (err?.stack || err))
+    if (res.headersSent) return next(err)
+    res.status(status).send({
+      ok: false,
+      error: status >= 500 ? 'Internal server error' : err?.expose ? err.message : 'Bad request',
+    })
+  })
+
   async function queryJSON(req, res) {
-    let queryname = req.query?.query || ''
+    let queryname = typeof req.query?.query === 'string' ? req.query.query : ''
     Log.log('queryJSON ' + queryname)
     res.setHeader('Content-type', 'application/json')
 
@@ -276,63 +450,114 @@ let pool = null
       return
     }
 
+    if (!pool) {
+      res.send({ error: 'Database not connected!' })
+      return
+    }
+
     // read data from postgreSQL
-    pool.query(query, (err, resp) => {
+    pool.query(query, async (err, resp) => {
       if (err) {
         res.send({ error: 'Query error!' })
         return
       }
 
-      res.send(resp.rows)
-      return
+      // a user restricted to some group1 (stations) only gets rows of its points
+      const g1 = req.rights?.group1List
+      if (!Array.isArray(g1) || g1.length === 0) {
+        res.send(resp.rows)
+        return
+      }
+      try {
+        const rowTags = [
+          ...new Set(
+            resp.rows.map((r) => r?.tag).filter((t) => typeof t === 'string')
+          ),
+        ]
+        const allowed = new Set(
+          rowTags.length === 0 || !db
+            ? []
+            : (
+                await db
+                  .collection(COLL_REALTIME)
+                  .find(
+                    { tag: { $in: rowTags }, group1: { $in: g1 } },
+                    { projection: { tag: 1 } }
+                  )
+                  .toArray()
+              ).map((d) => d.tag)
+        )
+        res.send(resp.rows.filter((r) => allowed.has(r?.tag)))
+      } catch (e) {
+        Log.log('queryJSON filter error: ' + e.message)
+        res.send({ error: 'Query error!' })
+      }
     })
   }
 
   // find file on mongodb gridfs and return it
   async function getFileApi(req, res) {
-    let filename = req.query?.name || ''
-    let bucketName = req.query?.bucket || 'fs'
-    let mimeType = req.query?.mime || path.basename(filename)
-    let refresh = req.query.refresh || 0
+    const str = (v, dflt) => (typeof v === 'string' ? v : dflt)
+    let filename = str(req.query?.name, '')
+    let bucketName = str(req.query?.bucket, 'fs')
+    // the content type comes from the file name; `mime` may only choose a
+    // passive type (images, media, text, pdf): never html, svg, xml or script
+    let mimeType = path.basename(filename)
+    const mimeParam = str(req.query?.mime, '').trim().toLowerCase()
+    if (mimeParam !== '' && SAFE_GETFILE_MIME_RE.test(mimeParam)) mimeType = mimeParam
+    let refresh = str(req.query?.refresh, '')
 
+    res.setHeader('Content-type', 'application/json')
     if (filename.trim() === '') {
-      res.setHeader('Content-type', 'application/json')
-      res.send("{ error: 'Parameter [name] empty or not specified' }")
+      res.send({ error: 'Parameter [name] empty or not specified' })
+      return
     }
     // CIM-EMS models and study results are confidential: they are served only
     // by the cimEms/artifact route, which checks the engineering right.
     if (bucketName.trim().toLowerCase().startsWith('cimartifacts')) {
-      res.setHeader('Content-type', 'application/json')
-      res.send("{ error: 'File not found' }")
+      res.send({ error: 'File not found' })
+      return
+    }
+    if (!db) {
+      res.send({ error: 'Database disconnected!' })
       return
     }
     try {
       let gfs = new GridFSBucket(db, { bucketName: bucketName })
-      let f = await gfs.find({ filename: filename }).toArray()
+      let f = await gfs.find({ filename: filename }, { limit: 1 }).toArray()
       if (f.length === 0) {
         Log.log('File not found ' + filename)
-        res.setHeader('Content-type', 'application/json')
-        res.send("{ error: 'File not found' }")
+        res.send({ error: 'File not found' })
         return
       }
       let readstream = gfs.openDownloadStreamByName(filename)
+      readstream.on('error', (e) => {
+        Log.log('File read error: ' + filename + ' ' + e.message)
+        if (!res.headersSent) res.status(500)
+        res.end()
+      })
       res.type(mimeType)
+      // stored files come from many sources: active content (html, svg, xml,
+      // scripts) runs sandboxed, without access to the session of this site
+      if (/html|svg|xml|javascript/i.test(res.get('Content-Type') || ''))
+        res.setHeader('Content-Security-Policy', 'sandbox')
       res.setHeader(
         'Content-disposition',
-        'inline; filename="' + filename + '"'
+        'inline; filename="' + filename.replace(/["\r\n\\]/g, '_') + '"'
       )
-      if (refresh) res.setHeader('Refresh', refresh)
+      if (refresh) res.setHeader('Refresh', refresh.replace(/[\r\n]/g, ''))
       readstream.pipe(res)
     } catch (e) {
       Log.log('File not found: ' + filename + ' ' + e.message)
       res.setHeader('Content-type', 'application/json')
-      res.send("{ error: 'File not found' }")
+      res.send({ error: 'File not found' })
     }
   }
 
   // OPC WEB HMI API
   async function opcApi(req, res) {
     let tini = new Date().getTime()
+    if (!req.body || typeof req.body !== 'object') req.body = {}
 
     res.setHeader('Access-Control-Allow-Origin', '*')
     res.setHeader('Content-Type', 'application/json')
@@ -393,10 +618,57 @@ let pool = null
       return
     } else {
       if ('username' in rslt) username = rslt.username
-      if ('rights' in rslt) userRights = rslt.rights
+      // rights as they are now in the database (verifyToken already loaded them)
+      let current = req.rights || null
+      if (!current) {
+        try {
+          current = await authJwt.getCurrentRights(rslt)
+        } catch (e) {
+          current = undefined // database not available
+        }
+      }
+      if (!current) {
+        OpcResp.ServiceId = opc.ServiceCode.ServiceFault
+        const code =
+          current === undefined
+            ? opc.StatusCode.BadServerNotConnected
+            : opc.StatusCode.BadIdentityTokenRejected
+        OpcResp.Body.ResponseHeader.ServiceResult = code
+        OpcResp.Body.ResponseHeader.StringTable = [
+          opc.getStatusCodeName(code),
+          opc.getStatusCodeText(code),
+          current === undefined
+            ? 'Database disconnected!'
+            : 'Access denied (session ended or user not found)!',
+        ]
+        res.send(OpcResp)
+        return
+      }
+      userRights = current
+      if (!Array.isArray(userRights.group1List)) userRights.group1List = []
     }
 
-    if (!clientMongo || !HintMongoIsConnected) {
+    // rights for commands are always read afresh, once per request
+    let freshRights = null
+    const getFreshRights = async () => {
+      if (freshRights === null) {
+        try {
+          freshRights =
+            (await authJwt.getCurrentRights(rslt, { fresh: true })) || {}
+        } catch (e) {
+          // database not available: no commands, answered as unavailable
+          freshRights = { unavailable: true }
+        }
+      }
+      return freshRights
+    }
+    // restriction of the user to some group1 (stations)
+    const group1Restriction =
+      userRights.group1List.length > 0
+        ? { group1: { $in: userRights.group1List } }
+        : {}
+
+    if (!db || !HintMongoIsConnected) {
       // fail if not connected to database server
       OpcResp.ServiceId = opc.ServiceCode.ServiceFault
       OpcResp.Body.ResponseHeader.ServiceResult =
@@ -442,7 +714,7 @@ let pool = null
       case opc.ServiceCode.WriteRequest: // WRITE SERVICE
         {
           OpcResp.ServiceId = opc.ServiceCode.WriteResponse
-          if (!('NodesToWrite' in req.body.Body)) {
+          if (!Array.isArray(req.body.Body.NodesToWrite)) {
             OpcResp.Body.ResponseHeader.ServiceResult =
               opc.StatusCode.GoodNoData
             OpcResp.Body.ResponseHeader.StringTable = [
@@ -453,11 +725,35 @@ let pool = null
             res.send(OpcResp)
             return
           }
+          if (req.body.Body.NodesToWrite.length > MaxWriteNodes) {
+            OpcResp.Body.ResponseHeader.ServiceResult =
+              opc.StatusCode.BadTooManyOperations
+            OpcResp.Body.ResponseHeader.StringTable = [
+              opc.getStatusCodeName(opc.StatusCode.BadTooManyOperations),
+              opc.getStatusCodeText(opc.StatusCode.BadTooManyOperations),
+              'Too many NodesToWrite (maximum ' + MaxWriteNodes + ')',
+            ]
+            res.send(OpcResp)
+            return
+          }
           OpcResp.Body.ResponseHeader.ServiceResult = opc.StatusCode.Good
           OpcResp.Body.Results = []
           OpcResp.Body._CommandHandles = []
           for (let i = 0; i < req.body.Body.NodesToWrite.length; i++) {
             let node = req.body.Body.NodesToWrite[i]
+            if (!node || typeof node !== 'object') continue
+            if (!node.Value || typeof node.Value !== 'object') node.Value = {}
+            // point ids are numbers or strings, anything else would reach the queries
+            if (
+              node.NodeId &&
+              typeof node.NodeId === 'object' &&
+              'Id' in node.NodeId &&
+              typeof node.NodeId.Id !== 'string' &&
+              typeof node.NodeId.Id !== 'number'
+            ) {
+              OpcResp.Body.Results.push(opc.StatusCode.BadNodeIdInvalid)
+              continue
+            }
             if ('AttributeId' in node) {
               if (node.AttributeId == opc.AttributeId.ExtendedAlarmEventsAck) {
                 // alarm / event ack
@@ -506,20 +802,47 @@ let pool = null
                 }
 
                 let findPoint = null
-                if (node.NodeId.IdType === opcIdTypeNumber) {
+                if (node.NodeId?.IdType === opcIdTypeNumber) {
                   findPoint = {
-                    _id: parseInt(node.NodeId.Id),
-                    ...(userRights?.group1List?.length == 0
-                      ? {}
-                      : { group1: { $in: userRights.group1List } }),
+                    _id: asPointKey(node.NodeId.Id),
+                    ...group1Restriction,
                   }
-                } else if (node.NodeId.IdType === opcIdTypeString) {
+                } else if (node.NodeId?.IdType === opcIdTypeString) {
                   findPoint = {
-                    tag: node.NodeId.Id,
-                    ...(userRights?.group1List?.length == 0
-                      ? {}
-                      : { group1: { $in: userRights.group1List } }),
+                    tag: String(node.NodeId.Id),
+                    ...group1Restriction,
                   }
+                }
+
+                // actions on one point or one event need a valid point/event id
+                const ackBits = Number(node.Value.Body) || 0
+                const Ack = opc.Acknowledge
+                let eventObjectId = null
+                if (ackBits & (Ack.RemoveOneEvent | Ack.AckOneEvent)) {
+                  const ev = node._Properties?.event_id
+                  if (typeof ev === 'string' && ObjectId.isValid(ev))
+                    eventObjectId = new ObjectId(ev)
+                }
+                if (
+                  (findPoint === null &&
+                    ackBits &
+                      (Ack.AckOneAlarm |
+                        Ack.RemovePointEvents |
+                        Ack.AckPointEvents |
+                        Ack.RemoveOneEvent |
+                        Ack.AckOneEvent)) ||
+                  (eventObjectId === null &&
+                    ackBits & (Ack.RemoveOneEvent | Ack.AckOneEvent))
+                ) {
+                  OpcResp.Body.ResponseHeader.ServiceResult =
+                    opc.StatusCode.BadNodeIdInvalid
+                  OpcResp.Body.ResponseHeader.StringTable = [
+                    opc.getStatusCodeName(opc.StatusCode.BadNodeIdInvalid),
+                    opc.getStatusCodeText(opc.StatusCode.BadNodeIdInvalid),
+                    'Missing or invalid point or event id!',
+                  ]
+                  res.send(OpcResp)
+                  return
                 }
 
                 if (node.Value.Body & opc.Acknowledge.RemoveAllEvents) {
@@ -632,7 +955,7 @@ let pool = null
                   Log.log('Remove One Event: ' + node.NodeId.Id)
                   let result = await db.collection(COLL_SOE).updateMany(
                     {
-                      _id: new ObjectId(node._Properties.event_id),
+                      _id: eventObjectId,
                       ack: { $lte: 1 },
                       ...(userRights?.group1List?.length == 0
                         ? {}
@@ -648,14 +971,14 @@ let pool = null
                     username: username,
                     action: 'Remove One Event',
                     tag: node.NodeId.Id,
-                    eventId: new ObjectId(node._Properties.event_id),
+                    eventId: eventObjectId,
                     timeTag: new Date(),
                   })
                 } else if (node.Value.Body & opc.Acknowledge.AckOneEvent) {
                   Log.log('Ack One Event: ' + node.NodeId.Id)
                   await db.collection(COLL_SOE).updateMany(
                     {
-                      _id: new ObjectId(node._Properties.event_id),
+                      _id: eventObjectId,
                       ack: 0,
                       ...(userRights?.group1List?.length == 0
                         ? {}
@@ -671,7 +994,7 @@ let pool = null
                     username: username,
                     action: 'Ack One Event',
                     tag: node.NodeId.Id,
-                    eventId: new ObjectId(node._Properties.event_id),
+                    eventId: eventObjectId,
                     timeTag: new Date(),
                   })
                 }
@@ -680,9 +1003,8 @@ let pool = null
                   Log.log('Ack All Alarms')
                   let result = await db.collection(COLL_REALTIME).updateMany(
                     {
-                      ...(userRights?.group1List?.length == 0
-                        ? {}
-                        : { group1: { $in: userRights.group1List } }),
+                      alarmed: true,
+                      ...group1Restriction,
                     },
                     {
                       $set: {
@@ -716,7 +1038,7 @@ let pool = null
                           value: 0,
                           valueString: '$stateTextFalse',
                           timeTagAtSource: null,
-                          TimeTagAtSourceOk: null,
+                          timeTagAtSourceOk: null,
                         },
                       },
                     ],
@@ -757,7 +1079,7 @@ let pool = null
                           value: 0,
                           valueString: '$stateTextFalse',
                           timeTagAtSource: null,
-                          TimeTagAtSourceOk: null,
+                          timeTagAtSourceOk: null,
                         },
                       },
                     ]
@@ -829,8 +1151,9 @@ let pool = null
                 ]
                 res.send(OpcResp)
                 Log.log(
-                  'Write. Elapsed ' + (new Date().getTime() - tini) + ' ms'
-                )
+                  'Write. Elapsed ' + (new Date().getTime() - tini) + ' ms',
+              Log.levelDetailed
+            )
                 return
               }
 
@@ -838,7 +1161,19 @@ let pool = null
                 // Write a Value: Command
 
                 // go check user right for command in mongodb (not just in the token for better security)
-                if (!(await canSendCommands(req))) {
+                const cmdRights = await getFreshRights()
+                if (cmdRights.unavailable) {
+                  OpcResp.Body.ResponseHeader.ServiceResult =
+                    opc.StatusCode.BadServerNotConnected
+                  OpcResp.Body.ResponseHeader.StringTable = [
+                    opc.getStatusCodeName(opc.StatusCode.BadServerNotConnected),
+                    opc.getStatusCodeText(opc.StatusCode.BadServerNotConnected),
+                    'User rights unavailable (database not available), try again later!',
+                  ]
+                  res.send(OpcResp)
+                  return
+                }
+                if (!cmdRights.sendCommands) {
                   // ACTION DENIED
                   Log.log(`User has no right to issue commands! [${username}]`)
                   OpcResp.Body.ResponseHeader.ServiceResult =
@@ -862,7 +1197,11 @@ let pool = null
                       (node.Value.Type !== opc.DataType.Double &&
                         node.Value.Type !== opc.DataType.String) || // only accepts a double or string value for the command
                       (typeof node.Value.Body !== 'number' &&
-                        typeof node.Value.Body !== 'string')
+                        typeof node.Value.Body !== 'string') ||
+                      // a numeric command carries a finite number
+                      (node.Value.Type === opc.DataType.Double &&
+                        (typeof node.Value.Body !== 'number' ||
+                          !Number.isFinite(node.Value.Body)))
                     ) {
                       OpcResp.Body.ResponseHeader.ServiceResult =
                         opc.StatusCode.BadNodeAttributesInvalid
@@ -890,13 +1229,39 @@ let pool = null
                       node.Value.Type === opc.DataType.String
                         ? node.Value.Body
                         : parseFloat(cmd_val).toString()
-                    let query = { _id: parseInt(cmd_id) }
-                    if (isNaN(parseInt(cmd_id))) {
-                      query = { tag: cmd_id }
+                    const cmd_key = asPointKey(cmd_id)
+                    let query = { _id: cmd_key }
+                    if (cmd_key === null) {
+                      query = { tag: String(cmd_id) }
 
                       // special command tags that starts with $$ do not need to be found in the database
-                      // put it directly in the command queue
-                      if (cmd_id.startsWith('$$')) {
+                      // put it directly in the command queue. A user whose roles
+                      // restrict commands to some groups needs '$$' in that list.
+                      if (String(cmd_id).startsWith('$$')) {
+                        if (!UserRights.canCommandGroup(cmdRights, '$$')) {
+                          Log.log(
+                            `User has no right to issue special ($$) commands! [${username}]`
+                          )
+                          OpcResp.Body.ResponseHeader.ServiceResult =
+                            opc.StatusCode.BadUserAccessDenied
+                          OpcResp.Body.ResponseHeader.StringTable = [
+                            opc.getStatusCodeName(opc.StatusCode.BadUserAccessDenied),
+                            opc.getStatusCodeText(opc.StatusCode.BadUserAccessDenied),
+                            'User has no right to issue special ($$) commands!',
+                          ]
+                          res.send(OpcResp)
+                          return
+                        }
+                        UserActionsQueue.enqueue({
+                          username: username,
+                          tag: String(cmd_id),
+                          action: 'Command',
+                          properties: {
+                            value: new Double(cmd_val),
+                            valueString: cmd_val_str,
+                          },
+                          timeTag: new Date(),
+                        })
                         let result = await db
                           .collection(COLL_COMMANDS)
                           .insertOne({
@@ -912,10 +1277,7 @@ let pool = null
                             value: new Double(cmd_val),
                             valueString: cmd_val_str,
                             originatorUserName: username,
-                            originatorIpAddress:
-                              req.headers['x-real-ip'] ||
-                              req.headers['x-forwarded-for'] ||
-                              req.socket.remoteAddress,
+                            originatorIpAddress: clientAddress(req),
                           })
 
                         if (!result.acknowledged) {
@@ -940,10 +1302,8 @@ let pool = null
                       }
                     }
 
-                    // search command in database (wait for results)
-                    const data = await db
-                      .collection(COLL_REALTIME)
-                      .findOne(query)
+                    // search command in database (primary: a fresh block counts)
+                    const data = await findCommandPoint(db, query)
 
                     if (data === null || typeof data._id !== 'number') {
                       // command not found, abort
@@ -960,7 +1320,7 @@ let pool = null
                     }
 
                     // check if user has group1 list it can command
-                    if (!(await canSendCommandTo(req, data.group1))) {
+                    if (!UserRights.canCommandGroup(cmdRights, data.group1)) {
                       // ACTION DENIED
                       Log.log(
                         `User has no right to issue commands to the group1 destination! [${username}] [${data.group1}]`
@@ -978,6 +1338,21 @@ let pool = null
                       Log.log(
                         `User authorized to issue commands to the group1 destination! [${username}]`
                       )
+                    }
+
+                    // only command points, and not while blocked by the operator
+                    const refusal = await commandRefusal(db, data)
+                    if (refusal) {
+                      Log.log(`Command refused: ${refusal} [${username}] [${data.tag}]`)
+                      OpcResp.Body.ResponseHeader.ServiceResult =
+                        opc.StatusCode.BadNotWritable
+                      OpcResp.Body.ResponseHeader.StringTable = [
+                        opc.getStatusCodeName(opc.StatusCode.BadNotWritable),
+                        opc.getStatusCodeText(opc.StatusCode.BadNotWritable),
+                        refusal,
+                      ]
+                      res.send(OpcResp)
+                      return
                     }
 
                     let addressing = {}
@@ -1024,10 +1399,7 @@ let pool = null
                       value: new Double(cmd_val),
                       valueString: cmd_val_str,
                       originatorUserName: username,
-                      originatorIpAddress:
-                        req.headers['x-real-ip'] ||
-                        req.headers['x-forwarded-for'] ||
-                        req.socket.remoteAddress,
+                      originatorIpAddress: clientAddress(req),
                     })
 
                     if (!result.acknowledged) {
@@ -1065,7 +1437,7 @@ let pool = null
                         timeTagAtSource: new Date(),
                         timeTagAtSourceOk: true,
                         ack: 1,
-                      })
+                      }).catch(logBgError)
                     }
 
                     UserActionsQueue.enqueue({
@@ -1090,11 +1462,12 @@ let pool = null
                 // Write Properties
                 if ('NodeId' in node)
                   if ('Id' in node.NodeId) {
+                    // the group1 restriction of the user applies to property writes
                     let findPoint = null
                     if (node.NodeId.IdType === opcIdTypeNumber) {
-                      findPoint = { _id: parseInt(node.NodeId.Id) }
+                      findPoint = { _id: asPointKey(node.NodeId.Id), ...group1Restriction }
                     } else if (node.NodeId.IdType === opcIdTypeString) {
-                      findPoint = { tag: node.NodeId.Id }
+                      findPoint = { tag: String(node.NodeId.Id), ...group1Restriction }
                     }
                     if (findPoint === null) {
                       OpcResp.Body.ResponseHeader.ServiceResult =
@@ -1111,12 +1484,33 @@ let pool = null
                     if (findPoint !== null) {
                       let prevData = await db
                         .collection(COLL_REALTIME)
-                        .findOne(findPoint)
+                        .findOne(findPoint, { projection: PropertyWriteFields })
+
+                      if (prevData === null) {
+                        // not found, or outside the groups of the user
+                        OpcResp.Body.Results.push(opc.StatusCode.BadNodeIdUnknown)
+                        continue
+                      }
+
+                      if (!node.Value || typeof node.Value !== 'object') node.Value = {}
+                      if (
+                        !node.Value._Properties ||
+                        typeof node.Value._Properties !== 'object'
+                      )
+                        node.Value._Properties = {}
+
+                      // wrong types or oversized texts: nothing of this node is written
+                      const propProblem = propertyProblem(node.Value._Properties)
+                      if (propProblem) {
+                        Log.log('Property write refused: ' + propProblem)
+                        OpcResp.Body.Results.push(opc.StatusCode.BadTypeMismatch)
+                        continue
+                      }
 
                       let alarmDisableNew = {}
                       if (
                         userRights?.disableAlarms &&
-                        node.Value._Properties?.alarmDisabled !== undefined
+                        node.Value?._Properties?.alarmDisabled !== undefined
                       )
                         if (
                           prevData?.alarmDisabled !==
@@ -1143,9 +1537,9 @@ let pool = null
                       let loLimitNew = {}
                       // absent fields are left unchanged; a null limit (an
                       // Infinity serialized as JSON) means no limit
-                      const props = node.Value._Properties || {}
+                      const props = node.Value?._Properties || {}
                       const limitOf = (v, inf) =>
-                        v === null ? inf : Number(v)
+                        v === null ? inf : finiteNumber(v)
                       if (userRights?.enterLimits && props.loLimit !== undefined)
                         if (
                           prevData?.loLimit !== limitOf(props.loLimit, -Infinity)
@@ -1170,14 +1564,9 @@ let pool = null
                         userRights?.enterLimits &&
                         props.hysteresis !== undefined
                       )
-                        if (
-                          prevData?.hysteresis !==
-                          node.Value._Properties?.hysteresis
-                        )
+                        if (prevData?.hysteresis !== finiteNumber(props.hysteresis))
                           hysteresisNew = {
-                            hysteresis: new Double(
-                              node.Value._Properties.hysteresis
-                            ),
+                            hysteresis: new Double(finiteNumber(props.hysteresis)),
                           }
 
                       // loloLimit: node.Value._Properties.loLimit,
@@ -1193,18 +1582,11 @@ let pool = null
                           }
 
                       let valueNew = {}
-                      if (
-                        'substituted' in node.Value._Properties &&
-                        'newValue' in node.Value._Properties
-                      )
+                      if ('substituted' in props && 'newValue' in props)
                         if (userRights?.substituteValues)
-                          if (
-                            prevData?.value !== node.Value._Properties.newValue
-                          )
+                          if (prevData?.value !== finiteNumber(props.newValue))
                             valueNew = {
-                              value: new Double(
-                                node.Value._Properties.newValue
-                              ),
+                              value: new Double(finiteNumber(props.newValue)),
                             }
 
                       let set = {
@@ -1243,14 +1625,24 @@ let pool = null
                             'hysteresis' in hysteresisNew
                           ) {
                             Log.log('Update for range check: ' + node.NodeId.Id)
-                            db.collection(COLL_REALTIME).updateOne(findPoint, {
-                              $set: {
-                                sourceDataUpdate: {
-                                  ...prevData.sourceDataUpdate,
-                                  rangeCheck: new Date().getTime(),
+                            // merge on the server: a copy read earlier could overwrite
+                            // what a driver wrote in the meantime
+                            db.collection(COLL_REALTIME)
+                              .updateOne({ _id: prevData._id }, [
+                                {
+                                  $set: {
+                                    sourceDataUpdate: {
+                                      $mergeObjects: [
+                                        { $ifNull: ['$sourceDataUpdate', {}] },
+                                        { rangeCheck: new Date().getTime() },
+                                      ],
+                                    },
+                                  },
                                 },
-                              },
-                            })
+                              ])
+                              .catch((e) =>
+                                Log.log('Update for range check error: ' + e.message)
+                              )
                           }
                         }
 
@@ -1272,7 +1664,7 @@ let pool = null
                             timeTagAtSource: eventDate,
                             timeTagAtSourceOk: true,
                             ack: 1,
-                          })
+                          }).catch(logBgError)
                         }
 
                         // insert event for changed value
@@ -1301,7 +1693,7 @@ let pool = null
                             timeTagAtSource: eventDate,
                             timeTagAtSourceOk: true,
                             ack: 1,
-                          })
+                          }).catch(logBgError)
                         }
                       } else {
                         // some updateOne error
@@ -1343,8 +1735,23 @@ let pool = null
             cmdHandles = [],
             info = false,
             ack = false
+          if (
+            'NodesToRead' in req.body.Body &&
+            !Array.isArray(req.body.Body.NodesToRead)
+          ) {
+            OpcResp.Body.ResponseHeader.ServiceResult =
+              opc.StatusCode.BadNodeIdInvalid
+            OpcResp.Body.ResponseHeader.StringTable = [
+              opc.getStatusCodeName(opc.StatusCode.BadNodeIdInvalid),
+              opc.getStatusCodeText(opc.StatusCode.BadNodeIdInvalid),
+              'NodesToRead must be a list',
+            ]
+            res.send(OpcResp)
+            return
+          }
           if ('NodesToRead' in req.body.Body)
             req.body.Body.NodesToRead.map((node) => {
+              if (!node || typeof node !== 'object') return node
               if ('AttributeId' in node) {
                 if (node.AttributeId == opc.AttributeId.EventNotifier) {
                   if ('ClientHandle' in node) {
@@ -1356,8 +1763,11 @@ let pool = null
                   info = true
                 }
               }
-              if ('NodeId' in node)
-                if ('Id' in node.NodeId) {
+              if (node.NodeId && typeof node.NodeId === 'object')
+                if (
+                  typeof node.NodeId.Id === 'string' ||
+                  typeof node.NodeId.Id === 'number'
+                ) {
                   points.push(node.NodeId.Id)
                 }
               return node
@@ -1379,7 +1789,8 @@ let pool = null
             // Log.log(cmdHandles[0])
             if (
               typeof cmdHandles[0] !== 'string' ||
-              cmdHandles[0].length < 24
+              cmdHandles[0].length !== 24 ||
+              !ObjectId.isValid(cmdHandles[0])
             ) {
               OpcResp.Body.ResponseHeader.ServiceResult =
                 opc.StatusCode.BadRequestNotAllowed
@@ -1395,8 +1806,24 @@ let pool = null
             let data = await db
               .collection(COLL_COMMANDS)
               .findOne({ _id: new ObjectId(cmdHandles[0]) })
+            // another user's command in a station this user cannot see: unknown
+            if (
+              data !== null &&
+              !(await canSeeCommand(db, userRights, username, data))
+            )
+              data = null
 
-            // Log.log(data);
+            if (data === null) {
+              OpcResp.Body.ResponseHeader.ServiceResult =
+                opc.StatusCode.BadNodeIdUnknown
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.BadNodeIdUnknown),
+                opc.getStatusCodeText(opc.StatusCode.BadNodeIdUnknown),
+                'Command not found!',
+              ]
+              res.send(OpcResp)
+              return
+            }
             let status = -1,
               ackTime,
               cmdTime
@@ -1439,9 +1866,9 @@ let pool = null
           let tags = [],
             npts = []
           for (let i = 0; i < points.length; i++) {
-            let val = parseInt(points[i])
-            if (!isNaN(val)) npts.push(val)
-            else tags.push(points[i])
+            const key = asPointKey(points[i])
+            if (key !== null) npts.push(key)
+            else tags.push(String(points[i]))
           }
 
           let projection = info
@@ -1463,6 +1890,8 @@ let pool = null
                   frozen: 1,
                   type: 1,
                   annotation: 1,
+                  notes: 1,
+                  transit: 1,
                   origin: 1,
                   group1: 1,
                   beepType: 1,
@@ -1504,13 +1933,29 @@ let pool = null
           // if there is a content filter, it takes precedence over NodesToRead lists
           if ('ContentFilter' in req.body.Body) {
             sort = { group1: 1, group2: 1 }
-            projection = null
+            projection = { projection: FilteredReadFields }
             query = {}
             let grp1 = null
             let grp2 = null
-            req.body.Body.ContentFilter.map((contentFilter) => {
+            const isScalar = (v) =>
+              typeof v === 'string' ||
+              typeof v === 'number' ||
+              typeof v === 'boolean'
+            // attribute names are plain field names: no operators ($...) nor paths
+            const isFieldName = (v) =>
+              typeof v === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(v)
+            ;(Array.isArray(req.body.Body.ContentFilter)
+              ? req.body.Body.ContentFilter
+              : []
+            ).map((contentFilter) => {
               // supports attribute (operand) Equals (operator) to a literal value (operand)
-              if (contentFilter.FilterOperator === opc.FilterOperator.Equals) {
+              if (
+                contentFilter?.FilterOperator === opc.FilterOperator.Equals &&
+                Array.isArray(contentFilter.FilterOperands) &&
+                contentFilter.FilterOperands.length >= 2 &&
+                isFieldName(contentFilter.FilterOperands[0]?.Value) &&
+                isScalar(contentFilter.FilterOperands[1]?.Value)
+              ) {
                 if (
                   contentFilter.FilterOperands[0].FilterOperand ===
                     opc.Operand.Attribute &&
@@ -1585,11 +2030,20 @@ let pool = null
             })
           }
 
+          // a filtered query of a user restricted to some stations reads only
+          // their points (the database does the filtering, not this process)
+          if (
+            'ContentFilter' in req.body.Body &&
+            userRights.group1List.length > 0
+          )
+            query = { $and: [query, { group1: { $in: userRights.group1List } }] }
+
           try {
             const results = await db
               .collection(COLL_REALTIME)
               .find(query, projection)
               .sort(sort)
+              .limit('ContentFilter' in req.body.Body ? MaxFilteredReadRows : 0)
               .toArray()
 
             if (results) {
@@ -1607,7 +2061,15 @@ let pool = null
 
               let Results = []
               if ('NodesToRead' in req.body.Body) {
+                // index the points once instead of scanning them for each node
+                const byTag = new Map()
+                const byId = new Map()
+                for (const pt of results) {
+                  byTag.set(pt.tag, pt)
+                  byId.set(pt._id, pt)
+                }
                 req.body.Body.NodesToRead.map((node) => {
+                  if (!node || typeof node !== 'object') return node
                   let Result = {
                     // will return this if point not found or access denied
                     StatusCode: opc.StatusCode.BadNotFound,
@@ -1616,13 +2078,12 @@ let pool = null
                     _Properties: null,
                   }
 
-                  for (let i = 0; i < results.length; i++) {
-                    let pointInfo = results[i]
+                  do {
+                    const pointInfo =
+                      byTag.get(node.NodeId?.Id) ??
+                      byId.get(asPointKey(node.NodeId?.Id))
 
-                    if (
-                      node.NodeId.Id === pointInfo.tag ||
-                      node.NodeId.Id === pointInfo._id
-                    ) {
+                    if (pointInfo) {
                       // check for group1 list in user rights (from token)
                       if (userRights.group1List.length > 0) {
                         if (
@@ -1726,7 +2187,7 @@ let pool = null
                       Result.SourceTimestamp = pointInfo.timeTag
                       break
                     }
-                  }
+                  } while (false)
                   Results.push(Result)
                 })
               } else {
@@ -1801,7 +2262,7 @@ let pool = null
                       origin: node.origin,
                       timeTagAtSourceOk:
                         'timeTagAtSourceOk' in node
-                          ? node.TimeTagAtSourceOk
+                          ? node.timeTagAtSourceOk
                           : null,
                       type: node.type,
                     },
@@ -1839,8 +2300,9 @@ let pool = null
                   results.length +
                   ' values. Elapsed ' +
                   (new Date().getTime() - tini) +
-                  ' ms'
-              )
+                  ' ms',
+              Log.levelDetailed
+            )
             }
           } catch (error) {
             OpcResp.Body.ResponseHeader.ServiceResult =
@@ -1930,6 +2392,17 @@ let pool = null
               }
               return node
             })
+            if (req.body.Body.NodesToRead.length > MaxHistoryNodes) {
+              OpcResp.Body.ResponseHeader.ServiceResult =
+                opc.StatusCode.BadTooManyOperations
+              OpcResp.Body.ResponseHeader.StringTable = [
+                opc.getStatusCodeName(opc.StatusCode.BadTooManyOperations),
+                opc.getStatusCodeText(opc.StatusCode.BadTooManyOperations),
+                'Too many NodesToRead (maximum ' + MaxHistoryNodes + ')',
+              ]
+              res.send(OpcResp)
+              return
+            }
             if (tags.length == 0) {
               OpcResp.Body.ResponseHeader.ServiceResult =
                 opc.StatusCode.GoodNoData
@@ -1960,9 +2433,14 @@ let pool = null
             if (
               'NumValuesPerNode' in
               req.body.Body.HistoryReadDetails.ParameterData
-            )
-              limitValues =
-                req.body.Body.HistoryReadDetails.ParameterData.NumValuesPerNode
+            ) {
+              // the row count is bounded: 0, negative or absurd values are not honored
+              const n = parseInt(
+                req.body.Body.HistoryReadDetails.ParameterData.NumValuesPerNode,
+                10
+              )
+              if (!isNaN(n) && n > 0) limitValues = Math.min(n, MaxEventRows)
+            }
 
             // req.body.Body.HistoryReadDetails.ParameterData.IsTeasModified is expected to be false!
             if (
@@ -2054,6 +2532,8 @@ let pool = null
               filterDateLte = {}
             }
 
+            // restriction of the user to some group1, applied by the database
+            const filterUserGroup = group1Restriction
             let filterGroup = {}
             if (group1Filter.length > 0)
               filterGroup = {
@@ -2090,6 +2570,7 @@ let pool = null
                           filterDateLte,
                           filterGroup,
                           filterPriority,
+                          filterUserGroup,
                           { ack: { $lte: 1 } },
                         ],
                       },
@@ -2134,6 +2615,7 @@ let pool = null
                         filterDateLte,
                         filterGroup,
                         filterPriority,
+                        filterUserGroup,
                         { ack: { $lte: endDateTime !== null ? 2 : 1 } }, // when realtime query (endDate=null) filter out eliminated (ack=2) events
                       ],
                     },
@@ -2224,8 +2706,9 @@ let pool = null
                     Results.length +
                     ' values. Elapsed ' +
                     (new Date().getTime() - tini) +
-                    ' ms'
-                )
+                    ' ms',
+              Log.levelDetailed
+            )
                 return
               }
             }
@@ -2252,6 +2735,12 @@ let pool = null
             res.send(OpcResp)
             return
           }
+
+          // each requested node gets a result, a repeated node a copy of the
+          // same rows: the database reads every tag once, and the row limit
+          // below is shared by all the nodes of the request
+          const nodeCount = tags.length
+          tags = [...new Set(tags)]
 
           // restrict to tags the user is allowed to see (group1 restriction)
           let allowedTags = tags
@@ -2289,21 +2778,26 @@ let pool = null
           // cap the number of rows returned by the historian
           let rowLimit = parseInt(limitValues, 10)
           if (isNaN(rowLimit) || rowLimit < 1) rowLimit = MaxHistoryRowsPerNode
-          rowLimit =
-            Math.min(rowLimit, MaxHistoryRowsPerNode) * allowedTags.length
+          // a limit for each tag: one busy tag cannot take the rows of the others
+          rowLimit = Math.min(rowLimit, MaxHistoryRowsPerNode)
+          // and a limit for the whole response (repeated nodes count again)
+          rowLimit = Math.max(
+            1,
+            Math.min(rowLimit, Math.floor(MaxHistorySamples / nodeCount))
+          )
 
           // all request-supplied values below are bound as query parameters
           // ($1..$n): never build this query by string concatenation
           let query =
-            'SELECT tag, value, flags, ' +
-            'time_tag, ' +
-            'time_tag_at_source ' +
+            'SELECT h.tag, h.value, h.flags, h.time_tag, h.time_tag_at_source ' +
+            'FROM unnest($3::text[]) AS t(tag) ' +
+            'CROSS JOIN LATERAL (' +
+            'SELECT tag, value, flags, time_tag, time_tag_at_source ' +
             'FROM hist ' +
-            'WHERE time_tag>=$1 AND ' +
-            'time_tag<=$2 AND ' +
-            'tag = ANY($3) ' +
-            'ORDER BY tag asc, time_tag ASC ' +
-            'LIMIT $4'
+            'WHERE hist.tag = t.tag AND time_tag>=$1 AND time_tag<=$2 ' +
+            'ORDER BY time_tag ASC LIMIT $4' +
+            ') AS h ' +
+            'ORDER BY h.tag ASC, h.time_tag ASC'
           let queryParams = [startTs, endTs, allowedTags, rowLimit]
 
           if (startTs.getTime() === endTs.getTime()) {
@@ -2335,6 +2829,7 @@ let pool = null
             return
           }
           pool.query(query, queryParams, (err, resp) => {
+           try {
             if (err) {
               OpcResp.ServiceId = opc.ServiceCode.ServiceFault
               OpcResp.Body.ResponseHeader.ServiceResult =
@@ -2349,6 +2844,13 @@ let pool = null
             }
 
             let Results = [] // [{ StatusCode, ContinuationPoint, HistoryData[], NodeId }]
+            // group the rows by tag once instead of scanning them for each node
+            const rowsByTag = new Map()
+            for (const row of resp.rows) {
+              let list = rowsByTag.get(row.tag)
+              if (!list) rowsByTag.set(row.tag, (list = []))
+              list.push(row)
+            }
             req.body.Body.NodesToRead.map((node) => {
               let HistoryReadResult = {
                 StatusCode: opc.StatusCode.BadNotFound,
@@ -2364,23 +2866,23 @@ let pool = null
                         if ('Id' in node.NodeId) {
                           // only string keys supported here
                           HistoryReadResult.NodeId = node.NodeId
-                          resp.rows.map((node) => {
-                            if (node.tag === HistoryReadResult.NodeId.Id) {
+                          ;(rowsByTag.get(HistoryReadResult.NodeId.Id) || []).map((node) => {
+                            {
                               HistoryReadResult.StatusCode = opc.StatusCode.Good
                               HistoryReadResult.HistoryData.push({
                                 Value: {
                                   Type:
-                                    node.flags.charAt(2) === '0'
+                                    String(node.flags ?? '').charAt(2) === '0'
                                       ? opc.DataType.Boolean
                                       : opc.DataType.Double,
                                   Body:
-                                    node.flags.charAt(2) === '0'
+                                    String(node.flags ?? '').charAt(2) === '0'
                                       ? node.value === 0
                                         ? false
                                         : true
                                       : node.value,
                                   Quality:
-                                    node.flags.charAt(0) === '0'
+                                    String(node.flags ?? '').charAt(0) === '0'
                                       ? opc.StatusCode.Good
                                       : opc.StatusCode.Bad,
                                 },
@@ -2414,8 +2916,13 @@ let pool = null
                 resp.rows.length +
                 ' values. Elapsed ' +
                 (new Date().getTime() - tini) +
-                ' ms'
+                ' ms',
+              Log.levelDetailed
             )
+           } catch (e) {
+            Log.log('HistoryRead error: ' + e.message)
+            if (!res.headersSent) res.status(500).send({ error: 'HistoryRead error' })
+           }
           })
         }
         return
@@ -2489,8 +2996,9 @@ let pool = null
               Results.length +
               ' values. Elapsed ' +
               (new Date().getTime() - tini) +
-              ' ms'
-          )
+              ' ms',
+              Log.levelDetailed
+            )
         }
         return
       default:
@@ -2507,83 +3015,117 @@ let pool = null
     }
   }
 
-  for (;;) {
+  // Write the queued user actions (audit trail) to mongodb. An action leaves the
+  // queue only after it was stored: when the database is not available they wait.
+  let flushingActions = false
+  async function flushUserActions() {
+    if (flushingActions || !db || !HintMongoIsConnected) return
+    flushingActions = true
     try {
-      if (clientMongo) {
-        if (!HintMongoIsConnected) {
-          // not anymore connected, will retry
-          clientMongo.close()
-          db = null
-          clientMongo = null
-        } else {
-          // it is connected: process userActions fifo
-          while (!UserActionsQueue.isEmpty()) {
-            let ins = UserActionsQueue.peek()
-            db.collection(COLL_ACTIONS).insertOne(ins)
-            UserActionsQueue.dequeue()
+      while (!UserActionsQueue.isEmpty()) {
+        const batch = UserActionsQueue.peekMany(UserActionsBatch)
+        let stored = batch.length
+        try {
+          // ordered: on an error, the documents before the failing one are stored
+          await db.collection(COLL_ACTIONS).insertMany(batch, { ordered: true })
+        } catch (err) {
+          const firstError = Array.isArray(err?.writeErrors)
+            ? err.writeErrors[0]
+            : err?.writeErrors
+          const inserted = Number(err?.insertedCount) || 0
+          // a duplicate means a previous try did store that one
+          if ((firstError?.code ?? err?.code) === 11000) stored = inserted + 1
+          else {
+            UserActionsQueue.ack(batch.slice(0, inserted))
+            Log.log('User actions not stored, will retry: ' + err.message)
+            break
           }
         }
+        // acknowledged by identity: an overflow during the insert may have
+        // dropped some of these from the queue already
+        UserActionsQueue.ack(batch.slice(0, stored))
       }
-
-      if (!clientMongo) {
-        // new connection
-        Log.log('Connecting to ' + jsConfig.mongoConnectionString)
-        await MongoClient.connect(
-          jsConfig.mongoConnectionString,
-          jsConfig.MongoConnectionOptions
-        )
-          .then(async (client) => {
-            clientMongo = client
-            HintMongoIsConnected = true
-            db = clientMongo.db(jsConfig.mongoDatabaseName)
-          })
-          .catch(function (err) {
-            db = null
-            clientMongo = null
-            Log.log(err)
-            if (err.name == 'MongoParseError') process.exit(-1)
-          })
-      }
-    } catch (e) {
-      if (clientMongo) clientMongo.close()
-      db = null
-      clientMongo = null
-      Log.log(e)
+    } finally {
+      flushingActions = false
     }
+  }
+  setInterval(flushUserActions, UserActionsFlushMs)
+  flushOnExit = async () => {
+    while (flushingActions) await new Promise((r) => setTimeout(r, 50))
+    await flushUserActions()
+  }
 
-    // wait 5 seconds
+  // watch the mongodb connection (the driver reconnects by itself)
+  for (;;) {
     await new Promise((resolve) => setTimeout(resolve, 5000))
-
-    if (!(await checkConnectedMongo(clientMongo))) {
-      clientMongo = null
+    try {
+      await checkConnectedMongo(dbAuth.mongoose.connection.getClient())
+    } catch (e) {
+      HintMongoIsConnected = false
+      Log.log(e)
     }
   }
 })()
 
+// User and role names identify them (sign-in, role assignment): unique
+// indexes make that hold also for concurrent requests. The database seed
+// creates them; an older database may lack them. Existing duplicates make the
+// creation fail: that is logged, names must then be made unique by hand.
+async function ensureUniqueNameIndexes(mdb) {
+  for (const [coll, field, name] of [
+    ['users', 'username', 'userNameIndex'],
+    ['roles', 'name', 'roleNameIndex'],
+  ]) {
+    try {
+      const indexes = await mdb
+        .collection(coll)
+        .indexes()
+        .catch((e) => {
+          if (e?.code === 26) return [] // no collection yet
+          throw e
+        })
+      const present = indexes.some(
+        (ix) =>
+          ix.unique === true &&
+          Object.keys(ix.key).length === 1 &&
+          ix.key[field] === 1
+      )
+      if (!present)
+        await mdb.collection(coll).createIndex({ [field]: 1 }, { name, unique: true })
+    } catch (err) {
+      Log.log(
+        'Could not create the unique index of ' + coll + '.' + field +
+          ' (duplicate names?): ' + err.message
+      )
+    }
+  }
+}
+
 // test mongoDB connectivity
 async function checkConnectedMongo(client) {
   if (!client) {
+    HintMongoIsConnected = false
     return false
   }
   const CheckMongoConnectionTimeout = 10000
   let tr = setTimeout(() => {
     Log.log('Mongo ping timeout error!')
     HintMongoIsConnected = false
+    UserRights.setDatabaseHealthy(false)
   }, CheckMongoConnectionTimeout)
 
   let res = null
   try {
     res = await client.db('admin').command({ ping: 1 })
-    clearTimeout(tr)
   } catch (e) {
     Log.log('Error on mongodb connection!')
-    return false
-  }
-  if ('ok' in res && res.ok) {
-    HintMongoIsConnected = true
-    return true
-  } else {
     HintMongoIsConnected = false
+    UserRights.setDatabaseHealthy(false)
     return false
+  } finally {
+    clearTimeout(tr)
   }
+  HintMongoIsConnected = !!(res && 'ok' in res && res.ok)
+  UserRights.setDatabaseHealthy(HintMongoIsConnected)
+  return HintMongoIsConnected
 }

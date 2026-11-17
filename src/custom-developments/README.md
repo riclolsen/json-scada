@@ -2,6 +2,8 @@
 
 Use the example templates to create your own custom developments.
 
+The apps are served by the realtime server under `/custom-developments/<folder>/` to signed-in users only (a browser without a session is sent to the login page); the data they read is limited by the rights of the user.
+
 1.  Duplicate the template folder and rename it to your own development name.
 2.  Use an AI-enabled text editor edit the project files. We recommend using WindSurf, VS Code with Cline or Copilot extension, Cursor.
 3.  Ask the AI assistant to help you write the code to accomplish your development goals.

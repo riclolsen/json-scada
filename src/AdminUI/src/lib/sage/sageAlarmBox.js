@@ -2,7 +2,9 @@
  * Embedded alarm box for the Display Viewer — native port of the legacy
  * almbox.html iframe (loaded via the screen's #set_filter group1 markup).
  *
- * Lists the substation's currently-alarmed points in a compact top-right box
+ * Lists the substation's currently-alarmed points in a compact box at the
+ * top-right corner of the Display Viewer page (placed in the page, never on
+ * other pages), over the viewer toolbar's right end,
  * that expands on hover (legacy: ~40px collapsed -> ~105px on mouseover) and is
  * scrollable. Rows are clickable to open point access. The engine feeds it the
  * alarmed points (opc.readFiltered({station, onlyAlarms:true})) each refresh.
@@ -21,8 +23,12 @@ const COLLAPSED_PX = 42 // ~3 rows
 const EXPANDED_PX = 150
 
 export class AlarmBoxPanel {
-  constructor(cfg, onOpenPoint) {
+  // host: element the box is placed in (the viewer page, so it never shows on
+  // other pages); without one it is fixed to the window.
+  constructor(cfg, onOpenPoint, host) {
     this.cfg = cfg
+    this.host = host || null
+    this.disposed = false
     this.onOpenPoint = onOpenPoint || (() => {})
     this.box = null
     this.list = null
@@ -30,13 +36,13 @@ export class AlarmBoxPanel {
   }
 
   ensure() {
-    if (this.box) return
+    if (this.box || this.disposed) return
     const box = document.createElement('div')
     Object.assign(box.style, {
-      position: 'fixed',
-      top: '50px',
+      position: this.host ? 'absolute' : 'fixed',
+      top: '0px',
       right: '0px',
-      zIndex: '7',
+      zIndex: '1010', // over the viewer toolbar and the SVG
       width: '372px',
       maxHeight: COLLAPSED_PX + 'px',
       overflowX: 'hidden',
@@ -57,7 +63,7 @@ export class AlarmBoxPanel {
     })
     const list = document.createElement('div')
     box.appendChild(list)
-    document.body.appendChild(box)
+    ;(this.host || document.body).appendChild(box)
     this.box = box
     this.list = list
   }
@@ -65,6 +71,7 @@ export class AlarmBoxPanel {
   // items: [{ key, sub, bay, descr, valueStr, qualifier, alarmTime }]
   render(items) {
     this.ensure()
+    if (!this.box) return // disposed: a late refresh must not bring it back
     if (!items || items.length === 0) {
       this.box.style.display = 'none'
       this._html = ''
@@ -105,6 +112,7 @@ export class AlarmBoxPanel {
   }
 
   dispose() {
+    this.disposed = true
     if (this.box && this.box.parentNode) this.box.parentNode.removeChild(this.box)
     this.box = null
     this.list = null

@@ -1,17 +1,17 @@
 {
   "name": "opc-ua-server",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test-history.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "mongodb": "^7.0.0",
-    "node-opcua": "^2.124.0",
-    "node-opcua-aggregates": "^2.175.2",
+    "mongodb": "^7.9.0",
+    "node-opcua": "^2.187.29",
+    "node-opcua-aggregates": "^2.187.29",
     "pg": "^8.13.0"
   }
 }

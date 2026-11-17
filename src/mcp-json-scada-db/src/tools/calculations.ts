@@ -36,7 +36,7 @@ import {
 } from '../jsonscada/calculations.js'
 import { aliveInfo } from './status.js'
 import { buildDoc, findTag } from './tags.js'
-import { RESERVED_NAME_MESSAGE, isSystemTagName } from '../jsonscada/system-tags.js'
+import { NUMERIC_NAME_MESSAGE, RESERVED_NAME_MESSAGE, isNumericLeadTagName, isSystemTagName } from '../jsonscada/system-tags.js'
 import { errorResult, jsonResult, notConnectedResult, textResult } from './util.js'
 
 const POINT_PROJECTION = {
@@ -513,6 +513,7 @@ export function registerCalculationsAdminTools(
         const name = tag.trim()
         if (isSystemTagName(name)) return textResult(RESERVED_NAME_MESSAGE, true)
         const existing = await findTag(api, name)
+        if (!existing && isNumericLeadTagName(name)) return textResult(NUMERIC_NAME_MESSAGE, true)
         if (existing && existing.origin !== 'calculated')
           return textResult(
             `Tag '${name}' exists with origin "${existing.origin}". Refusing to turn it into a ` +

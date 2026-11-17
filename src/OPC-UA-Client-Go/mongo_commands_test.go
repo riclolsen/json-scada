@@ -39,11 +39,11 @@ func TestCommandVariantScalars(t *testing.T) {
 		{"float", 42.5, "", float32(42.5)},
 		{"double", 42.5, "", float64(42.5)},
 		{"string", 0, "hello", "hello"},
-		{"bytestring", 0, "3q2+7w==", "3q2+7w=="},
-		{"localizedtext", 0, "Pump 1", "Pump 1"},
-		{"qualifiedname", 0, "2:Foo", "2:Foo"},
-		{"nodeid", 0, "ns=2;s=Foo", "ns=2;s=Foo"},
-		{"guid", 0, "72962B91-FA75-4AE6-8D28-B404DC7DAF63", "72962B91-FA75-4AE6-8D28-B404DC7DAF63"},
+		{"bytestring", 0, "3q2+7w==", []byte{0xde, 0xad, 0xbe, 0xef}},
+		{"localizedtext", 0, "Pump 1", &ua.LocalizedText{EncodingMask: ua.LocalizedTextText, Text: "Pump 1"}},
+		{"qualifiedname", 0, "2:Foo", &ua.QualifiedName{NamespaceIndex: 2, Name: "Foo"}},
+		{"nodeid", 0, "ns=2;s=Foo", ua.NewStringNodeID(2, "Foo")},
+		{"guid", 0, "72962B91-FA75-4AE6-8D28-B404DC7DAF63", ua.NewGUID("72962B91-FA75-4AE6-8D28-B404DC7DAF63")},
 
 		// The ASDU is matched case-insensitively, as the C# switch
 		// lowercases first.

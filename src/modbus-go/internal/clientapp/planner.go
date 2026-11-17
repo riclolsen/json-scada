@@ -48,7 +48,10 @@ type Block struct {
 	Count  int
 	Slices []Slice
 
-	// poll state
+	// sig identifies the block's reads and decoding (see blockSig)
+	sig string
+
+	// poll state, owned by the poll goroutine
 	lastRaw          []byte
 	invalidPublished bool
 }

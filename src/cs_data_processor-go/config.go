@@ -248,7 +248,7 @@ func findConfigFile() string {
 	return candidates[0]
 }
 
-// findSQLDir locates the folder watched by process_pg_hist/process_pg_rtdata.
+// findSQLDir locates the folder watched by src/process_pg_sql.
 func findSQLDir() string {
 	candidates := []string{
 		filepath.Join("..", "..", "sql"),

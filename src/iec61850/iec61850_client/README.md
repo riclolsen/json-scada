@@ -78,7 +78,7 @@ Parameters for communication with IEC61850 servers.
 - _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.
 
 TLS notes: certificates may be PEM or DER. `chainValidation: false` skips chain verification;
-`allowOnlySpecificCertificates: true` pins the peer to `peerCertFilesPaths`. The version window is the lowest to the highest enabled flag. Go does not negotiate TLS 1.0/1.1, so a request for them is clamped to TLS 1.2 and logged. The default port for MMS over TLS is 3782 — put it in `ipAddresses` explicitly, since the default here stays 102 for compatibility.
+`allowOnlySpecificCertificates: true` pins the peer to `peerCertFilesPaths`, which must then list at least one certificate (the connection is refused otherwise). The version window is the lowest to the highest enabled flag. Go does not negotiate TLS 1.0/1.1, so a request for them is clamped to TLS 1.2 and logged. The default port for MMS over TLS is 3782 — put it in `ipAddresses` explicitly, since the default here stays 102 for compatibility.
 
 Commands use `protocolSourceCommonAddress: "CO"` for a control object; any other functional
 constraint performs a plain MMS write. `protocolSourceCommandUseSBO` forces select-with-value on a normal-security SBO object; otherwise the control model decides the sequence.
@@ -152,6 +152,10 @@ The value of a data object is the attribute its common data class names — `stV
 
 When the attribute names are not known, the value is found by type, preferring a status attribute (a boolean or a two-bit position) over a numeric one.
 
+A **complex measurand** (CMV, e.g. `MMXU1.PhV.phsA`) reads the magnitude of `cVal`. A **composite** data object — a WYE, DEL or SEQ such as `MMXU1.PhV`, made of `phsA`, `phsB`, … — has no value of its own: the browse registers each member as a point (`MMXU1.PhV.phsA`, …), and the object is still read or reported in one piece and split. A composite configured by hand at data-object level reads its first member.
+
+**Quality and timestamp** come from the object's `q` and `t`: a `q` whose validity is not good (invalid or questionable) makes the tag invalid, and the source time is `t` even when a later attribute is also a time (`tOpOk`). The C# driver let the last attribute of the structure decide both, so an invalid point read as good. Report blocks are enabled with the quality-change trigger as well, so a point that turns invalid without changing value is reported at once.
+
 ## autoCreateTags
 
 With `autoCreateTags: true` the driver creates a tag for every value-bearing object it finds:
@@ -166,7 +170,7 @@ With `autoCreateTags: true` the driver creates a tag for every value-bearing obj
 
 Each command tag is **linked to the point where its effect shows**: the command carries
 `supervisedOfCommand` with the `_id` of the supervised point of the same data object, and that
-point gets `commandOfSupervised` pointing back. The driver waits for the supervised point to exist before creating the command, so the pair is always complete; a controllable object with no status at all yields an unlinked command, which still operates but gives the operator no feedback.
+point gets `commandOfSupervised` pointing back. The command is created right away; when its supervised point does not exist yet (on a large IED the first poll can come minutes later), the pair is linked as soon as it does, also across restarts. A controllable object with no status at all yields an unlinked command, which still operates but gives the operator no feedback.
 
 A controllable object is registered as soon as it is discovered, so it can be commanded in the same session — no restart needed to use a freshly created command tag. Control objects are never polled: reading one returns the operate structure, not a measurement.
 

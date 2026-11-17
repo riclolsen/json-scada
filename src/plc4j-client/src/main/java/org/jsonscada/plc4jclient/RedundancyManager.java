@@ -27,9 +27,10 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 /**
- * Redundancy control over the protocolDriverInstances document, same state
- * machine as the Go processRedundancy(): active node updates the keep-alive;
- * inactive node takes over after observing more than LIMIT unchanged keep-alives.
+ * Redundancy control over the protocolDriverInstances document, state
+ * machine of the other JSON-SCADA drivers: the active node updates the keep-alive;
+ * the inactive node takes over after observing more than LIMIT consecutive polls
+ * with an unchanged keep-alive.
  */
 public class RedundancyManager {
 
@@ -50,11 +51,13 @@ public class RedundancyManager {
     try {
       instance = instancesColl.find(Filters.eq("_id", instanceId)).first();
     } catch (Exception e) {
+      isActive = false;
       Log.log("Redundancy - Error querying protocolDriverInstances!");
       Log.log(e.toString());
       return;
     }
     if (instance == null || !(instance.get("protocolDriver") instanceof String)) {
+      isActive = false;
       Log.log("Redundancy - No driver instance found!");
       return;
     }
@@ -75,38 +78,53 @@ public class RedundancyManager {
       keepAlive = dt;
     }
 
+    boolean activate = false;
     if (cfg.nodeName.equals(activeNodeName)) {
       if (!isActive) {
         Log.log("Redundancy - ACTIVATING this Node!");
       }
-      isActive = true;
+      activate = true;
     } else {
       if (isActive) { // was active, other node assumed, so be inactive and wait
         Log.log("Redundancy - DEACTIVATING this Node (other node active)!");
         countKeepAliveUpdates = 0;
         isActive = false;
+        lastActiveNodeKeepAliveTimeTag = keepAlive;
         sleepMs(1000);
       }
       isActive = false;
       if (Objects.equals(lastActiveNodeKeepAliveTimeTag, keepAlive)) {
         countKeepAliveUpdates++;
+      } else {
+        // keep-alive advanced: the active node is alive, only consecutive stalls count
+        countKeepAliveUpdates = 0;
       }
       lastActiveNodeKeepAliveTimeTag = keepAlive;
       if (countKeepAliveUpdates > COUNT_KEEP_ALIVE_UPDATES_LIMIT) { // time exceeded, be active
         Log.log("Redundancy - ACTIVATING this Node!");
-        isActive = true;
+        activate = true;
       }
     }
 
-    if (isActive) {
-      Log.log("Redundancy - This node is active.");
+    if (activate) {
+      if (Log.level >= Log.LEVEL_DETAILED) {
+        Log.log("Redundancy - This node is active.");
+      }
       try {
-        instancesColl.updateOne(
-            Filters.eq("_id", instanceId),
+        // Claim only the state we observed; concurrent contenders cannot both win.
+        var result = instancesColl.updateOne(
+            Filters.and(Filters.eq("_id", instanceId),
+                Filters.eq("activeNodeName", activeNodeName),
+                Filters.eq("activeNodeKeepAliveTimeTag", keepAlive)),
             new Document("$set", new Document()
                 .append("activeNodeName", cfg.nodeName)
                 .append("activeNodeKeepAliveTimeTag", new Date())));
+        isActive = result.getMatchedCount() != 0;
+        if (!isActive) {
+          countKeepAliveUpdates = 0;
+        }
       } catch (Exception e) {
+        isActive = false;
         Log.log(e.toString());
       }
     }

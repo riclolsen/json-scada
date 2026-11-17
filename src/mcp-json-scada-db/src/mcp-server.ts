@@ -58,6 +58,7 @@ import { SYSTEM_TAGS_GUIDE } from "./jsonscada/system-tags.js";
 import { registerCustomDevTools } from "./tools/custom-dev.js";
 import { CUSTOM_DEV_GUIDE } from "./jsonscada/custom-dev.js";
 import { AdminApiClient } from "./jsonscada/admin-api.js";
+import { applyServiceSettings } from "./jsonscada/service-settings.js";
 import { ConnectionManager } from "./jsonscada/connection-manager.js";
 import { Log } from "./jsonscada/index.js";
 import packageInfo from "../package.json" with { type: "json" };
@@ -68,13 +69,14 @@ const ENV_PREFIX = packageInfo.config.envPrefix || "JS_MCPJSDB_";
 const mgr = new ConnectionManager();
 
 // Configuration and process management tools go through the AdminUI backend
-// API; they are only offered when admin credentials are configured.
-const adminApi = new AdminApiClient();
+// API; they are only offered when admin credentials are configured. Both are
+// set in main(), after the HTTP service settings saved from the AdminUI were
+// applied to the environment.
+let adminApi: AdminApiClient;
 
 // CIM-EMS model/binding/run/request tools (AdminUI API) can be turned off on
 // their own, e.g. when network model details must not reach the AI provider.
-const cimEmsAdminTools =
-  (process.env[ENV_PREFIX + "CIM_EMS_TOOLS"] || "").toLowerCase() !== "false";
+let cimEmsAdminTools = true;
 
 // Builds a fully configured MCP server instance. A factory is needed because
 // the SDK serves each stdio connection / HTTP request from its own instance.
@@ -189,6 +191,20 @@ function buildServer(): McpServer {
 }
 
 async function main() {
+  const transportType =
+    process.env[ENV_PREFIX + "TRANSPORT"] ||
+    (process.argv.includes("--http") ? "http" : "stdio");
+
+  // The HTTP service takes the settings saved from the AdminUI (Admin > System >
+  // MCP server); a stdio server keeps the environment its AI client gave it.
+  if (transportType === "http") {
+    const applied = await applyServiceSettings(mgr.jsConfig);
+    if (applied.length) Log.log("Service settings from the AdminUI: " + applied.join(", "));
+  }
+  adminApi = new AdminApiClient();
+  cimEmsAdminTools =
+    (process.env[ENV_PREFIX + "CIM_EMS_TOOLS"] || "").toLowerCase() !== "false";
+
   Log.log(
     adminApi.enabled
       ? `Admin tools enabled (AdminUI API ${adminApi.baseUrl}, user '${adminApi.user}')`
@@ -203,10 +219,6 @@ async function main() {
       console.error("Fatal error in MongoDB connection loop:", error);
       process.exit(1);
     });
-
-  const transportType =
-    process.env[ENV_PREFIX + "TRANSPORT"] ||
-    (process.argv.includes("--http") ? "http" : "stdio");
 
   try {
     if (transportType === "http") {

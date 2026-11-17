@@ -43,8 +43,6 @@ function Start(interval, clientMongo, db, configObj, MongoStatus) {
 async function ProcessRedundancy(clientMongo, db, configObj) {
   if (!clientMongo || !db) return
 
-  Log.levelCurrent = configObj.LogLevel
-
   const countKeepAliveUpdatesLimit = 4
 
   // poor man's local static variables
@@ -68,18 +66,31 @@ async function ProcessRedundancy(clientMongo, db, configObj) {
       // not found, then create a new entry
       ProcessActive = true
       Log.log('Redundancy - Instance config not found, creating one...')
-      db.collection(configObj.ProtocolDriverInstancesCollectionName).insertOne({
-        protocolDriver: AppDefs.NAME,
-        protocolDriverInstanceNumber: new Double(configObj.Instance),
-        enabled: true,
-        logLevel: new Double(configObj.LogLevel),
-        nodeNames: [],
-        activeNodeName: configObj.nodeName,
-        activeNodeKeepAliveTimeTag: new Date(),
-      })
+      await db
+        .collection(configObj.ProtocolDriverInstancesCollectionName)
+        .insertOne({
+          protocolDriver: AppDefs.NAME,
+          protocolDriverInstanceNumber: new Double(configObj.Instance),
+          enabled: true,
+          logLevel: new Double(configObj.LogLevel),
+          nodeNames: [],
+          activeNodeName: configObj.nodeName,
+          activeNodeKeepAliveTimeTag: new Date(),
+        })
     } else {
       // check for disabled or node not allowed
       const instance = result
+
+      // the instance logLevel can raise the level set by argument/environment
+      const instLevel = Number(instance?.logLevel)
+      const level =
+        Number.isFinite(instLevel) && instLevel > configObj.LogLevel ?
+          instLevel
+        : configObj.LogLevel
+      if (level !== Log.levelCurrent) {
+        Log.levelCurrent = level
+        Log.log('Redundancy - Log level ' + level, Log.levelMin)
+      }
 
       let instKeepAliveTimeTag = null
 
@@ -136,22 +147,22 @@ async function ProcessRedundancy(clientMongo, db, configObj) {
 
       if (ProcessActive) {
         // process active, then update keep alive
-        db.collection(
-          configObj.ProtocolDriverInstancesCollectionName
-        ).updateOne(
-          {
-            protocolDriver: AppDefs.NAME,
-            protocolDriverInstanceNumber: new Double(configObj.Instance),
-          },
-          {
-            $set: {
-              activeNodeName: configObj.nodeName,
-              activeNodeKeepAliveTimeTag: new Date(),
-              softwareVersion: AppDefs.VERSION,
-              stats: {},
+        await db
+          .collection(configObj.ProtocolDriverInstancesCollectionName)
+          .updateOne(
+            {
+              protocolDriver: AppDefs.NAME,
+              protocolDriverInstanceNumber: new Double(configObj.Instance),
             },
-          }
-        )
+            {
+              $set: {
+                activeNodeName: configObj.nodeName,
+                activeNodeKeepAliveTimeTag: new Date(),
+                softwareVersion: AppDefs.VERSION,
+                stats: {},
+              },
+            }
+          )
       }
     }
   } catch (err) {

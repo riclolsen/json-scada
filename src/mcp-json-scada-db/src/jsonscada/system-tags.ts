@@ -76,6 +76,13 @@ export const isSystemTagName = (name: unknown) =>
 export const isCommStatusTagName = (name: unknown) =>
   typeof name === 'string' && COMM_PREFIXES.some((p) => name.trim().startsWith(p))
 
+// A tag name never begins with a number (or a signed number): point ids that are
+// numbers or digit strings are point keys (server_realtime_auth refuses these names too).
+export const isNumericLeadTagName = (name: unknown) =>
+  typeof name === 'string' && /^[+-]?\d/.test(name.trim())
+export const NUMERIC_NAME_MESSAGE =
+  'Tag names must not begin with a number (a number or digit string is read as a point key). Choose another name.'
+
 export const RESERVED_NAME_MESSAGE =
   'Tag names beginning with "_System." are reserved for tags the data processor creates and maintains ' +
   '(see get_system_tags_guide). Choose another name.'

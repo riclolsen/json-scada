@@ -64,7 +64,7 @@
             fmtTime(item.importedAt)
           }}</template>
           <template #[`item.validation`]="{ item }">
-            <span class="text-caption"
+            <span class="text-body-small"
               >{{ item.validation?.errors?.length || 0 }} /
               {{ item.validation?.warnings?.length || 0 }} /
               {{ item.validation?.unsupported?.length || 0 }}</span
@@ -115,23 +115,23 @@
                 >
                   <div
                     v-if="item.validation?.[k]?.length"
-                    class="text-subtitle-2"
+                    class="text-title-small"
                   >
                     {{ t('admin.cimEms.' + k) }}
                   </div>
-                  <ul class="ml-6 text-caption">
+                  <ul class="ml-6 text-body-small">
                     <li v-for="(m, i) in item.validation?.[k] || []" :key="i">
                       {{ m }}
                     </li>
                   </ul>
                 </div>
-                <div class="text-caption mt-1">
+                <div class="text-body-small mt-1">
                   SHA-256: {{ item.sourceSha256 }} · pypowsybl
                   {{ item.engine?.pypowsybl }} ·
                   {{ t('admin.cimEms.loadFlow') }}:
                   {{ item.validation?.load_flow?.status || '-' }}
                 </div>
-                <div class="text-caption">
+                <div class="text-body-small">
                   {{
                     Object.entries(item.counts || {})
                       .filter(([, v]) => v)
@@ -226,7 +226,7 @@
             @click="showLists = !showLists"
             >{{ t('admin.cimEms.details') }}</v-btn
           >
-          <div v-if="showLists" class="text-caption mt-1">
+          <div v-if="showLists" class="text-body-small mt-1">
             <b>{{ t('admin.cimEms.ambiguous') }}:</b>
             {{ proposalInfo.ambiguous.join(', ') || '-' }}<br />
             <b>{{ t('admin.cimEms.unmatched') }}:</b>
@@ -379,7 +379,7 @@
               >
               <span
                 v-if="item.summary.estimation.badData?.length"
-                class="text-caption ml-1"
+                class="text-body-small ml-1"
                 >{{ item.summary.estimation.badData.length }}
                 {{ t('admin.cimEms.badData') }}</span
               >
@@ -394,7 +394,7 @@
               >
               <span
                 v-if="item.summary.contingency.status === 'done'"
-                class="text-caption ml-1"
+                class="text-body-small ml-1"
                 >{{ item.summary.contingency.insecure?.length || 0 }} /
                 {{ item.summary.contingency.contingencies }}</span
               >
@@ -404,10 +404,10 @@
             <tr>
               <td :colspan="columns.length" class="py-2">
                 <div v-if="item.summary?.estimation?.badData?.length">
-                  <div class="text-subtitle-2">
+                  <div class="text-title-small">
                     {{ t('admin.cimEms.badData') }}
                   </div>
-                  <ul class="ml-6 text-caption">
+                  <ul class="ml-6 text-body-small">
                     <li
                       v-for="(b, i) in item.summary.estimation.badData"
                       :key="i"
@@ -419,10 +419,10 @@
                   </ul>
                 </div>
                 <div v-if="item.summary?.contingency?.insecure?.length">
-                  <div class="text-subtitle-2">
+                  <div class="text-title-small">
                     {{ t('admin.cimEms.insecure') }}
                   </div>
-                  <div class="text-caption ml-6">
+                  <div class="text-body-small ml-6">
                     {{ item.summary.contingency.insecure.join(', ') }}
                   </div>
                 </div>
@@ -435,7 +435,7 @@
                   ><v-icon start>mdi-download</v-icon
                   >{{ t('admin.cimEms.caResult') }}</v-btn
                 >
-                <pre class="text-caption">{{
+                <pre class="text-body-small">{{
                   JSON.stringify(
                     {
                       runId: item.runId,
@@ -489,7 +489,7 @@
           <template #expanded-row="{ columns, item }">
             <tr>
               <td :colspan="columns.length">
-                <pre class="text-caption">{{
+                <pre class="text-body-small">{{
                   JSON.stringify(
                     {
                       params: item.params,
@@ -527,7 +527,7 @@
             :label="t('admin.cimEms.packageFile')"
             prepend-icon="mdi-folder-zip"
           />
-          <div class="text-caption">{{ t('admin.cimEms.uploadHint') }}</div>
+          <div class="text-body-small">{{ t('admin.cimEms.uploadHint') }}</div>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
@@ -725,8 +725,11 @@
       const json = await getJson(API + 'listModels')
       models.value = json.models || []
       canEngineer.value = !!json.canEngineer
-      if (!bModelId.value && modelIds.value.length)
+      // a model chosen here does not fire the selector's update event: load its bindings too
+      if (!bModelId.value && modelIds.value.length) {
         bModelId.value = modelIds.value[0]
+        fetchBindings(null)
+      }
     } catch (err) {
       notify(String(err.message || err), 'error')
     }

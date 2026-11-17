@@ -101,25 +101,37 @@ function NewTag() {
 
 // find biggest point key (_id) on range and adjust automatic key
 async function GetAutoKeyInitialValue(rtCollection, configObj) {
-  AutoKeyId = configObj.ConnectionNumber * AutoKeyMultiplier
+  return refreshAutoKey(rtCollection, configObj.ConnectionNumber)
+}
+
+// the key never goes back: another node (redundancy) may have created tags
+async function refreshAutoKey(rtCollection, connectionNumber) {
+  const base = connectionNumber * AutoKeyMultiplier
   let resLastKey = await rtCollection
-    .find({
-      _id: {
-        $gt: AutoKeyId,
-        $lt: (configObj.ConnectionNumber + 1) * AutoKeyMultiplier,
+    .find(
+      {
+        _id: {
+          $gt: base,
+          $lt: (connectionNumber + 1) * AutoKeyMultiplier,
+        },
       },
-    })
+      { projection: { _id: 1 } }
+    )
     .sort({ _id: -1 })
     .limit(1)
     .toArray()
-  if (resLastKey.length > 0 && '_id' in resLastKey[0]) {
-    if (parseInt(resLastKey[0]._id) >= AutoKeyId)
-      AutoKeyId = parseInt(resLastKey[0]._id)
-  }
+  let last = base
+  if (resLastKey.length > 0 && '_id' in resLastKey[0])
+    last = parseInt(resLastKey[0]._id)
+  AutoKeyId = Math.max(AutoKeyId, base, last)
   return AutoKeyId
 }
 
-let ListCreatedTags = []
+const isDuplicateId = (e) =>
+  e?.code === 11000 &&
+  (e?.keyPattern?._id !== undefined || /_id_/.test(String(e?.message)))
+
+const ListCreatedTags = new Set()
 
 async function AutoCreateTag(data, connectionNumber, rtDataCollection) {
   let splitTopic = []
@@ -133,7 +145,7 @@ async function AutoCreateTag(data, connectionNumber, rtDataCollection) {
     tag += data.protocolSourceObjectAddress
   }
 
-  if (!ListCreatedTags.includes(tag)) {
+  if (!ListCreatedTags.has(tag)) {
     // possibly not created tag, must check
     let res = await rtDataCollection
       .find({
@@ -196,13 +208,26 @@ async function AutoCreateTag(data, connectionNumber, rtDataCollection) {
 
       // console.log('>> Insert ' + tag)
 
-      let resIns = await rtDataCollection.insertOne(newTag)
+      // the key may already be used by tags created by the other node of a
+      // redundant pair: refresh it from the database and retry
+      let resIns = null
+      for (let attempt = 0; ; attempt++) {
+        try {
+          resIns = await rtDataCollection.insertOne(newTag)
+          break
+        } catch (e) {
+          if (!isDuplicateId(e) || attempt >= 2) throw e
+          await refreshAutoKey(rtDataCollection, connectionNumber)
+          newTag._id = NewTag()._id
+          Log.log('Auto Key - Key in use, retrying with ' + newTag._id)
+        }
+      }
       if (resIns.acknowledged)
-        ListCreatedTags.push(tag) // change for mongo driver >= 4.0
+        ListCreatedTags.add(tag) // change for mongo driver >= 4.0
       else Log.log('Auto Key - Error inserting tag : ' + tag, Log.levelDetailed)
     } else {
       // found (already exists, no need to create), just list as created
-      ListCreatedTags.push(tag)
+      ListCreatedTags.add(tag)
     }
   }
 }

@@ -22,6 +22,7 @@ import com.mongodb.client.model.WriteModel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.plc4x.java.api.PlcConnection;
 import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.apache.plc4x.java.api.messages.PlcReadResponse;
@@ -29,63 +30,106 @@ import org.apache.plc4x.java.api.types.PlcResponseCode;
 import org.apache.plc4x.java.api.value.PlcValue;
 
 /**
- * Periodic integrity read of all topics of one connection (like the per-connection
- * goroutine in the Go driver): immediate read after connect, then every giInterval
- * seconds; exits closing the connection when the instance goes inactive or the
- * device stops answering (the supervision loop reconnects).
+ * Periodic integrity read of all topics of one PLC connection: immediate read
+ * after connect, then every giInterval seconds. The task is bound to the
+ * {@link PlcConnection} it was started for and ends (closing that connection)
+ * as soon as the connection is replaced, closed, retired by a configuration
+ * reload, the instance goes inactive or the device stops answering; the
+ * supervision loop then reconnects with a fresh task.
  */
 public class ScanTask implements Runnable {
 
+  /** Consecutive failed integrity reads before the connection is recycled. */
+  private static final int MAX_CONSECUTIVE_READ_FAILURES = 3;
+  /** Granularity of the wait between reads, so the task notices state changes. */
+  private static final long WAIT_SLICE_MS = 500;
+
   private final ProtocolConnection pc;
   private final MongoWriter writer;
+  private final PlcConnection conn;
+  private final PlcReadRequest request;
+  private int consecutiveFailures = 0;
 
-  public ScanTask(ProtocolConnection pc, MongoWriter writer) {
+  public ScanTask(
+      ProtocolConnection pc, MongoWriter writer, PlcConnection conn, PlcReadRequest request) {
     this.pc = pc;
     this.writer = writer;
+    this.conn = conn;
+    this.request = request;
+  }
+
+  /** True while this task's connection is still the live one of the protocol connection. */
+  private boolean alive() {
+    return !Thread.currentThread().isInterrupted() && RedundancyManager.isActive
+        && !pc.retired && pc.plcConn == conn && conn.isConnected();
   }
 
   @Override
   public void run() {
-    execRead();
+    try {
+      loop();
+    } finally {
+      pc.close(conn);
+    }
+  }
+
+  private void loop() {
     long periodMs = pc.giInterval > 0 ? (long) (pc.giInterval * 1000) : 300_000L;
     if (pc.giInterval <= 0) {
       Log.log(pc.name + ": giInterval not set, defaulting to 300s");
     }
+    if (!execRead()) {
+      consecutiveFailures++;
+    }
     while (true) {
-      RedundancyManager.sleepMs(periodMs);
-      PlcConnection conn = pc.plcConn;
-      if (conn == null || !conn.isConnected()) {
-        break;
+      long next = System.currentTimeMillis() + periodMs;
+      while (System.currentTimeMillis() < next) {
+        if (!alive()) {
+          return;
+        }
+        RedundancyManager.sleepMs(Math.max(1, Math.min(WAIT_SLICE_MS, next - System.currentTimeMillis())));
+      }
+      if (!alive()) {
+        return;
       }
       if (!RedundancyManager.isActive) {
         Log.log("Instance inactive! Closing connection...");
-        pc.closeQuietly();
-        break;
+        return;
       }
       if (execRead()) {
+        consecutiveFailures = 0;
         continue;
       }
-      if (!Plc4jClient.pingOk(pc)) {
-        pc.closeQuietly();
-        break;
+      consecutiveFailures++;
+      if (consecutiveFailures >= MAX_CONSECUTIVE_READ_FAILURES
+          || !Plc4jClient.pingOk(pc.name, conn)) {
+        Log.log(pc.name + ": device not answering, closing connection...");
+        return;
       }
     }
   }
 
   /** Executes the integrity read; returns false on read failure. */
   boolean execRead() {
-    PlcReadRequest req = pc.readRequest;
-    if (req == null) {
+    if (!alive()) {
       return false;
     }
     if (Log.level >= Log.LEVEL_BASIC) {
       Log.log(pc.name + ": integrity read...");
     }
     PlcReadResponse resp;
+    java.util.concurrent.CompletableFuture<? extends PlcReadResponse> future = null;
     try {
+      future = request.execute();
       long timeoutS = Math.max(5, Math.min(60, (long) pc.giInterval));
-      resp = req.execute().get(timeoutS, TimeUnit.SECONDS);
+      resp = future.get(timeoutS, TimeUnit.SECONDS);
     } catch (Exception e) {
+      if ((e instanceof TimeoutException || e instanceof InterruptedException) && future != null) {
+        future.cancel(true); // do not leave the request pending against a hung device
+      }
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
       Log.log(pc.name + ": error executing read-request: "
           + (e.getMessage() != null ? e.getMessage() : e.toString()));
       return false;
@@ -120,10 +164,11 @@ public class ScanTask implements Runnable {
         ev = ValueExtractor.extract(v, endianness, pc.name, tagName);
         asduAtSource = v.getPlcValueType() != null ? v.getPlcValueType().name() : "Unknown";
       }
-      SourceDataUpdater.appendOps(ops, pc, tagName, asduAtSource, ev);
+      SourceDataUpdater.appendOps(
+          ops, pc, tagName, asduAtSource, ev, pc.arrayLengthByTag.getOrDefault(tagName, 0));
     }
-    if (!ops.isEmpty() && !writer.queue.offer(ops)) {
-      System.out.println("Error: mongo write channel full. Discarding values!");
+    if (alive() && !ops.isEmpty() && !writer.queue.offer(ops)) {
+      Log.log("Error: mongo write channel full. Discarding values!");
     }
     return true;
   }

@@ -33,6 +33,11 @@ const AdmZip = require('adm-zip')
 // escaping. Both come from ldapts itself, so they match exactly the encoders
 // the client uses when it serializes a search request.
 const { Client, Filter, DN } = require('ldapts')
+const { checkToken } = require('../middlewares/authJwt')
+const { clientAddress } = require('../services/client-address')
+const { stripSessionToken } = require('../../proxy-utils')
+const crypto = require('node:crypto')
+const UserRights = require('../services/user-rights')
 const ProcessManager = require('../services/process-manager')
 const RestartScheduler = require('../services/restart-scheduler')
 const SystemSettings = require('../services/system-settings')
@@ -42,6 +47,14 @@ const Tag = db.tag
 const ProtocolDriverInstance = db.protocolDriverInstance
 const ProtocolConnection = db.protocolConnection
 const UserAction = db.userAction
+const BCRYPT_COST = 10
+// shortest password accepted when one is set (stored passwords are not checked)
+const MIN_PASSWORD_LENGTH = 8
+const PASSWORD_TOO_SHORT =
+  'Password too short (minimum ' + MIN_PASSWORD_LENGTH + ' characters)!'
+function passwordTooShort(pw) {
+  return typeof pw !== 'string' || pw.length < MIN_PASSWORD_LENGTH
+}
 
 /**
  * Generates a CLSID-style UUID (version 4)
@@ -59,41 +72,149 @@ const generateClsid = () => {
   return `{${generateHex(8)}-${generateHex(4)}-4${generateHex(3)}-${(Math.floor(Math.random() * 4) + 8).toString(16)}${generateHex(3)}-${generateHex(12)}}`
 }
 
+// Update documents built from request bodies. Mongoose treats top-level keys
+// beginning with '$' as update operators, so a body like
+// { _id, $set: { roles: [...] } } or { _id, $inc: { tokenVersion: -1 } } would
+// slip past every check made on the plain fields. Bodies are reduced to plain
+// fields (an allowlist where one exists) and ids must be scalars, so a filter
+// like { _id: { $ne: null } } cannot select other documents.
+function withoutOperators(body) {
+  const out = {}
+  for (const [k, v] of Object.entries(body || {}))
+    if (!k.startsWith('$') && !k.includes('.')) out[k] = v
+  return out
+}
+function pickFields(body, allowed) {
+  const out = {}
+  for (const k of allowed)
+    if (Object.prototype.hasOwnProperty.call(body || {}, k)) out[k] = body[k]
+  return out
+}
+function scalarId(v) {
+  return typeof v === 'string' || typeof v === 'number' ? v : null
+}
+const USER_UPDATE_FIELDS = ['username', 'email', 'password', 'isLDAPUser']
+const ROLE_UPDATE_FIELDS = [
+  'name',
+  'isAdmin',
+  'changePassword',
+  'sendCommands',
+  'enterAnnotations',
+  'enterNotes',
+  'enterManuals',
+  'enterLimits',
+  'substituteValues',
+  'ackEvents',
+  'ackAlarms',
+  'disableAlarms',
+  'cimEngineering',
+  'group1List',
+  'group1CommandList',
+  'displayList',
+  'maxSessionDays',
+]
+
+// Paging and filter of the admin list routes (listTags, listUserActions).
+// A page has at most MAX_LIST_PAGE entries (the largest AdminUI option). The
+// filter is { field: value | { op: value } } with plain field names and a few
+// comparison operators: no $where/$expr/$function (code run by the database)
+// nor nested logical operators.
+const MAX_LIST_PAGE = 1000
+const LIST_FILTER_OPS = new Set(['$eq', '$ne', '$gt', '$gte', '$lt', '$lte', '$in', '$nin', '$regex', '$options', '$exists'])
+const MAX_FILTER_REGEX = 200
+function listPaging(body) {
+  let limit = Math.floor(Number(body?.itemsPerPage))
+  if (!Number.isFinite(limit) || limit < 1) limit = 10
+  limit = Math.min(limit, MAX_LIST_PAGE)
+  let page = Math.floor(Number(body?.page))
+  if (!Number.isFinite(page) || page < 1) page = 1
+  return { limit, skip: limit * (page - 1) }
+}
+function isFilterScalar(v) {
+  return v === null || ['string', 'number', 'boolean'].includes(typeof v)
+}
+// a copy of the filter, or null when it is not acceptable
+function listFilter(filter) {
+  if (filter === undefined || filter === null) return {}
+  if (typeof filter !== 'object' || Array.isArray(filter)) return null
+  const out = {}
+  for (const [k, v] of Object.entries(filter)) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*$/.test(k)) return null
+    if (isFilterScalar(v)) {
+      out[k] = v
+      continue
+    }
+    if (typeof v !== 'object' || Array.isArray(v)) return null
+    const cond = {}
+    for (const [op, x] of Object.entries(v)) {
+      if (!LIST_FILTER_OPS.has(op)) return null
+      if (op === '$in' || op === '$nin') {
+        if (!Array.isArray(x) || x.length > 10000 || !x.every(isFilterScalar)) return null
+      } else if (op === '$regex') {
+        if (typeof x !== 'string' || x.length > MAX_FILTER_REGEX) return null
+      } else if (op === '$options') {
+        if (typeof x !== 'string' || !/^[imsx]*$/.test(x)) return null
+      } else if (!isFilterScalar(x)) return null
+      cond[op] = x
+    }
+    out[k] = cond
+  }
+  return out
+}
+function sortOf(body, dflt) {
+  const order = {}
+  if (Array.isArray(body?.sortBy))
+    for (const s of body.sortBy.slice(0, 10))
+      if (typeof s?.key === 'string' && /^[A-Za-z_][A-Za-z0-9_.]*$/.test(s.key))
+        order[s.key] = s?.order === 'desc' ? -1 : 1
+  return Object.keys(order).length > 0 ? order : { [dflt]: 1 }
+}
+
+// Error text for an admin route answer: what the admin can act on (invalid
+// field, duplicate name, missing file), never internals such as stack traces,
+// paths of the server or database messages; the full error goes to the log.
+function errorText(err) {
+  if (err?.code === 11000)
+    return 'Duplicate value: ' + Object.keys(err.keyValue || {}).join(', ')
+  if (err?.name === 'ValidationError' || err?.name === 'CastError')
+    return String(err.message).slice(0, 500)
+  if (typeof err?.code === 'string' && /^E[A-Z]+$/.test(err.code))
+    return 'File operation failed (' + err.code + ')'
+  return 'Operation failed, see the server log.'
+}
+
 // add header to identify json-scada user for Grafana auto-login (auth.proxy)
+// (node lowercases incoming header names: drop any client-sent value first, or it
+// would be forwarded next to ours and could impersonate another user)
 exports.addXWebAuthUser = (req) => {
-  let ck = checkToken(req)
-  if (ck !== false) req.headers['X-WEBAUTH-USER'] = ck?.username
+  delete req.headers['x-webauth-user']
+  // verifyToken already checked the token
+  const ck = req.token || checkToken(req)
+  if (ck) req.headers['x-webauth-user'] = ck.username
+  stripSessionToken(req)
 }
 
 exports.listUserActions = async (req, res) => {
   Log.log('listUserActions')
 
-  let skip = 0
-  if ('page' in req.body && 'itemsPerPage' in req.body)
-    skip = req.body.itemsPerPage * (req.body.page - 1)
-  let filter = {}
-  if ('filter' in req.body) filter = req.body.filter
-
-  let limit = req.body.itemsPerPage || 10
-  let orderby = {}
-  if ('sortBy' in req.body) {
-    for (let i = 0; i < req.body.sortBy.length; i++)
-      orderby[req.body.sortBy[i].key] =
-        req.body.sortBy[i]?.order === 'desc' ? -1 : 1
-    if (req.body.sortBy.length === 0) orderby = { timeTag: 1 }
-  } else orderby = { timeTag: 1 }
+  const { limit, skip } = listPaging(req.body)
+  const filter = listFilter(req.body?.filter)
+  if (filter === null) {
+    res.status(200).send({ error: 'Invalid filter!' })
+    return
+  }
+  const orderby = sortOf(req.body, 'timeTag')
 
   try {
-    let count = await UserAction.countDocuments(filter)
-    let userActions = await UserAction.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort(orderby)
-      .exec()
+    // the page and the total are independent queries
+    const [count, userActions] = await Promise.all([
+      UserAction.countDocuments(filter),
+      UserAction.find(filter).sort(orderby).skip(skip).limit(limit).exec(),
+    ])
     res.status(200).send({ userActions: userActions, countTotal: count })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -136,11 +257,31 @@ function changesCommStatusOwnedField(stored, body) {
   )
 }
 
+// A tag name never begins with a number (or a signed number): a point id that
+// is a number or a digit string is read as a point key (_id), anything else as
+// a tag name (asPointKey in index.js and graphql-server.js).
+const tagNameError =
+  'Invalid tag name: it must not be empty nor begin with a number.'
+function isValidTagName(name) {
+  return (
+    typeof name === 'string' && name.trim() !== '' && !/^[+-]?\d/.test(name.trim())
+  )
+}
+
 exports.createTag = async (req, res) => {
   Log.log('createTag')
   try {
     if (isCommStatusTagName(req.body?.tag) || req.body?.commStatus) {
       res.status(200).send({ error: commStatusTagError })
+      return
+    }
+    if (
+      req.body?.tag !== undefined &&
+      req.body?.tag !== null &&
+      String(req.body.tag).trim() !== '' &&
+      !isValidTagName(req.body.tag)
+    ) {
+      res.status(200).send({ error: tagNameError })
       return
     }
     if (req.body?._id && req.body?._id != 0) {
@@ -183,7 +324,7 @@ exports.createTag = async (req, res) => {
     res.status(200).send(tag)
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -191,7 +332,8 @@ exports.updateTag = async (req, res) => {
   try {
     registerUserAction(req, 'updateTag')
 
-    if ('_id' in req.body) {
+    req.body = withoutOperators(req.body)
+    if ('_id' in req.body && scalarId(req.body._id) !== null) {
       let _id = req.body._id
       delete req.body._id
       const csTag = await findCommStatusTag(_id)
@@ -203,6 +345,11 @@ exports.updateTag = async (req, res) => {
         res.status(200).send({ error: commStatusTagError })
         return
       }
+      if ('tag' in req.body && !isValidTagName(req.body.tag)) {
+        res.status(200).send({ error: tagNameError })
+        return
+      }
+      if ('tag' in req.body) req.body.tag = req.body.tag.trim()
 
       let IsNumberVal = function (value) {
         if (/^(\-|\+)?([0-9]+(\.[0-9]+)?)$/.test(value)) return true
@@ -225,58 +372,53 @@ exports.updateTag = async (req, res) => {
     } else res.status(200).send({ error: 'No _id in update request.' })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
 exports.deleteTag = async (req, res) => {
   try {
+    const id = scalarId(req.body?._id)
+    if (id === null) {
+      res.status(200).send({ error: 'No valid _id in delete request.' })
+      return
+    }
     registerUserAction(req, 'deleteTag')
-
-    if ('_id' in req.body) {
-      if (await findCommStatusTag(req.body._id)) {
-        res.status(200).send({ error: commStatusTagError })
-        return
-      }
-      await Tag.findOneAndDelete({ _id: req.body._id })
-      res.status(200).send({ error: false })
-    } else res.status(200).send({ error: 'No _id in delete request.' })
+    if (await findCommStatusTag(id)) {
+      res.status(200).send({ error: commStatusTagError })
+      return
+    }
+    await Tag.findOneAndDelete({ _id: id })
+    res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
 exports.listTags = async (req, res) => {
   Log.log('listTags')
 
-  let skip = 0
-  if ('page' in req.body && 'itemsPerPage' in req.body)
-    skip = req.body.itemsPerPage * (req.body.page - 1)
-  let filter = {}
-  if ('filter' in req.body) filter = req.body.filter
-  req.body.filter['_id'] = { $nin: [-1, -2] }
-
-  let limit = req.body.itemsPerPage || 10
-  let orderby = {}
-  if ('sortBy' in req.body) {
-    for (let i = 0; i < req.body.sortBy.length; i++)
-      orderby[req.body.sortBy[i].key] =
-        req.body.sortBy[i]?.order === 'desc' ? -1 : 1
-    if (req.body.sortBy.length === 0) orderby = { tag: 1 }
-  } else orderby = { tag: 1 }
+  const { limit, skip } = listPaging(req.body)
+  const filter = listFilter(req.body?.filter)
+  if (filter === null) {
+    res.status(200).send({ error: 'Invalid filter!' })
+    return
+  }
+  // the beep and its internal companion point are not listed
+  filter['_id'] = { $nin: [-1, -2] }
+  const orderby = sortOf(req.body, 'tag')
   try {
-    let count = await Tag.countDocuments(filter)
-    let tags = await Tag.find(filter)
-      .skip(skip)
-      .limit(limit)
-      .sort(orderby)
-      .exec()
+    // the page and the total are independent queries
+    const [count, tags] = await Promise.all([
+      Tag.countDocuments(filter),
+      Tag.find(filter).sort(orderby).skip(skip).limit(limit).exec(),
+    ])
     let ret = { tags: tags, countTotal: count }
     res.status(200).send(ret)
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1139,6 +1281,9 @@ exports.updateProtocolConnection = async (req, res) => {
 
   try {
     // findOneAndUpdate returns the pre-update document (used to detect instance moves)
+    req.body = withoutOperators(req.body)
+    if (scalarId(req.body._id) === null)
+      return res.status(200).send({ error: 'Invalid connection id!' })
     const oldConn = await ProtocolConnection.findOneAndUpdate(
       { _id: req.body._id },
       req.body
@@ -1153,7 +1298,7 @@ exports.updateProtocolConnection = async (req, res) => {
     res.status(200).send({ ...restartInfo })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1193,32 +1338,46 @@ async function scheduleConnectionRestart(driver, instanceNumber, oldConn) {
 
 exports.deleteProtocolConnection = async (req, res) => {
   try {
+    const id = scalarId(req.body?._id)
+    if (id === null)
+      return res.status(200).send({ error: 'Invalid connection id!' })
     registerUserAction(req, 'deleteProtocolConnection')
 
-    if (req.body?.deleteTags === true) {
-      await Tag.deleteMany({
-        protocolSourceConnectionNumber: req.body.protocolConnectionNumber,
-      })
-    }
-
-    const conn = await ProtocolConnection.findOneAndDelete({
-      _id: req.body._id,
-    })
+    // the connection first: its tags are those of the number stored in it
+    // (never a number taken from the request), and nothing is deleted when
+    // the connection does not exist
+    const conn = await ProtocolConnection.findOneAndDelete({ _id: id })
       .lean()
       .exec()
+    if (!conn) return res.status(200).send({ error: 'Connection not found!' })
 
-    const restartInfo = conn
-      ? await scheduleConnectionRestart(
-          conn.protocolDriver,
-          conn.protocolDriverInstanceNumber,
-          null
-        )
-      : {}
+    if (req.body?.deleteTags === true) {
+      const number = Number(conn.protocolConnectionNumber)
+      if (Number.isFinite(number)) {
+        try {
+          await Tag.deleteMany({ protocolSourceConnectionNumber: number })
+        } catch (err) {
+          // the connection is gone: say so, the tags can be deleted again
+          Log.log(err)
+          return res.status(200).send({
+            error:
+              'Connection deleted, but its tags could not be deleted: ' +
+              errorText(err),
+          })
+        }
+      }
+    }
+
+    const restartInfo = await scheduleConnectionRestart(
+      conn.protocolDriver,
+      conn.protocolDriverInstanceNumber,
+      null
+    )
 
     res.status(200).send({ error: false, ...restartInfo })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1240,7 +1399,7 @@ exports.createProtocolConnection = async (req, res) => {
     res.status(200).send({ _id: protocolConnection._id, error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1261,7 +1420,7 @@ exports.getProtocolConnectionModel = async (req, res) => {
       .send({ error: false, protocolConnection: protocolConnection })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1273,18 +1432,21 @@ exports.listProtocolConnections = async (req, res) => {
     res.status(200).send(protocolConnections)
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
 exports.deleteProtocolDriverInstance = async (req, res) => {
   try {
+    const id = scalarId(req.body?._id)
+    if (id === null)
+      return res.status(200).send({ error: 'Invalid driver instance id!' })
     registerUserAction(req, 'deleteProtocolDriverInstance')
 
-    const doc = await ProtocolDriverInstance.findOne({ _id: req.body._id })
+    // the deleted document itself (not a second read) drives the service hook
+    const doc = await ProtocolDriverInstance.findOneAndDelete({ _id: id })
       .lean()
       .exec()
-    await ProtocolDriverInstance.findOneAndDelete({ _id: req.body._id })
 
     // best-effort: stop and uninstall the OS service for the removed instance
     let processWarning = undefined
@@ -1301,7 +1463,7 @@ exports.deleteProtocolDriverInstance = async (req, res) => {
     res.status(200).send({ error: false, processWarning })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1318,7 +1480,7 @@ exports.listNodes = async (req, res) => {
     res.status(200).send([...new Set(listNodes)])
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1331,7 +1493,7 @@ exports.createProtocolDriverInstance = async (req, res) => {
     res.status(200).send({ _id: driverInstance._id, error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1343,12 +1505,15 @@ exports.listProtocolDriverInstances = async (req, res) => {
     res.status(200).send(driverInstances)
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
 exports.updateProtocolDriverInstance = async (req, res) => {
   try {
+    req.body = withoutOperators(req.body)
+    if (scalarId(req.body._id) === null)
+      return res.status(200).send({ error: 'Invalid driver instance id!' })
     req.body.protocolDriverInstanceNumber = Math.floor(
       req.body.protocolDriverInstanceNumber
     )
@@ -1384,7 +1549,7 @@ exports.updateProtocolDriverInstance = async (req, res) => {
     res.status(200).send({ error: false, processWarning })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1398,7 +1563,7 @@ exports.listUsers = async (req, res) => {
     res.status(200).send(users)
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1410,12 +1575,22 @@ exports.listRoles = async (req, res) => {
     res.status(200).send(roles)
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
+}
+
+// user and role are given by name: plain strings only (an object such as
+// { $ne: null } would select some other document)
+function namesOf(body) {
+  return typeof body?.username === 'string' && typeof body?.role === 'string'
 }
 
 exports.userAddRole = async (req, res) => {
   try {
+    if (!namesOf(req.body)) {
+      res.status(200).send({ error: 'Invalid user or role name!' })
+      return
+    }
     registerUserAction(req, 'userAddRole')
     let role = await Role.findOne({ name: req.body.role }).exec()
     if (!role) {
@@ -1427,18 +1602,23 @@ exports.userAddRole = async (req, res) => {
       res.status(200).send({ error: 'User not found!' })
       return
     }
-    user.roles.push(role._id)
+    user.roles.addToSet(role._id)
     await user.save()
+    UserRights.invalidate()
     res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
 exports.userRemoveRole = async (req, res) => {
   try {
-    if (req?.body?.username === 'admin' && req.body.role === 'admin') {
+    if (!namesOf(req.body)) {
+      res.status(200).send({ error: 'Invalid user or role name!' })
+      return
+    }
+    if (req.body.username === 'admin' && req.body.role === 'admin') {
       res
         .status(200)
         .send({ error: 'Cannot remove admin role from admin user!' })
@@ -1457,12 +1637,20 @@ exports.userRemoveRole = async (req, res) => {
       res.status(200).send({ error: 'User not found!' })
       return
     }
+    if (
+      role.isAdmin &&
+      (await remainingAdmins({ fromUser: user._id, role: role._id })) === 0
+    ) {
+      res.status(200).send({ error: LAST_ADMIN_MESSAGE })
+      return
+    }
     user.roles.pull(role._id)
     await user.save()
+    UserRights.invalidate()
     res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
@@ -1474,53 +1662,61 @@ exports.listGroup1 = async (req, res) => {
     res.status(200).send(groups)
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
+}
+
+// Displays the signed-in user may open (an empty list means all of them).
+exports.userDisplays = (req, res) => {
+  res.status(200).send({ displayList: req.rights?.displayList || [] })
+}
+
+// The display (svg) folder of the installation, independent of the working
+// directory of the process (listDisplays, openDisplay and saveDisplay).
+const SVG_DIR = path.resolve(__dirname, '..', '..', '..', '..', 'svg')
+// a display file name: an .svg name directly in SVG_DIR
+const DISPLAY_NAME_RE = /^[^.][^/\\:]*\.svg$/i
+function displayPath(name) {
+  if (typeof name !== 'string') return null
+  const fileName = path.basename(name)
+  const p = path.resolve(SVG_DIR, fileName)
+  return DISPLAY_NAME_RE.test(fileName) && path.dirname(p) === SVG_DIR
+    ? { fileName, p }
+    : null
 }
 
 exports.listDisplays = (req, res) => {
   Log.log('listDisplays')
 
-  fs.readdir('../../svg', function (err, files) {
-    //handling error
+  fs.readdir(SVG_DIR, function (err, files) {
     if (err) {
       Log.log(err)
-      res.status(200).send({ error: err })
+      res.status(200).send({ error: errorText(err) })
       return
     }
-
-    let svgFiles = files.filter(function (file) {
-      return path.extname(file).toLowerCase() === '.svg'
-    })
-
-    res.status(200).send(svgFiles)
+    res.status(200).send(files.filter((f) => path.extname(f).toLowerCase() === '.svg'))
   })
 }
 
 exports.openDisplay = (req, res) => {
   Log.log('openDisplay')
 
-  // Sanitize file path to prevent directory traversal
-  const svgDir = path.resolve(__dirname, '..', '..', '..', '..', 'svg')
-  const requestedPath = path.resolve(
-    svgDir,
-    path.basename(req.query.file || '')
-  )
-
-  if (!requestedPath.startsWith(svgDir)) {
-    Log.log('openDisplay: Invalid file path attempted: ' + req.query.file)
-    res.status(400).send({ error: 'Invalid file path' })
+  // one .svg name directly in the svg folder (a repeated parameter arrives
+  // as an array, other files of the folder are not displays)
+  const target = displayPath(req.query?.file)
+  if (!target) {
+    Log.log('openDisplay: Invalid file name attempted: ' + String(req.query?.file))
+    res.status(400).send({ error: 'Invalid file name (must be a .svg file)' })
     return
   }
 
-  fs.readFile(requestedPath, function (err, data) {
-    //handling error
+  fs.readFile(target.p, function (err, data) {
     if (err) {
       Log.log(err)
-      res.status(200).send({ error: err })
+      res.status(200).send({ error: errorText(err) })
       return
     }
-
+    // as before: a binary download, never rendered (and run) as a page
     res.status(200).send(data)
   })
 }
@@ -1528,159 +1724,407 @@ exports.openDisplay = (req, res) => {
 exports.saveDisplay = (req, res) => {
   Log.log('saveDisplay')
 
-  // Sanitize file path to prevent directory traversal
-  const svgDir = path.resolve(__dirname, '..', '..', '..', '..', 'svg')
-  const requestedPath = path.resolve(svgDir, path.basename(req.body.file || ''))
-
-  if (!requestedPath.startsWith(svgDir)) {
-    Log.log('saveDisplay: Invalid file path attempted: ' + req.body.file)
-    res.status(400).send({ error: 'Invalid file path' })
+  // only .svg files directly in the svg folder (no directory traversal)
+  const target = displayPath(req.body?.file)
+  if (!target) {
+    Log.log('saveDisplay: Invalid file name attempted: ' + req.body?.file)
+    res.status(400).send({ error: 'Invalid file name (must be a .svg file)' })
+    return
+  }
+  if (typeof req.body.content !== 'string') {
+    res.status(400).send({ error: 'Missing display content' })
     return
   }
 
+  const { fileName, p: requestedPath } = target
   fs.writeFile(requestedPath, req.body.content, function (err) {
     //handling error
     if (err) {
       Log.log(err)
-      res.status(200).send({ error: err })
+      res.status(200).send({ error: errorText(err) })
       return
     }
-
+    // the content itself is in the file, the audit keeps name and size
+    registerUserAction(req, 'saveDisplay', { body: { file: fileName, size: req.body.content.length } })
     res.status(200).send({ error: false })
   })
 }
 
+// Users that would still hold a role with isAdmin after a change: without the
+// admin flag of role `withoutRole`, without user `withoutUser`, or with user
+// `fromUser` losing role `role`. Used to refuse changes locking every admin out.
+async function remainingAdmins({ withoutRole, withoutUser, fromUser, role } = {}) {
+  const adminRoleIds = (
+    await Role.find({ isAdmin: true }).select('_id').read('primary').lean().exec()
+  )
+    .map((r) => String(r._id))
+    .filter((id) => id !== String(withoutRole))
+  if (adminRoleIds.length === 0) return 0
+  const users = await User.find({ roles: { $in: adminRoleIds } })
+    .select('_id roles')
+    .read('primary')
+    .lean()
+    .exec()
+  return users.filter((u) => {
+    if (withoutUser !== undefined && String(u._id) === String(withoutUser))
+      return false
+    if (fromUser !== undefined && String(u._id) === String(fromUser))
+      return u.roles.some(
+        (r) => adminRoleIds.includes(String(r)) && String(r) !== String(role)
+      )
+    return true
+  }).length
+}
+const LAST_ADMIN_MESSAGE =
+  'Refused: no user would be left with administrator rights!'
+
 exports.updateRole = async (req, res) => {
   Log.log('Update role')
   try {
+    const id = scalarId(req.body?._id)
+    if (id === null) {
+      res.status(200).send({ error: 'Invalid role id!' })
+      return
+    }
+    const fields = pickFields(req.body, ROLE_UPDATE_FIELDS)
+    if (
+      'isAdmin' in fields &&
+      fields.isAdmin !== true &&
+      (await remainingAdmins({ withoutRole: id })) === 0
+    ) {
+      res.status(200).send({ error: LAST_ADMIN_MESSAGE })
+      return
+    }
     registerUserAction(req, 'updateRole')
-    await Role.findOneAndUpdate({ _id: req.body._id }, req.body)
+    await Role.updateOne({ _id: id }, { $set: fields })
+    UserRights.invalidate()
     res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
 exports.updateUser = async (req, res) => {
   Log.log('Update user: ' + req?.body?.username)
   try {
+    const id = scalarId(req.body?._id)
+    if (id === null) {
+      res.status(200).send({ error: 'Invalid user id!' })
+      return
+    }
+    // plain allowed fields only: roles change through userAddRole/RemoveRole,
+    // the token version only moves forward (and only here, with the password)
+    const fields = pickFields(req.body, USER_UPDATE_FIELDS)
+    if (fields.password === '' || fields.password === null) delete fields.password
+    if ('password' in fields && passwordTooShort(fields.password)) {
+      res.status(200).send({ error: PASSWORD_TOO_SHORT })
+      return
+    }
+    let renamed = false
+    if ('username' in fields) {
+      if (typeof fields.username !== 'string' || fields.username.trim() === '') {
+        res.status(200).send({ error: 'Invalid user name!' })
+        return
+      }
+      const current = await User.findById(id).select('username').read('primary').lean().exec()
+      if (current?.username === 'admin' && fields.username !== 'admin') {
+        res.status(200).send({ error: 'Cannot rename admin user!' })
+        return
+      }
+      if (await usernameTaken(fields.username, id)) {
+        res.status(200).send({ error: 'User name already exists!' })
+        return
+      }
+      renamed = !!current && current.username !== fields.username
+    }
     registerUserAction(req, 'updateUser')
-    if (
-      'password' in req.body &&
-      req.body.password !== '' &&
-      req.body.password !== null
-    )
-      req.body.password = bcrypt.hashSync(req.body.password, 8)
-    else delete req.body['password']
-    delete req.body['roles']
-    await User.findOneAndUpdate({ _id: req.body._id }, req.body)
+    const update = { $set: fields }
+    if ('password' in fields)
+      fields.password = await bcrypt.hash(fields.password, BCRYPT_COST)
+    // a password set by an admin, or a new user name (tokens carry the name
+    // used for the audit trail and the Grafana trusted header), ends the
+    // sessions of that user: in the same write as the change
+    if ('password' in fields || renamed) update.$inc = { tokenVersion: 1 }
+    await User.updateOne({ _id: id }, update)
+    UserRights.invalidate()
     res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
+}
+
+// Is the user name used by another user? (names identify users at sign-in)
+async function usernameTaken(username, exceptId) {
+  if (typeof username !== 'string' || username.trim() === '') return false
+  const other = await User.findOne({ username: username }).select('_id').lean().exec()
+  return !!other && String(other._id) !== String(exceptId)
 }
 
 exports.createRole = async (req, res) => {
   Log.log('Create role')
   try {
-    const role = new Role(req.body)
+    const fields = pickFields(req.body, ROLE_UPDATE_FIELDS)
+    if (typeof fields.name !== 'string' || fields.name.trim() === '') {
+      res.status(200).send({ error: 'Invalid role name!' })
+      return
+    }
+    const role = new Role(fields)
     await role.save()
     req.body._id = role._id
     registerUserAction(req, 'createRole')
     res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
 exports.createUser = async (req, res) => {
   Log.log('Create user')
   try {
-    if (req.body.password && req.body.password !== '')
-      req.body.password = bcrypt.hashSync(req.body.password, 8)
-    const user = new User(req.body)
-    await user.save()
+    // plain allowed fields only (no id, token version or LDAP identity)
+    const fields = pickFields(req.body, [...USER_UPDATE_FIELDS, 'roles'])
+    if (typeof fields.username !== 'string' || fields.username.trim() === '') {
+      res.status(200).send({ error: 'Invalid user name!' })
+      return
+    }
+    if ('roles' in fields) {
+      const ids = Array.isArray(fields.roles) ? fields.roles : null
+      const found =
+        ids && ids.every((r) => typeof r === 'string' && /^[0-9a-fA-F]{24}$/.test(r))
+          ? await Role.countDocuments({ _id: { $in: ids } })
+          : -1
+      if (found !== new Set(ids || []).size) {
+        res.status(200).send({ error: 'Invalid role list!' })
+        return
+      }
+      fields.roles = [...new Set(ids)]
+    }
+    if (await usernameTaken(fields.username, null)) {
+      res.status(200).send({ error: 'User name already exists!' })
+      return
+    }
+    if (fields.password === '' || fields.password === null) delete fields.password
+    if ('password' in fields) {
+      if (passwordTooShort(fields.password)) {
+        res.status(200).send({ error: PASSWORD_TOO_SHORT })
+        return
+      }
+      fields.password = await bcrypt.hash(fields.password, BCRYPT_COST)
+    }
+    // the unique index refuses a name created meanwhile (code 11000)
+    const user = new User(fields)
+    try {
+      await user.save()
+    } catch (err) {
+      if (err?.code === 11000 && 'username' in (err.keyValue || {})) {
+        res.status(200).send({ error: 'User name already exists!' })
+        return
+      }
+      throw err
+    }
     req.body._id = user._id
     registerUserAction(req, 'createUser')
     res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
 exports.deleteRole = async (req, res) => {
   Log.log('Delete role')
 
-  // do not delete a role that is attributed to a user
-  let users = await User.find({ roles: req.body._id }).exec()
-  if (users.length > 0)
-    return res
-      .status(200)
-      .send({ error: 'Cannot delete role that is attributed to a user!' })
-
-  registerUserAction(req, 'deleteRole')
-
   try {
-    await Role.findOneAndDelete({ _id: req.body._id })
+    const id = scalarId(req.body?._id)
+    if (id === null) return res.status(200).send({ error: 'Invalid role id!' })
+    // do not delete a role that is attributed to a user
+    const users = await User.find({ roles: id }).select('_id').lean().exec()
+    if (users.length > 0)
+      return res
+        .status(200)
+        .send({ error: 'Cannot delete role that is attributed to a user!' })
+
+    registerUserAction(req, 'deleteRole')
+
+    await Role.findOneAndDelete({ _id: id })
+    UserRights.invalidate()
     res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
 exports.deleteUser = async (req, res) => {
   Log.log('Delete user')
-  if (req.body.username === 'admin') {
-    res.status(200).send({ error: 'Cannot delete admin user!' })
-    return
-  }
-  registerUserAction(req, 'deleteUser')
-
   try {
-    await User.findOneAndDelete({ _id: req.body._id })
+    // the protected user is identified by the stored document, not by the
+    // username the request claims
+    const id = scalarId(req.body?._id)
+    if (id === null) {
+      res.status(200).send({ error: 'Invalid user id!' })
+      return
+    }
+    const target = await User.findById(id).read('primary').exec()
+    if (req.body.username === 'admin' || target?.username === 'admin') {
+      res.status(200).send({ error: 'Cannot delete admin user!' })
+      return
+    }
+    if (target && (await remainingAdmins({ withoutUser: target._id })) === 0) {
+      res.status(200).send({ error: LAST_ADMIN_MESSAGE })
+      return
+    }
+    registerUserAction(req, 'deleteUser')
+
+    await User.findOneAndDelete({ _id: id })
+    UserRights.invalidate()
     res.status(200).send({ error: false })
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: errorText(err) })
   }
 }
 
-// create user profile passing username, email, password and roles
-exports.signup = async (req, res) => {
-  const user = new User({
-    username: req.body.username,
-    email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 8),
-  })
+// ---------------------------------------------------------------------------
+// Sign-in throttling: after SIGNIN_MAX_FAILURES failed attempts of the same
+// client address for the same user name, further attempts are refused until
+// SIGNIN_LOCK_MS passed. Kept in memory (a restart clears it). The address is
+// the one of the connection unless it comes from a trusted proxy (see
+// services/client-address.js).
+// ---------------------------------------------------------------------------
+const SIGNIN_MAX_FAILURES = 5
+const SIGNIN_LOCK_MS = 15 * 60 * 1000
+const SIGNIN_MAX_TRACKED = 10000 // bound of the failure table
+// failures of one client address, whatever the user names (password spraying)
+const SIGNIN_MAX_FAILURES_PER_ADDRESS = 30
+// password checks running at once (bcrypt and LDAP binds are expensive)
+const SIGNIN_MAX_CONCURRENT = 8
+// ...and from one client address, so one client cannot take every slot
+const SIGNIN_MAX_CONCURRENT_PER_ADDRESS = 2
+let signinsInProgress = 0
+const signinsByAddress = new Map() // client address -> checks running
+const MAX_USERNAME_LOGGED = 64 // characters of a failed user name kept in logs
+const signinFailures = new Map() // key -> { count, first, lockedUntil }
 
-  registerUserAction(req, 'signup')
-
-  try {
-    await user.save()
-
-    if (req.body.roles) {
-      let roles = await Role.find({
-        name: { $in: req.body.roles },
-      }).exec()
-      user.roles = roles.map((role) => role._id)
-      await user.save()
-      res.send({ message: 'User was registered successfully!' })
-    } else {
-      let role = await Role.findOne({ name: 'user' }).exec()
-      user.roles = [role._id]
-      await user.save()
-      res.send({ message: 'User was registered successfully!' })
+function signinKey(req) {
+  return (
+    clientAddress(req) +
+    '|' +
+    String(req.body?.username).slice(0, 256).toLowerCase()
+  )
+}
+function signinLocked(key) {
+  const e = signinFailures.get(key)
+  return !!e && e.lockedUntil > Date.now()
+}
+function purgeSigninFailures() {
+  const now = Date.now()
+  for (const [k, e] of signinFailures)
+    if (now - e.first > SIGNIN_LOCK_MS && e.lockedUntil < now)
+      signinFailures.delete(k)
+}
+function signinFailed(key, max = SIGNIN_MAX_FAILURES) {
+  const now = Date.now()
+  let e = signinFailures.get(key)
+  if (!e || now - e.first > SIGNIN_LOCK_MS) e = { count: 0, first: now, lockedUntil: 0 }
+  e.count++
+  if (e.count >= max) e.lockedUntil = now + SIGNIN_LOCK_MS
+  if (!signinFailures.has(key) && signinFailures.size >= SIGNIN_MAX_TRACKED) {
+    purgeSigninFailures()
+    // still full: drop the oldest entries (Map keeps insertion order)
+    for (const k of signinFailures.keys()) {
+      if (signinFailures.size < SIGNIN_MAX_TRACKED) break
+      signinFailures.delete(k)
     }
-  } catch (err) {
-    Log.log(err)
-    res.status(500).send({ message: err })
-    return
   }
+  signinFailures.set(key, e)
+}
+setInterval(purgeSigninFailures, 60 * 1000).unref()
+
+const SIGNIN_FAIL_MESSAGE = 'Invalid user name or password.'
+// compared against when the user does not exist, so the response time does not tell
+const DUMMY_HASH = bcrypt.hashSync('json-scada-dummy-password', BCRYPT_COST)
+
+// sessions last maxSessionDays of the user's roles, at least one hour; LDAP
+// users at most ldap.maxSessionHours (default 12): the directory is only
+// consulted at sign-in, so a disabled account must not keep a long session
+const MIN_SESSION_SECONDS = 3600
+const DEFAULT_LDAP_SESSION_HOURS = 12
+function sessionSeconds(rights, user) {
+  const days = Number(rights?.maxSessionDays)
+  let seconds = Math.max(
+    MIN_SESSION_SECONDS,
+    Math.round((Number.isFinite(days) ? days : 0) * 86400)
+  )
+  if (user?.isLDAPUser) {
+    const h = Number(config.ldap?.maxSessionHours)
+    const cap = Math.round(
+      (Number.isFinite(h) && h > 0 ? h : DEFAULT_LDAP_SESSION_HOURS) * 3600
+    )
+    seconds = Math.min(seconds, Math.max(60, cap))
+  }
+  return seconds
+}
+
+// cookies are sent over https when the request came that way (also behind a proxy)
+function isSecureRequest(req) {
+  return req.secure || req.headers['x-forwarded-proto'] === 'https'
+}
+
+// Issues a session for a user with populated roles: the access token (http only
+// cookie) and a cookie with plain user data for the client side scripts.
+// The token only identifies the user (rights are read from the database on each
+// request), which keeps it small also for users with many stations.
+const MAX_USER_COOKIE_BYTES = 3500
+function issueSession(req, res, user) {
+  const { rights, authorities } = UserRights.combineRights(user.roles)
+  const seconds = sessionSeconds(rights, user)
+  const token = jwt.sign(
+    {
+      id: user.id,
+      username: user.username,
+      tv: Number(user.tokenVersion) || 0,
+      jti: crypto.randomUUID(),
+    },
+    config.secret,
+    { expiresIn: seconds }
+  )
+  // the station lists are not used by the client scripts and can be long
+  const { group1List, group1CommandList, ...clientRights } = rights
+  const userCookie = {
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    isLDAPUser: user.isLDAPUser,
+    roles: authorities,
+    rights: clientRights,
+  }
+  // browsers drop cookies over ~4 KB: a long display list is left out and the
+  // client reads it from auth/userDisplays (displayListTruncated: true)
+  if (encodeURIComponent(JSON.stringify(userCookie)).length > MAX_USER_COOKIE_BYTES) {
+    const { displayList, ...rest } = clientRights
+    userCookie.rights = { ...rest, displayListTruncated: true }
+  }
+  return res
+    .cookie('x-access-token', token, {
+      httpOnly: true,
+      secure: isSecureRequest(req),
+      sameSite: 'lax',
+      maxAge: (seconds + 86400) * 1000,
+    })
+    .cookie(
+      'json-scada-user',
+      JSON.stringify(userCookie),
+      {
+        httpOnly: false,
+        secure: isSecureRequest(req),
+        sameSite: 'lax',
+        maxAge: (2 * seconds + 86400) * 1000,
+      }
+    )
 }
 
 // User signin request
@@ -1688,167 +2132,132 @@ exports.signin = async (req, res) => {
   try {
     let user = null
 
-    // Try LDAP authentication first if enabled
-    if (config.ldap.enabled) {
-      user = await authenticateWithLDAP(req.body.username, req.body.password)
+    if (
+      typeof req.body?.username !== 'string' ||
+      typeof req.body?.password !== 'string' ||
+      req.body.username === ''
+    ) {
+      return res.status(200).send({ ok: false, message: SIGNIN_FAIL_MESSAGE })
     }
 
-    // Fall back to local authentication if LDAP auth failed or is disabled
-    if (!user) {
-      user = await User.findOne({
-        username: req.body.username,
+    const attemptKey = signinKey(req)
+    const addressKey = 'address|' + clientAddress(req)
+    if (signinLocked(attemptKey) || signinLocked(addressKey)) {
+      Log.log(
+        'Sign-in locked for ' +
+          req.body.username.slice(0, MAX_USERNAME_LOGGED) +
+          ' from ' +
+          clientAddress(req)
+      )
+      return res.status(200).send({
+        ok: false,
+        message: 'Too many failed attempts, try again later.',
       })
-        .populate('roles', '-__v')
+    }
+    const address = clientAddress(req)
+    if (
+      signinsInProgress >= SIGNIN_MAX_CONCURRENT ||
+      (signinsByAddress.get(address) || 0) >= SIGNIN_MAX_CONCURRENT_PER_ADDRESS
+    )
+      return res.status(503).send({
+        ok: false,
+        message: 'Server busy, try again in a moment.',
+      })
+    const failed = () => {
+      signinFailed(attemptKey)
+      signinFailed(addressKey, SIGNIN_MAX_FAILURES_PER_ADDRESS)
+      UserActionsQueue.enqueue({
+        username: req.body.username.slice(0, MAX_USERNAME_LOGGED),
+        action: 'signinFailed',
+        properties: { address: clientAddress(req) },
+        timeTag: new Date(),
+      })
+      return res
+        .status(200)
+        .clearCookie('x-access-token', {
+          httpOnly: true,
+          secure: isSecureRequest(req),
+          sameSite: 'lax',
+        })
+        .send({ ok: false, message: SIGNIN_FAIL_MESSAGE })
+    }
+
+    signinsInProgress++
+    signinsByAddress.set(address, (signinsByAddress.get(address) || 0) + 1)
+    try {
+      // A local account is checked here only: its password never goes to the
+      // directory, and an LDAP login can never take it over. An LDAP account
+      // (or an unknown name, when LDAP is enabled) is checked by the
+      // directory only: a password stored for it is never accepted.
+      const local = await User.findOne({ username: req.body.username })
+        .read('primary') // a password just changed must be the one checked
+        .populate({ path: 'roles', select: '-__v', options: { readPreference: 'primary' } })
         .exec()
 
-      if (!user) {
-        return res.status(200).send({ ok: false, message: 'User Not found.' })
-      }
+      if (local && !local.isLDAPUser) {
+        const passwordIsValid = await bcrypt.compare(
+          req.body.password,
+          local.password || DUMMY_HASH
+        )
+        if (!local.password || !passwordIsValid) return failed()
+        user = local
 
-      const passwordIsValid = bcrypt.compareSync(
-        req.body.password,
-        user.password
-      )
-
-      if (!passwordIsValid) {
-        return res.status(200).cookie('x-access-token', null).send({
-          ok: false,
-          message: 'Wrong Password!',
-        })
+        // hashes made with a lower cost (older versions) are upgraded now
+        if (bcrypt.getRounds(user.password) < BCRYPT_COST)
+          User.updateOne(
+            { _id: user._id, password: user.password },
+            { $set: { password: await bcrypt.hash(req.body.password, BCRYPT_COST) } }
+          )
+            .exec()
+            .catch((e) => Log.log('Password rehash: ' + e.message))
+      } else if (config.ldap.enabled) {
+        user = await authenticateWithLDAP(req.body.username, req.body.password)
+        if (!user) return failed()
+      } else {
+        // no such user (or an LDAP user while LDAP is off): same time as a check
+        await bcrypt.compare(req.body.password, DUMMY_HASH)
+        return failed()
       }
+    } finally {
+      signinsInProgress--
+      const n = (signinsByAddress.get(address) || 1) - 1
+      if (n <= 0) signinsByAddress.delete(address)
+      else signinsByAddress.set(address, n)
     }
+    signinFailures.delete(attemptKey)
 
     // Populate roles for LDAP user
     if (user.isLDAPUser) {
       user = await User.findById(user._id).populate('roles', '-__v').exec()
     }
 
-    // Combines all roles rights for the user
-    let authorities = []
-    let rights = {
-      isAdmin: false,
-      changePassword: false,
-      sendCommands: false,
-      enterAnnotations: false,
-      enterNotes: false,
-      enterManuals: false,
-      enterLimits: false,
-      substituteValues: false,
-      ackEvents: false,
-      ackAlarms: false,
-      disableAlarms: false,
-      group1List: [],
-      group1CommandList: [],
-      displayList: [],
-      maxSessionDays: 0.0,
-    }
+    // register user action (the user name of the account, not of the request)
+    registerUserAction(req, 'signin', { username: user.username, noBody: true })
 
-    for (let i = 0; i < user.roles.length; i++) {
-      authorities.push(user.roles[i].name)
-      if ('isAdmin' in user.roles[i])
-        rights.isAdmin = rights.isAdmin || user.roles[i].isAdmin
-      if ('changePassword' in user.roles[i])
-        rights.changePassword =
-          rights.changePassword || user.roles[i].changePassword
-      if ('sendCommands' in user.roles[i])
-        rights.sendCommands = rights.sendCommands || user.roles[i].sendCommands
-      if ('enterAnnotations' in user.roles[i])
-        rights.enterAnnotations =
-          rights.enterAnnotations || user.roles[i].enterAnnotations
-      if ('enterNotes' in user.roles[i])
-        rights.enterNotes = rights.enterNotes || user.roles[i].enterNotes
-      if ('enterManuals' in user.roles[i])
-        rights.enterManuals = rights.enterManuals || user.roles[i].enterManuals
-      if ('enterLimits' in user.roles[i])
-        rights.enterLimits = rights.enterLimits || user.roles[i].enterLimits
-      if ('substituteValues' in user.roles[i])
-        rights.substituteValues =
-          rights.substituteValues || user.roles[i].substituteValues
-      if ('ackEvents' in user.roles[i])
-        rights.ackEvents = rights.ackEvents || user.roles[i].ackEvents
-      if ('ackAlarms' in user.roles[i])
-        rights.ackAlarms = rights.ackAlarms || user.roles[i].ackAlarms
-      if ('disableAlarms' in user.roles[i])
-        rights.disableAlarms =
-          rights.disableAlarms || user.roles[i].disableAlarms
-      if ('group1List' in user.roles[i])
-        rights.group1List =
-          (
-            i > 0 &&
-            (rights.group1List.length === 0 ||
-              user.roles[i].group1List.length === 0)
-          ) ?
-            []
-          : rights.group1List.concat(user.roles[i].group1List)
-      if ('group1CommandList' in user.roles[i])
-        rights.group1CommandList = rights.group1CommandList.concat(
-          user.roles[i].group1CommandList
-        )
-      if ('displayList' in user.roles[i])
-        rights.displayList = rights.displayList.concat(
-          user.roles[i].displayList
-        )
-      if ('maxSessionDays' in user.roles[i])
-        if (user.roles[i].maxSessionDays > rights.maxSessionDays)
-          rights.maxSessionDays = user.roles[i].maxSessionDays
-    }
-
-    const token = jwt.sign(
-      { id: user.id, username: user.username, rights: rights },
-      config.secret,
-      {
-        expiresIn: rights.maxSessionDays * 86400, // days*24 hours
-      }
-    )
-
-    // register user action
-    registerUserAction(req, 'signin')
-
-    // return the access token in a cookie unaccessible to javascript (http only)
-    // also return a cookie with plain user data accessible to the client side scripts
-    res
+    issueSession(req, res, user)
       .status(200)
-      .cookie('x-access-token', token, {
-        httpOnly: true,
-        secure: false,
-        maxAge: (1 + rights.maxSessionDays) * 86400 * 1000,
-      })
-      .cookie(
-        'json-scada-user',
-        JSON.stringify({
-          id: user._id,
-          username: user.username,
-          email: user.email,
-          isLDAPUser: user.isLDAPUser,
-          roles: authorities,
-          rights: rights,
-        }),
-        {
-          httpOnly: false,
-          secure: false,
-          maxAge: (1 + 2 * rights.maxSessionDays) * 86400 * 1000,
-        }
-      )
       .send({ ok: true, message: 'Signed In' })
   } catch (err) {
-    if (err) {
-      Log.log(err)
-      res.status(200).send({ ok: false, message: err })
-      return
-    }
+    Log.log(err)
+    res.status(200).send({ ok: false, message: 'Sign-in error' })
   }
 }
 
-// Sign out: eliminate the cookie with access token
-exports.signout = (req, res) => {
-  registerUserAction(req, 'signout')
+// Sign out: the token is revoked (a kept copy stops working) and the cookie removed
+exports.signout = async (req, res) => {
+  // only a valid session is audited, never what the request claims
+  const tok = checkToken(req)
+  if (tok !== false) {
+    registerUserAction(req, 'signout', { noBody: true })
+    await UserRights.revokeToken(tok)
+  }
 
   return res
     .status(200)
-    .cookie('x-access-token', null, {
+    .clearCookie('x-access-token', {
       httpOnly: true,
-      secure: false,
-      maxAge: 0,
+      secure: isSecureRequest(req),
+      sameSite: 'lax',
     })
     .send({
       ok: true,
@@ -1856,26 +2265,26 @@ exports.signout = (req, res) => {
     })
 }
 
-// check and decoded token
-checkToken = (req) => {
-  let res = false
-  let token = req.headers['x-access-token'] || req.cookies['x-access-token']
-  if (!token) {
-    return res
-  }
-  jwt.verify(token, config.secret, (err, decoded) => {
-    if (err) {
-      return res
-    }
-    res = decoded
-  })
-  return res
-}
-// Modify password change to handle LDAP users
+// Password change of the signed-in user (not for LDAP users). Every session of
+// the user issued before it ends; this one gets a new token.
 exports.changePassword = async (req, res) => {
   Log.log('User request for password change.')
   try {
-    let user = await User.findOne({ username: req.body.username }).exec()
+    const ck = checkToken(req)
+    let rights = null
+    try {
+      rights = ck === false ? null : await UserRights.getCurrentRights(ck, { fresh: true })
+    } catch (e) {
+      res.status(200).send({ error: 'Database not available, try again later!' })
+      return
+    }
+    if (!rights || ck.username !== req.body.username || !rights.changePassword) {
+      res.status(200).send({ error: "Can't change password!" })
+      Log.log("Can't change password!")
+      return
+    }
+
+    let user = await User.findById(ck.id).read('primary').exec()
     if (!user) {
       res.status(200).send({ error: 'User not found!' })
       Log.log('Change password user not found!')
@@ -1889,27 +2298,16 @@ exports.changePassword = async (req, res) => {
       return
     }
 
-    let ck = checkToken(req)
     if (
-      ck === false ||
-      ck?.username !== req.body.username ||
-      !ck?.rights?.changePassword
-    ) {
-      res.status(200).send({ error: "Can't change password!" })
-      Log.log("Can't change password!")
-      return
-    }
-    if (
-      !('currentPassword' in req.body) ||
-      req.body.currentPassword === '' ||
-      req.body.currentPassword === null
+      typeof req.body.currentPassword !== 'string' ||
+      req.body.currentPassword === ''
     ) {
       res.status(200).send({ error: 'Invalid current password!' })
       Log.log('Invalid current password!')
       return
     }
 
-    const passwordIsValid = bcrypt.compareSync(
+    const passwordIsValid = await bcrypt.compare(
       req.body.currentPassword,
       user.password
     )
@@ -1919,26 +2317,41 @@ exports.changePassword = async (req, res) => {
       return
     }
 
-    if (
-      !('newPassword' in req.body) ||
-      req.body.newPassword === '' ||
-      req.body.newPassword === null
-    ) {
+    if (typeof req.body.newPassword !== 'string' || req.body.newPassword === '') {
       res.status(200).send({ error: 'Invalid new password!' })
       Log.log('Invalid new password!')
       return
     }
-    user.password = bcrypt.hashSync(req.body.newPassword, 8)
-    await user.save()
+    if (passwordTooShort(req.body.newPassword)) {
+      res.status(200).send({ error: PASSWORD_TOO_SHORT })
+      return
+    }
+    const newHash = await bcrypt.hash(req.body.newPassword, BCRYPT_COST)
+    // one write for the hash and the token version (older tokens are refused
+    // from then on), and only over the password just checked: a concurrent
+    // change (each hash has its own salt) makes this one fail, not both apply
+    user = await User.findOneAndUpdate(
+      { _id: user._id, password: user.password },
+      { $set: { password: newHash }, $inc: { tokenVersion: 1 } },
+      { new: true }
+    )
+      .read('primary')
+      .populate({ path: 'roles', select: '-__v', options: { readPreference: 'primary' } })
+      .exec()
+    UserRights.invalidate()
+    if (!user) {
+      res.status(200).send({ error: 'Password changed meanwhile, try again!' })
+      Log.log('Change password: concurrent change, refused')
+      return
+    }
     registerUserAction(req, 'changePassword')
-    res.status(200).send({})
     Log.log('Password changed!')
-    delete req.body['currentPassword']
-    delete req.body['newPassword']
-    registerUserAction(req, 'restartProcesses')
+
+    // give this session a new token (with the new token version)
+    issueSession(req, res, user).status(200).send({})
   } catch (err) {
     Log.log(err)
-    res.status(200).send({ error: err })
+    res.status(200).send({ error: 'Password change error' })
   }
 }
 
@@ -1972,6 +2385,23 @@ const PLATFORM_SCRIPTS_DIR = path.join(
   IS_WINDOWS ? 'platform-windows' : 'platform-linux'
 )
 const PROJECT_TMP_DIR = path.join(JS_ROOT_DIR, 'tmp')
+// The project import and export scripts use the fixed PROJECT_TMP_DIR (the
+// export starts by emptying it): one of them at a time, from before the first
+// file is written there until its last file there was used and removed.
+let projectBusy = null // 'importProject' | 'exportProject' | null
+function takeProjectLock(action) {
+  if (projectBusy)
+    throw new Error(
+      'A project ' + (projectBusy === 'importProject' ? 'import' : 'export') +
+        ' is already running, try again later!'
+    )
+  projectBusy = action
+  let released = false
+  return () => {
+    if (!released && projectBusy === action) projectBusy = null
+    released = true
+  }
+}
 
 // The only scripts these endpoints are ever allowed to run.
 const PLATFORM_SCRIPTS = {
@@ -1984,6 +2414,50 @@ const PLATFORM_SCRIPTS = {
     ? 'restart_services.bat'
     : 'restart_processes.sh',
 }
+
+// Why the users/roles of a project zip (mongoexport files, one JSON document
+// per line) cannot be imported, or null: both files are needed and some user
+// must hold a role with isAdmin.
+function projectAdminProblem(zip) {
+  const read = (name) => {
+    const e = zip.getEntry(name)
+    return e ? zip.readAsText(e) : null
+  }
+  const rolesTxt = read('roles.json')
+  const usersTxt = read('users.json')
+  if (rolesTxt === null || usersTxt === null)
+    return 'Project file without users.json/roles.json: the import would remove all users!'
+  const docs = (txt) =>
+    txt
+      .split(/\r?\n/)
+      .filter((l) => l.trim() !== '')
+      .map((l) => {
+        try {
+          return JSON.parse(l)
+        } catch (e) {
+          return null
+        }
+      })
+  const oid = (v) => (v && typeof v === 'object' ? v.$oid : v)
+  const adminRoles = new Set(
+    docs(rolesTxt)
+      .filter((r) => r && r.isAdmin === true)
+      .map((r) => String(oid(r._id)))
+  )
+  const hasAdmin = docs(usersTxt).some(
+    (u) =>
+      u &&
+      Array.isArray(u.roles) &&
+      u.roles.some((r) => adminRoles.has(String(oid(r))))
+  )
+  return hasAdmin
+    ? null
+    : 'Project file has no user with an admin role: the import would lock everybody out!'
+}
+
+// limits of an uploaded project zip once unpacked (uploads are up to 100 MB)
+const MAX_PROJECT_UNPACKED_BYTES = 1024 * 1024 * 1024
+const MAX_PROJECT_ENTRIES = 10000
 
 // Kill a script that never finishes instead of leaking child processes.
 const SCRIPT_TIMEOUT_MS = 5 * 60 * 1000
@@ -2076,7 +2550,14 @@ exports.exportProject = async (req, res) => {
 
     // The file name is passed as a separate argv entry and never reaches a
     // shell, so it cannot extend the command line.
-    const cmd = spawnPlatformScript('exportProject', [project.fileName])
+    const release = takeProjectLock('exportProject')
+    let cmd
+    try {
+      cmd = spawnPlatformScript('exportProject', [project.fileName])
+    } catch (e) {
+      release()
+      throw e
+    }
     cmd.on('close', (code) => {
       Log.log(`child process exited with code ${code}`)
       // basename is a further guard even though the name is already validated.
@@ -2085,12 +2566,20 @@ exports.exportProject = async (req, res) => {
         path.basename(project.fileName)
       )
       if (!fs.existsSync(filePath) || code != 0) {
+        release()
         Log.log('Project file not found! ' + filePath)
-        res.status(200).send({ error: 'Project file not found! ' + filePath })
+        res.status(200).send({ error: 'Project file not found!' })
         return
       }
       registerUserAction(req, 'exportProject')
-      res.download(filePath)
+      // the exported file holds the whole configuration: do not leave it behind
+      res.download(filePath, (err) => {
+        if (err) Log.log('Project download error: ' + err.message)
+        fs.unlink(filePath, (e) => {
+          if (e) Log.log('Could not remove ' + filePath + ': ' + e.message)
+          release()
+        })
+      })
     })
   } catch (err) {
     Log.log(err)
@@ -2101,6 +2590,9 @@ exports.exportProject = async (req, res) => {
 // import project file: download, extract zip project file, import collections and move some files
 exports.importProject = async (req, res) => {
   Log.log('Import project')
+  let zipPath = null // removed on any failure before the import starts
+  let started = false
+  let release = () => {}
   try {
     if (!req.files || !req.files.projectFileData)
       throw new Error('No project file uploaded!')
@@ -2130,12 +2622,16 @@ exports.importProject = async (req, res) => {
       return
     }
 
+    // taken before anything is written to the shared directory: a refused
+    // request must not overwrite (nor clean up) the files of a running one
+    release = takeProjectLock('importProject')
+
     // Fixed extraction directory, not influenced by the request.
     const projectPath = PROJECT_TMP_DIR
     if (!fs.existsSync(projectPath))
       fs.mkdirSync(projectPath, { recursive: true, mode: 0o700 })
 
-    const zipPath = path.join(projectPath, safeName)
+    zipPath = path.join(projectPath, safeName)
     await upload.mv(zipPath)
     const zip = new AdmZip(zipPath)
 
@@ -2147,7 +2643,14 @@ exports.importProject = async (req, res) => {
     // separator is a path separator on Windows and an ordinary character on
     // Linux, and adm-zip writes entry names verbatim).
     const resolvedBase = path.resolve(projectPath)
-    for (const entry of zip.getEntries()) {
+    const entries = zip.getEntries()
+    // zip bomb guard: limits on the unpacked size and number of entries
+    if (entries.length > MAX_PROJECT_ENTRIES)
+      throw new Error('Project file has too many entries!')
+    const unpacked = entries.reduce((n, e) => n + (Number(e.header?.size) || 0), 0)
+    if (unpacked > MAX_PROJECT_UNPACKED_BYTES)
+      throw new Error('Project file too large when unpacked!')
+    for (const entry of entries) {
       const entryName = entry.entryName
       // directory entries legitimately end with '/', everything else must be a
       // plain relative path of non-empty, non-traversing segments
@@ -2173,19 +2676,71 @@ exports.importProject = async (req, res) => {
       }
     }
 
+    // the import scripts replace all users and roles: a project without a
+    // user holding an admin role would lock everybody out
+    const adminProblem = projectAdminProblem(zip)
+    if (adminProblem) throw new Error(adminProblem)
+
     zip.extractAllTo(projectPath, true)
     Log.log('Files extracted to: ' + projectPath)
 
+    // the extracted files hold the whole configuration (users, connection
+    // passwords): remove them, and the zip, once the import is over
+    const cleanup = () => {
+      const files = [
+        zipPath,
+        ...entries
+          .filter((e) => !e.isDirectory)
+          .map((e) => path.resolve(projectPath, e.entryName)),
+      ]
+      for (const p of files)
+        try {
+          fs.unlinkSync(p)
+        } catch (e) {
+          if (e.code !== 'ENOENT') Log.log('Could not remove ' + p + ': ' + e.message)
+        }
+      release() // the directory is free again
+    }
+
     // Fixed script, no shell, no arguments taken from the request.
-    const cmd = spawnPlatformScript('importProject')
+    let cmd
+    try {
+      cmd = spawnPlatformScript('importProject')
+    } catch (e) {
+      cleanup()
+      throw e
+    }
+    started = true
+    let spawnError = null
+    cmd.on('error', (e) => (spawnError = e))
     cmd.on('close', (code) => {
       Log.log(`child process exited with code ${code}`)
-      registerUserAction(req, 'importProject')
+      cleanup()
+      // users and roles were replaced behind the back of the rights cache
+      UserRights.invalidate()
+      registerUserAction(req, 'importProject', {
+        body: { projectFileName: safeName, exitCode: code },
+      })
+      if (spawnError || code !== 0) {
+        res.status(200).send({
+          error:
+            'Project import failed (' +
+            (spawnError ? spawnError.message : 'exit code ' + code) +
+            '), see the server log!',
+        })
+        return
+      }
       res.status(200).send({ error: false })
-      return
     })
   } catch (err) {
     Log.log(err)
+    if (!started) {
+      if (zipPath)
+        try {
+          fs.unlinkSync(zipPath)
+        } catch (e) {}
+      release()
+    }
     res.status(200).send({ error: err.message || String(err) })
   }
 }
@@ -2370,33 +2925,21 @@ exports.sanitizeDatabase = async function (req, res) {
   res.status(200).send({ error: false })
 }
 
-// enqueue use action for later insertion to mongodb
-function registerUserAction(req, actionName) {
-  let body = {}
-  Object.assign(body, req.body)
-
-  let ck = checkToken(req)
-  if (ck !== false) {
-    Log.log(actionName + ' - ' + ck?.username)
-    delete body['password']
-    // register user action
-    UserActionsQueue.enqueue({
-      username: ck?.username,
-      properties: body,
-      action: actionName,
-      timeTag: new Date(),
-    })
-  } else {
-    Log.log(actionName + ' - ' + req.body?.username)
-    delete body['password']
-    // register user action
-    UserActionsQueue.enqueue({
-      username: req.body?.username,
-      properties: body,
-      action: actionName,
-      timeTag: new Date(),
-    })
-  }
+// enqueue user action for later insertion to mongodb (UserActionsQueue removes
+// secrets). Without a valid token (sign-in, sign-up) the user name is the one
+// of the request: pass `username` once it is known to be genuine.
+function registerUserAction(req, actionName, opts = {}) {
+  const body = Object.assign({}, req.body)
+  const ck = req.token || checkToken(req)
+  const username =
+    ck !== false && ck ? ck.username : opts.username ?? req.body?.username
+  Log.log(actionName + ' - ' + String(username).substring(0, MAX_USERNAME_LOGGED))
+  UserActionsQueue.enqueue({
+    username: username,
+    properties: opts.noBody ? {} : opts.body ?? body,
+    action: actionName,
+    timeTag: new Date(),
+  })
 }
 
 // LDAP authentication helper
@@ -2561,6 +3104,15 @@ async function authenticateWithLDAP(username, password) {
 
     // Find or create user in local database
     let user = await User.findOne({ username: userData.username })
+    // the directory may answer with a name of its own (case, other attribute):
+    // a local account with that name is never turned into this LDAP user
+    if (user && !user.isLDAPUser) {
+      Log.log(
+        'LDAP - Refused: a local (non LDAP) user has the name ' +
+          userData.username
+      )
+      return null
+    }
 
     const defaultRole = await Role.findOne({ name: config.ldap.defaultRole })
 

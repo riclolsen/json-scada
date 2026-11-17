@@ -25,6 +25,7 @@
 package conv
 
 import (
+	"math"
 	"time"
 
 	"github.com/riclolsen/go-iecp5/asdu"
@@ -43,7 +44,32 @@ var mapToWithCP56Time = map[int]int{
 	15: 37, // M_IT_NA_1 -> M_IT_TB_1
 }
 
+// Bits32 converts a numeric value to the 32 bits of a bitstring. Values in
+// [2^31, 2^32) keep their high bit and negative values in [-2^31, 0) map to
+// their two's complement (a float64 to int32 conversion of either is
+// implementation-defined in Go). Out-of-range values saturate, NaN is 0.
+func Bits32(v float64) uint32 {
+	switch {
+	case math.IsNaN(v):
+		return 0
+	case v >= math.MaxUint32:
+		return math.MaxUint32
+	case v <= math.MinInt32:
+		return 1 << 31
+	}
+	return uint32(int64(v))
+}
+
+// clamp rounds v to the nearest integer and limits it to [lo, hi], flagging
+// overflow in q when it had to be limited (NaN becomes 0, flagged invalid).
 func clamp(v float64, lo, hi float64, q *Quality) float64 {
+	if math.IsNaN(v) {
+		if q != nil {
+			q.Invalid = true
+		}
+		return 0
+	}
+	v = math.Round(v)
 	if v > hi {
 		if q != nil {
 			q.Overflow = true
@@ -125,7 +151,7 @@ func BuildInfoObj(
 			Value: asdu.StepPosition{Val: int(int16(v)), HasTransient: transient},
 			Qds:   quality.ToQds(), Time: tt}
 	case 7, 33: // M_BO_NA_1 / M_BO_TB_1
-		uv := uint32(value)
+		uv := Bits32(value)
 		if kconv1 == -1 {
 			uv = ^uv
 		}
@@ -192,7 +218,7 @@ func BuildInfoObj(
 		obj.Info = asdu.SetpointCommandFloatInfo{Ioa: ioa, Value: float32(v),
 			Qos: asdu.QualifierOfSetpointCmd{Qual: 0, InSelect: sbo}, Time: tt}
 	case 51, 64: // C_BO_NA_1 / C_BO_TA_1
-		uv := uint32(value)
+		uv := Bits32(value)
 		if kconv1 == -1 {
 			uv = ^uv
 		}

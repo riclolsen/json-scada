@@ -38,15 +38,18 @@ import (
 // buildIECValue turns one MMS value into the record the MongoDB writer
 // consumes.
 //
-// parity note: for a structured value the C# driver computes value,
-// quality, transient state and timestamp from the whole structure, then
-// recomputes quality, transient state and timestamp once per member inside
-// its logging loop — so the *last* member decides them. For the usual
-// {stVal, q, t} that means the timestamp member has the last word and
-// quality reads as good. That behaviour is reproduced here on purpose:
-// tags fed by the two drivers must not disagree.
-// The returned timestamp is the one the C# driver would have carried out of
-// the same loop: it is the source timestamp of a data-change report.
+// deviation D13: for a structured value the C# driver recomputed quality,
+// transient state and timestamp once per member, so the last member decided
+// them. For {stVal, q, t} that is the timestamp, so the IED's quality never
+// reached the tag (an invalid point read as good), and for a controllable
+// object's status the timestamp came from tOpOk rather than t. Here the
+// quality is the object's q attribute and the timestamp its first UtcTime,
+// which is t for every common data class.
+//
+// deviation D14: the C# driver also let the last structured member decide
+// the value, which reads the angle of a complex measurand (CMV) and zero for
+// a composite (WYE). The value is now the named value attribute, cVal
+// included, or the first numeric one found by type.
 func buildIECValue(conn *Iec61850Connection, entry *Iec61850Entry, value *mms.Value,
 	selfPublish bool, fromReport bool, log *strings.Builder) (IECValue, uint64) {
 
@@ -80,53 +83,33 @@ func buildIECValue(conn *Iec61850Connection, entry *Iec61850Entry, value *mms.Va
 		} else {
 			v, isBinary = mmsGetNumericVal(value)
 		}
-		failed = mmsGetQualityFailed(value)
-		transient = mmsGetQualityTransient(value)
+		failed = structQualityFailed(value, childs)
 		timestamp = mmsGetTimestamp(value)
 
-		for i := 0; i < value.Len(); i++ {
-			e := value.Index(i)
-			if e == nil {
-				continue
-			}
-			if logging {
+		if logging {
+			for i := 0; i < value.Len(); i++ {
+				e := value.Index(i)
+				if e == nil {
+					continue
+				}
 				fmt.Fprintf(log, "  %s", mmsTypeName(e.Type()))
-			}
-			if e.Type() == mms.TypeStructure {
-				if named == nil {
-					v, isBinary = mmsGetNumericVal(e)
-				}
-				for j := 0; j < e.Len(); j++ {
-					g := e.Index(j)
-					if g == nil {
-						continue
+				if e.Type() == mms.TypeStructure {
+					log.WriteString("\n")
+					for j := 0; j < e.Len(); j++ {
+						if g := e.Index(j); g != nil {
+							fmt.Fprintf(log, "  %s     -> %s\n", mmsTypeName(g.Type()), mmsToString(g))
+						}
 					}
-					if logging {
-						fmt.Fprintf(log, "  %s     -> %s\n", mmsTypeName(g.Type()), mmsToString(g))
-					}
-					if named == nil {
-						v, isBinary = mmsGetNumericVal(g)
-					}
+					continue
 				}
+				fmt.Fprintf(log, "   -> %s\n", mmsToString(e))
 			}
-			failed = mmsGetQualityFailed(e)
-			transient = mmsGetQualityTransient(e)
-			timestamp = mmsGetTimestamp(e)
-
-			if logging {
-				switch e.Type() {
-				case mms.TypeBitString, mms.TypeUTCTime:
-					fmt.Fprintf(log, "   -> %s\n", mmsToString(e))
-				default:
-					fmt.Fprintf(log, "   -> %s\n", formatDouble(v))
-				}
-			}
+			fmt.Fprintf(log, "  value -> %s\n", formatDouble(v))
 		}
 
 		// A double point says more than its position: 00 is the transient
-		// intermediate state and 11 is a faulty one. Those belong in the
-		// quality of the tag, and they survive the loop above, which reads
-		// quality from the last member of the structure.
+		// intermediate state and 11 is a faulty one. Both belong in the
+		// quality of the tag.
 		if pos := doublePointAttribute(value, childs); pos != nil {
 			if mmsTestDoubleStateFailed(pos) {
 				failed = true
@@ -178,6 +161,33 @@ func buildIECValue(conn *Iec61850Connection, entry *Iec61850Entry, value *mms.Va
 	return iv, timestamp
 }
 
+// emitValues queues the value of an entry. A composite data object (one
+// with Parts) is split: each member of its structure is the value of one
+// part, and the composite itself carries none. A value that does not have
+// the expected shape is taken as the entry's own.
+func emitValues(conn *Iec61850Connection, entry *Iec61850Entry, value *mms.Value,
+	selfPublish, fromReport bool, reason model.ReasonCode, log *strings.Builder) {
+	if len(entry.Parts) > 0 && value != nil && value.Type() == mms.TypeStructure && value.Len() == len(entry.Parts) {
+		for i, part := range entry.Parts {
+			emitOne(conn, part, value.Index(i), selfPublish && part.AutoPublish, fromReport, reason, log)
+		}
+		return
+	}
+	emitOne(conn, entry, value, selfPublish, fromReport, reason, log)
+}
+
+func emitOne(conn *Iec61850Connection, entry *Iec61850Entry, value *mms.Value,
+	selfPublish, fromReport bool, reason model.ReasonCode, log *strings.Builder) {
+	iv, timestamp := buildIECValue(conn, entry, value, selfPublish, fromReport, log)
+	// Only a data-change report carries a usable source timestamp, and only
+	// from a structured value.
+	if fromReport && reason&model.ReasonDataChange != 0 && value != nil && value.Type() == mms.TypeStructure && timestamp != 0 {
+		iv.HasSourceTimestamp = true
+		iv.SourceTimestamp = time.UnixMilli(int64(timestamp)).UTC()
+	}
+	enqueueValue(iv)
+}
+
 // reportHandler receives one decoded report. It runs on the association's
 // reader goroutine, so it only formats a log line and enqueues values.
 func reportHandler(conn *Iec61850Connection, st *rcbState, rep *client.Report) {
@@ -205,14 +215,24 @@ func reportHandler(conn *Iec61850Connection, st *rcbState, rep *client.Report) {
 			fmt.Fprintf(&log, "  entryID: %s \n", entryIDString(rep.EntryID))
 		}
 		if st.buffered {
-			if last, ok := conn.LastReportID(st.ref); ok && bytes.Equal(last, rep.EntryID) {
+			last, seen := conn.LastReportID(st.ref)
+			switch {
+			case rep.SubSeqNum > 0 && st.segEntryID != nil && bytes.Equal(st.segEntryID, rep.EntryID) &&
+				rep.SubSeqNum > st.segLast:
+				// The next segment of a report accepted in this session:
+				// every segment carries the same EntryID.
+				st.segLast = rep.SubSeqNum
+			case seen && bytes.Equal(last, rep.EntryID):
 				if logging {
 					log.WriteString("Repeated report!\n")
 					jslog.Log(jslog.LevelBasic, "%s", log.String())
 				}
 				return
+			default:
+				id := append([]byte(nil), rep.EntryID...)
+				conn.SetLastReportID(st.ref, id)
+				st.segEntryID, st.segLast = id, rep.SubSeqNum
 			}
-			conn.SetLastReportID(st.ref, append([]byte(nil), rep.EntryID...))
 		}
 	}
 
@@ -271,15 +291,7 @@ func reportHandler(conn *Iec61850Connection, st *rcbState, rep *client.Report) {
 			fmt.Fprintf(&log, " Included for reason %s \n", reasonName(e.Reason))
 		}
 
-		iv, timestamp := buildIECValue(conn, entry, e.Value, conn.AutoCreateTags, true, &log)
-
-		// Only a data-change carries a usable source timestamp, and only
-		// from a structured value.
-		if e.Reason&model.ReasonDataChange != 0 && e.Value != nil && e.Value.Type() == mms.TypeStructure && timestamp != 0 {
-			iv.HasSourceTimestamp = true
-			iv.SourceTimestamp = time.UnixMilli(int64(timestamp)).UTC()
-		}
-		enqueueValue(iv)
+		emitValues(conn, entry, e.Value, conn.AutoCreateTags, true, e.Reason, &log)
 	}
 
 	jslog.Log(jslog.LevelBasic, "%s", log.String())

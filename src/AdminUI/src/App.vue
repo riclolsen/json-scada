@@ -1,44 +1,19 @@
 <template>
   <v-app :theme="theme">
-    <v-app-bar app height="48">
-      <v-app-bar-title class="text-subtitle-1">
-        <router-link to="/" class="text-decoration-none">
-          <v-tooltip :text="version">
-            <template v-slot:activator="{ props }">
-              <span v-bind="props">{{ $t('app.title') }}</span>
-            </template>
-          </v-tooltip>
-        </router-link>
-      </v-app-bar-title>
-      <v-spacer></v-spacer>
-      <span class="text-body-2 font-weight-medium" style="position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; white-space: nowrap; opacity: 0.9;">{{ pageTitle }}</span>
-      <v-select v-model="currentLocale" :items="availableLocales" variant="outlined" density="compact" hide-details
-        class="mr-2" style="max-width: 120px"></v-select>
-      <v-btn icon size="small" @click="toggleTheme">
-        <v-icon>{{
-          theme === 'light' ? 'mdi-weather-night' : 'mdi-weather-sunny'
-        }}</v-icon>
-      </v-btn>
-      <v-menu v-if="loggedInUser" offset-y>
-        <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" variant="text" class="ml-2">
-            <v-icon right size="small">mdi-account-circle</v-icon>
-            {{ loggedInUser }}
-          </v-btn>
-        </template>
-        <v-list>
-          <v-list-item @click="logout">
-            <v-list-item-title>{{ $t('app.logout') }} <v-icon> mdi-logout </v-icon>
-            </v-list-item-title>
-          </v-list-item>
-          <v-list-item v-if="!isLDAPUser" @click="openChangePasswordDialog">
-            <v-list-item-title>{{ $t('login.changePassword') }}
-              <v-icon> mdi-lock-reset </v-icon>
-            </v-list-item-title>
-          </v-list-item>
-        </v-list>
-      </v-menu>
-    </v-app-bar>
+    <AppSidebar
+      v-if="!embedded"
+      :logged-in-user="loggedInUser || ''"
+      :isLDAPUser="isLDAPUser"
+      :is-admin="isAdmin"
+      :theme="theme"
+      :locale="currentLocale"
+      :available-locales="availableLocales"
+      :version="version"
+      @update:locale="(l) => (currentLocale = l)"
+      @toggle-theme="toggleTheme"
+      @logout="logout"
+      @change-password="openChangePasswordDialog"
+    />
 
     <!-- Change Password Dialog -->
     <v-dialog scrollable v-if="loggedInUser" v-model="showChangePasswordDialog" max-width="400px">
@@ -79,32 +54,43 @@ import { ref, watch, provide, onMounted, computed } from 'vue'
 import { useTheme } from 'vuetify'
 import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
-import { STORAGE_KEY } from './i18n'
+import { STORAGE_KEY, getStoredLocale } from './i18n'
+import { getUserSetting, setUserSetting } from './lib/viewerHelpers'
+import AppSidebar from './components/AppSidebar.vue'
 
 const THEME_STORAGE_KEY = 'user-theme'
 
-const version = ref('v0.70-alpha')
+const version = ref('v0.71-alpha')
 const router = useRouter()
 const route = useRoute()
 const vuetifyTheme = useTheme()
 const { locale, t } = useI18n()
 
-const getStoredTheme = () => localStorage.getItem(THEME_STORAGE_KEY) || 'dark'
+// theme and language are kept per user (see getUserSetting)
+const getStoredTheme = () => getUserSetting(THEME_STORAGE_KEY) || 'dark'
 const theme = ref(getStoredTheme())
 
-// Map route paths to i18n dashboard translation keys
+// `?embed=1`: the page runs inside an iframe (Display Viewer hover preview,
+// #foreign_object) or a bare popup — no side panel
+// (read from the URL too: the first render happens before the router resolves)
+const isEmbedFlag = (v) => v === '1' || v === 'true'
+const embedded = computed(
+  () =>
+    isEmbedFlag(route.query.embed) ||
+    isEmbedFlag(new URLSearchParams(window.location.hash.split('?')[1] || '').get('embed'))
+)
+provide('embedded', embedded)
+
+// Map route paths to i18n keys for the browser tab title
 const pageTitle = computed(() => {
   const map = {
     '/login': 'login.title',
-    '/dashboard': 'dashboard.title',
+    '/dashboard': 'nav.home',
     '/display-viewer': 'dashboard.displayViewer',
-    '/display-viewer-new': 'dashboard.displayViewer',
     '/alarms-viewer': 'dashboard.alarmsViewer',
-    '/alarms-viewer-new': 'dashboard.alarmsViewer',
     '/tabular-viewer': 'dashboard.tabularViewer',
-    '/tabular-viewer-new': 'dashboard.tabularViewer',
     '/events-viewer': 'dashboard.eventsViewer',
-    '/events-viewer-new': 'dashboard.eventsViewer',
+    '/trend-viewer': 'trendViewer.title',
     '/log-viewer': 'dashboard.logViewer',
     '/about': 'dashboard.about',
     '/admin': 'dashboard.admin',
@@ -120,15 +106,42 @@ const pageTitle = computed(() => {
   const key = map[route.path]
   return key ? t(key) : ''
 })
+watch(
+  pageTitle,
+  (title) => (document.title = title ? title + ' · ' + t('app.title') : t('app.title')),
+  { immediate: true }
+)
 
 const currentLocale = ref(locale.value)
 const loggedInUser = ref('')
+// a user who signs in gets their own theme and language back
+watch(loggedInUser, (name) => {
+  if (!name) return
+  const th = getStoredTheme()
+  if (th !== theme.value) {
+    theme.value = th
+    vuetifyTheme.global.name.value = th
+  }
+  const loc = getStoredLocale()
+  if (loc !== currentLocale.value) currentLocale.value = loc
+})
 const isLDAPUser = ref(false)
 const showChangePasswordDialog = ref(false)
 const newPassword = ref('')
 const confirmNewPassword = ref('')
 const currentPassword = ref('')
 const errorMessage = ref('')
+
+// admin-only menu entries follow the signed-in user's rights (cookie)
+const isAdmin = computed(() => {
+  if (!loggedInUser.value) return false
+  try {
+    const ck = parseCookie(document.cookie)
+    return !!JSON.parse(ck['json-scada-user'] || '{}')?.rights?.isAdmin
+  } catch (e) {
+    return false
+  }
+})
 
 const availableLocales = [
   { title: 'English', value: 'en' },
@@ -155,7 +168,7 @@ onMounted(() => {
 const toggleTheme = () => {
   theme.value = theme.value === 'light' ? 'dark' : 'light'
   vuetifyTheme.global.name.value = theme.value
-  localStorage.setItem(THEME_STORAGE_KEY, theme.value)
+  setUserSetting(THEME_STORAGE_KEY, theme.value, { alsoShared: true })
 }
 
 const setLoggedInUser = (username) => {
@@ -255,7 +268,7 @@ const changePwd = () => {
 
 watch(currentLocale, (newLocale) => {
   locale.value = newLocale
-  localStorage.setItem(STORAGE_KEY, newLocale)
+  setUserSetting(STORAGE_KEY, newLocale, { alsoShared: true })
 })
 
 function checkLogin() {
@@ -277,6 +290,8 @@ function checkLogin() {
         if (loggedInUser.value !== ck.username)
           loggedInUser.value = ck.username
         // console.log('User is logged in')
+      } else if (data.unavailable) {
+        // server database briefly unavailable: keep the session, check again later
       } else {
         router.push('/login')
         // console.log('User is not logged in')
@@ -307,12 +322,5 @@ provide('setLoggedInUser', setLoggedInUser)
 <style>
 html {
   overflow-y: auto;
-}
-</style>
-
-<style scoped>
-.text-decoration-none {
-  text-decoration: none;
-  color: inherit;
 }
 </style>

@@ -2,10 +2,11 @@
 # Defender (MsMpEng.exe) on a busy SCADA server.
 #
 #  - Folder exclusions: SQL files constantly written/deleted by cs_data_processor and
-#    process_hist/process_rtdata, logs and database files.
-#  - Process exclusions (full paths): JSON-SCADA runtimes and drivers, plus the
-#    Windows tools started in a loop by sql\process_pg_hist.bat and process_pg_rtdata.bat
-#    (forfiles.exe, PING.EXE). Files opened by excluded processes are not scanned.
+#    src\process_pg_sql (process_hist/process_rtdata services), logs and database files.
+#  - Process exclusions (full paths): JSON-SCADA runtimes and drivers, plus the Windows
+#    tools the former sql\process_pg_*.bat loaders started in a loop (forfiles.exe,
+#    PING.EXE; kept so -Remove also undoes older installs). Files opened by excluded
+#    processes are not scanned.
 #  - cmd.exe is NOT excluded unless -IncludeCmd is given: excluding it lowers protection
 #    for every batch script on the machine, not just JSON-SCADA ones.
 #

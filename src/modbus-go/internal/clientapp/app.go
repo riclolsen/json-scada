@@ -28,7 +28,7 @@ import (
 var App = drv.AppDefs{
 	Name:      "MODBUS",
 	EnvPrefix: "JS_MODBUS_",
-	Version:   "0.2.1",
+	Version:   "0.3.0",
 	Msg:       "{json:scada} - Modbus Client Driver (Go)",
 }
 

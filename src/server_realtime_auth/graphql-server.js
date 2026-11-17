@@ -28,10 +28,17 @@ const { GraphQLError, GraphQLScalarType, Kind } = require('graphql')
 const cors = require('cors')
 const express = require('express')
 const { ObjectId, Double } = require('mongodb')
-const { Pool } = require('pg')
+const { getPgPool } = require('./pg-pool') // historian pool shared with /Invoke/
 const { authJwt } = require('./app/middlewares')
-const { canSendCommands, canSendCommandTo } = require('./app/middlewares/authJwt.js')
+const { propertyProblem } = require('./app/services/point-properties')
+const {
+  findCommandPoint,
+  commandRefusal,
+  canSeeCommand,
+} = require('./app/services/command-guard')
 const UserActionsQueue = require('./userActionsQueue')
+const UserRights = require('./app/services/user-rights')
+const { clientAddress } = require('./app/services/client-address')
 const Log = require('./simple-logger')
 
 const API_AP = process.env.JS_GRAPHQL_AP || '/apollo'
@@ -43,11 +50,169 @@ const EventsRemoveGuardSeconds = 20
 const DoInsertCommandAsSOE = true
 const CommandSentAsSOESymbol = '⚙️➡️'
 const MaxQueryLimit = 20000
-const MaxHistoryLimit = 50000
+const MaxHistoryLimit = 50000 // max historical values per tag
+const MaxHistoryTotalRows = 500000 // max historical values in one answer
+const MaxQueryDepth = 10 // deepest selection nesting accepted in a query
+// schema introspection (__schema/__type) nests type references deeply (the
+// standard GraphiQL/Apollo query has 15 levels): it gets a limit of its own
+const MaxIntrospectionDepth = 30
+// selections in a query document (fields, fragments): bounds validation work
+const MaxQuerySelections = 5000
+// top-level fields (aliases included) of an operation: they run concurrently,
+// so this bounds the database queries started by one request
+const MaxRootFields = 50
+// rows (documents, events, historical values) one request may ask for in all:
+// each list field takes its limit from this budget before it queries
+const MaxOperationRows = 500000
+
+// errors of writes nobody waits for (events, range checks) must not go unhandled
+function logBgError(e) {
+  Log.log('GraphQL: background write error: ' + (e?.message || e))
+}
+
+// A point id names a point key (_id) only when it is a number or a string of
+// digits: '22KV_BRK' is a tag name, not key 22 (parseInt would say 22).
+function asPointKey(id) {
+  if (typeof id === 'number') return Number.isFinite(id) ? id : null
+  if (typeof id === 'string' && /^-?\d+$/.test(id.trim())) return Number(id.trim())
+  return null
+}
+
+// Validation rule refusing queries nested deeper than maxDepth (fragments included).
+// Each fragment is measured once (memoized), so a query reusing fragments
+// many times costs no more than its size; the selections walked are also
+// counted and a document with more than maxSelections of them is refused,
+// which bounds the work of this rule.
+function depthLimitRule(maxDepth, maxIntrospectionDepth, maxSelections) {
+  return (context) => {
+    const fragments = {}
+    const memo = new Map() // `${name}|${inIntrospection}` -> { depth, intro }
+    const IN_PROGRESS = { depth: 0, intro: 0 } // fragment cycles count as 0
+    let walked = 0
+    class TooComplex extends Error {}
+
+    // { depth, intro }: depth of the selection set, deepest introspection subtree
+    const walk = (selectionSet, inIntrospection) => {
+      const out = { depth: 0, intro: 0 }
+      if (!selectionSet) return out
+      for (const sel of selectionSet.selections) {
+        if (++walked > maxSelections) throw new TooComplex()
+        let d = 0
+        if (sel.kind === Kind.FIELD) {
+          const name = sel.name.value
+          if (
+            !inIntrospection &&
+            (name === '__schema' || name === '__type') &&
+            sel.selectionSet
+          ) {
+            // measured against its own limit, counts as one level here
+            const r = walk(sel.selectionSet, true)
+            out.intro = Math.max(out.intro, 1 + r.depth, r.intro)
+            d = 1
+          } else if (sel.selectionSet) {
+            const r = walk(sel.selectionSet, inIntrospection)
+            out.intro = Math.max(out.intro, r.intro)
+            d = 1 + r.depth
+          } else d = 1
+        } else if (sel.kind === Kind.INLINE_FRAGMENT) {
+          const r = walk(sel.selectionSet, inIntrospection)
+          out.intro = Math.max(out.intro, r.intro)
+          d = r.depth
+        } else if (sel.kind === Kind.FRAGMENT_SPREAD) {
+          const r = fragmentDepth(sel.name.value, inIntrospection)
+          out.intro = Math.max(out.intro, r.intro)
+          d = r.depth
+        }
+        if (d > out.depth) out.depth = d
+      }
+      return out
+    }
+    const fragmentDepth = (name, inIntrospection) => {
+      const key = name + '|' + inIntrospection
+      const known = memo.get(key)
+      if (known) return known
+      if (!fragments[name]) return IN_PROGRESS // unknown: reported by graphql itself
+      memo.set(key, IN_PROGRESS)
+      const r = walk(fragments[name].selectionSet, inIntrospection)
+      memo.set(key, r)
+      return r
+    }
+
+    return {
+      Document(doc) {
+        for (const def of doc.definitions)
+          if (def.kind === Kind.FRAGMENT_DEFINITION) fragments[def.name.value] = def
+        try {
+          for (const def of doc.definitions)
+            if (def.kind === Kind.OPERATION_DEFINITION) {
+              const { depth, intro } = walk(def.selectionSet, false)
+              if (depth > maxDepth)
+                context.reportError(
+                  new GraphQLError(
+                    `Query is nested too deeply (${depth} levels, maximum ${maxDepth})`
+                  )
+                )
+              if (intro > maxIntrospectionDepth)
+                context.reportError(
+                  new GraphQLError(
+                    `Introspection query is nested too deeply (${intro} levels, maximum ${maxIntrospectionDepth})`
+                  )
+                )
+            }
+        } catch (e) {
+          if (!(e instanceof TooComplex)) throw e
+          context.reportError(
+            new GraphQLError(
+              `Query is too complex (more than ${maxSelections} selections)`
+            )
+          )
+        }
+      },
+    }
+  }
+}
+
+// Validation rule refusing operations with more than maxFields top-level
+// fields, counting those of fragments and inline fragments at the top level.
+function rootFieldsRule(maxFields) {
+  return (context) => ({
+    Document(doc) {
+      const fragments = {}
+      for (const def of doc.definitions)
+        if (def.kind === Kind.FRAGMENT_DEFINITION) fragments[def.name.value] = def
+      const count = (selectionSet, seen) => {
+        let n = 0
+        for (const sel of selectionSet?.selections || []) {
+          if (sel.kind === Kind.FIELD) n++
+          else if (sel.kind === Kind.INLINE_FRAGMENT) n += count(sel.selectionSet, seen)
+          else if (sel.kind === Kind.FRAGMENT_SPREAD) {
+            // each spread counts: the same fragment twice runs its fields twice
+            const f = fragments[sel.name.value]
+            if (!f || seen.has(f)) continue // cycle/unknown: reported by graphql
+            seen.add(f)
+            n += count(f.selectionSet, seen)
+            seen.delete(f)
+          }
+          if (n > maxFields) return n
+        }
+        return n
+      }
+      for (const def of doc.definitions)
+        if (def.kind === Kind.OPERATION_DEFINITION) {
+          const n = count(def.selectionSet, new Set())
+          if (n > maxFields)
+            context.reportError(
+              new GraphQLError(
+                `Operation has too many top-level fields (maximum ${maxFields})`
+              )
+            )
+        }
+    },
+  })
+}
 
 let db = null // mongoose models (see app/models)
 let AUTH = true // authentication/RBAC enabled?
-let pgPool = null // postgresql connection pool (for historical data)
 
 // ----------------------------------------------------------------------------
 // Custom scalars
@@ -147,16 +312,16 @@ const typeDefs = `#graphql
     "Get one point by its numeric point key (_id)."
     tagById(id: Float!): Tag
     "List of distinct group1 (station) names with point counts."
-    groups1: [GroupCount!]!
+    groups1(limit: Int = 20000, skip: Int = 0): [GroupCount!]!
     "List of distinct group2 (bay) names with point counts, optionally filtered by group1."
-    groups2(group1: String): [GroupCount!]!
+    groups2(group1: String, limit: Int = 20000, skip: Int = 0): [GroupCount!]!
     "Currently alarmed or out-of-normal points (like the persistentAlarms filter of the /Invoke API)."
     activeAlarms(group1: String, group2: String, limit: Int = 1000): [Tag!]!
 
     "Query sequence of events (SOE) data. Defaults to the last hour when no time range is given."
     soeEvents(filter: SoeFilter, limit: Int = 1000, ascending: Boolean = false): [SoeEvent!]!
 
-    "Query historical values (PostgreSQL/TimescaleDB 'hist' table) for a list of tags."
+    "Query historical values (PostgreSQL/TimescaleDB 'hist' table) for a list of tags; limit is the maximum number of values per tag."
     historicalData(
       tags: [String!]!
       timeBegin: DateTime
@@ -171,16 +336,16 @@ const typeDefs = `#graphql
     userActions(filter: UserActionFilter, limit: Int = 1000, skip: Int = 0): [UserAction!]!
 
     "List users (admin only)."
-    users: [User!]!
+    users(limit: Int = 20000, skip: Int = 0): [User!]!
     "List roles (admin only)."
-    roles: [Role!]!
+    roles(limit: Int = 20000, skip: Int = 0): [Role!]!
     "Global system settings (admin only)."
     systemSettings: SystemSettings
 
     "List protocol driver instances."
-    protocolDriverInstances: [ProtocolDriverInstance!]!
+    protocolDriverInstances(limit: Int = 20000, skip: Int = 0): [ProtocolDriverInstance!]!
     "List protocol connections (credentials/certificates are never exposed)."
-    protocolConnections: [ProtocolConnection!]!
+    protocolConnections(limit: Int = 20000, skip: Int = 0): [ProtocolConnection!]!
 
     # ---- legacy query names kept for backward compatibility ----
     "Deprecated: use users. (admin only)"
@@ -657,7 +822,7 @@ function nativeDb() {
   return conn.db
 }
 
-function buildContext(req) {
+async function buildContext(req) {
   let token = false,
     username = 'unknown',
     rights = null
@@ -665,10 +830,77 @@ function buildContext(req) {
     token = authJwt.checkToken(req)
     if (token !== false) {
       if ('username' in token) username = token.username
-      if ('rights' in token) rights = token.rights
+      // rights as they are now in the database, not the ones of sign-in time
+      // (verifyToken already loaded them)
+      try {
+        rights = req.rights || (await authJwt.getCurrentRights(token)) || null
+      } catch (e) {
+        throw gqlError('Database disconnected!', 'SERVICE_UNAVAILABLE')
+      }
     }
   }
-  return { req, token, username, rights }
+  return { req, token, username, rights, rowBudget: MaxOperationRows }
+}
+
+// Takes up to `limit` rows from the row budget of the request; refused when
+// the budget is used up. Call refundRows with the rows not used.
+function reserveRows(ctx, limit) {
+  if (!ctx || typeof ctx.rowBudget !== 'number') return limit
+  if (ctx.rowBudget <= 0)
+    throw gqlError(
+      `Request asks for too many rows (maximum ${MaxOperationRows} in all)`,
+      'BAD_USER_INPUT'
+    )
+  const n = Math.min(limit, ctx.rowBudget)
+  ctx.rowBudget -= n
+  return n
+}
+function refundRows(ctx, reserved, rows) {
+  if (ctx && typeof ctx.rowBudget === 'number' && Array.isArray(rows))
+    ctx.rowBudget += Math.max(0, reserved - rows.length)
+  return rows
+}
+// a list resolver's query, limited by the row budget
+async function budgeted(ctx, limit, run) {
+  const n = reserveRows(ctx, limit)
+  return refundRows(ctx, n, await run(n))
+}
+
+function skipOf(skip) {
+  return typeof skip === 'number' && skip > 0 ? Math.floor(skip) : 0
+}
+
+// a page of a configuration collection (users, roles, drivers, connections),
+// in a stable order, limited by the row budget
+function configPage(ctx, model, limit, skip) {
+  return budgeted(ctx, clampLimit(limit ?? MaxQueryLimit), (n) =>
+    model.find().sort({ _id: 1 }).skip(skipOf(skip)).limit(n)
+  )
+}
+
+// a page of distinct group names with point counts
+function groupPage(ctx, match, field, limit, skip) {
+  const pipeline = []
+  if (match) pipeline.push({ $match: match })
+  pipeline.push({ $group: { _id: '$' + field, count: { $sum: 1 } } })
+  pipeline.push({ $sort: { _id: 1 } })
+  const sk = skipOf(skip)
+  if (sk > 0) pipeline.push({ $skip: sk })
+  return budgeted(ctx, clampLimit(limit ?? MaxQueryLimit), async (n) => {
+    pipeline.push({ $limit: n })
+    const results = await nativeDb().collection(COLL_REALTIME).aggregate(pipeline).toArray()
+    return results.map((r) => ({ name: r._id || '', count: r.count }))
+  })
+}
+
+// all roles, read once per request: the roleDetails of every user listed
+// (aliases included) come from it instead of a query per user
+function rolesById(ctx) {
+  if (!ctx.rolesById)
+    ctx.rolesById = db.role
+      .find()
+      .then((roles) => new Map(roles.map((r) => [String(r._id), r])))
+  return ctx.rolesById
 }
 
 // group1 (station) access restriction filter for the realtime collection,
@@ -694,19 +926,32 @@ function requireTokenRight(ctx, right, message) {
   }
 }
 
-// check right against the database (not just the token) like /Invoke does for commands
+// rights as they are now (fresh, from the primary, see services/user-rights),
+// read once per request: the admin fields and commands of an operation share
+// them. null when the session ended; the database being unavailable is an
+// error of its own (SERVICE_UNAVAILABLE), never a missing right.
+function freshRights(ctx) {
+  if (ctx.token === false) return Promise.resolve(null)
+  if (!ctx.freshRights)
+    ctx.freshRights = authJwt
+      .getCurrentRights(ctx.token, { fresh: true })
+      .then((rights) => rights || null)
+      .catch((err) => {
+        Log.log('GraphQL: rights lookup - ' + err.message)
+        throw gqlError('Database disconnected!', 'SERVICE_UNAVAILABLE')
+      })
+  return ctx.freshRights
+}
+
 async function isAdminDb(ctx) {
   if (!AUTH) return true
-  if (ctx.token === false) return false
-  try {
-    const user = await db.user.findById(ctx.token.id).exec()
-    if (!user) return false
-    const roles = await db.role.find({ _id: { $in: user.roles } }).exec()
-    return roles.some((r) => r.isAdmin)
-  } catch (err) {
-    Log.log('GraphQL: ' + err.message)
-    return false
-  }
+  return !!(await freshRights(ctx))?.isAdmin
+}
+
+// command rights of the user (fresh rights): may it command this group1?
+async function canCommand(ctx, group1) {
+  if (!AUTH) return true
+  return UserRights.canCommandGroup(await freshRights(ctx), group1)
 }
 
 async function requireAdmin(ctx) {
@@ -758,8 +1003,8 @@ function buildTagQuery(ctx, filter) {
 
 // find-point query by numeric key or tag name (optionally group1-restricted)
 function findPointQuery(ctx, tagOrId, applyGroupRestriction) {
-  const asNumber = parseInt(tagOrId)
-  const key = isNaN(asNumber) ? { tag: tagOrId } : { _id: asNumber }
+  const asNumber = asPointKey(tagOrId)
+  const key = asNumber === null ? { tag: String(tagOrId) } : { _id: asNumber }
   if (applyGroupRestriction) {
     const gf = groupAccessFilter(ctx)
     if (gf) return { ...key, ...gf }
@@ -778,33 +1023,9 @@ function checkTagAccess(ctx, doc) {
   return doc
 }
 
-function getPgPool() {
-  if (pgPool) return pgPool
-  let pgopt = {}
-  if ('PGHOST' in process.env || 'PGHOSTADDR' in process.env) pgopt = null
-  else
-    pgopt = {
-      host: '127.0.0.1',
-      database: 'json_scada',
-      user: 'json_scada',
-      password: 'json_scada',
-      port: 5432,
-    }
-  Log.log('GraphQL: Postgresql - connecting')
-  pgPool = new Pool(pgopt)
-  pgPool.on('error', (err) => {
-    Log.log('GraphQL: Postgresql - ' + err.message)
-    try {
-      pgPool.end()
-    } catch (e) {}
-    pgPool = null
-  })
-  return pgPool
-}
-
 function originatorIp(req) {
   return (
-    req.headers['x-real-ip'] || req.headers['x-forwarded-for'] || req.socket?.remoteAddress
+    clientAddress(req)
   )
 }
 
@@ -825,8 +1046,9 @@ const resolvers = {
   JSONValue,
 
   User: {
-    roleDetails: async (parent) => {
-      return await db.role.find({ _id: { $in: parent.roles } })
+    roleDetails: async (parent, _, ctx) => {
+      const byId = await rolesById(ctx)
+      return (parent.roles || []).map((id) => byId.get(String(id))).filter(Boolean)
     },
   },
 
@@ -860,11 +1082,13 @@ const resolvers = {
       let sort = { tag: 1 }
       if (typeof sortBy === 'string' && /^[A-Za-z_][A-Za-z0-9_]*$/.test(sortBy))
         sort = { [sortBy]: sortDesc ? -1 : 1 }
-      return await db.tag
-        .find(query)
-        .sort(sort)
-        .skip(skip > 0 ? Math.floor(skip) : 0)
-        .limit(clampLimit(limit))
+      return budgeted(ctx, clampLimit(limit), (n) =>
+        db.tag
+          .find(query)
+          .sort(sort)
+          .skip(skip > 0 ? Math.floor(skip) : 0)
+          .limit(n)
+      )
     },
 
     tagsCount: async (_, { filter }, ctx) => {
@@ -879,27 +1103,17 @@ const resolvers = {
       return checkTagAccess(ctx, await db.tag.findOne({ _id: id }))
     },
 
-    groups1: async (_, __, ctx) => {
-      const match = groupAccessFilter(ctx)
-      const pipeline = []
-      if (match) pipeline.push({ $match: match })
-      pipeline.push({ $group: { _id: '$group1', count: { $sum: 1 } } })
-      pipeline.push({ $sort: { _id: 1 } })
-      const results = await nativeDb().collection(COLL_REALTIME).aggregate(pipeline).toArray()
-      return results.map((r) => ({ name: r._id || '', count: r.count }))
+    groups1: async (_, { limit, skip }, ctx) => {
+      return groupPage(ctx, groupAccessFilter(ctx), 'group1', limit, skip)
     },
 
-    groups2: async (_, { group1 }, ctx) => {
+    groups2: async (_, { group1, limit, skip }, ctx) => {
       const clauses = []
       const af = groupAccessFilter(ctx)
       if (af) clauses.push(af)
       if (typeof group1 === 'string' && group1 !== '') clauses.push({ group1: group1 })
-      const pipeline = []
-      if (clauses.length > 0) pipeline.push({ $match: { $and: clauses } })
-      pipeline.push({ $group: { _id: '$group2', count: { $sum: 1 } } })
-      pipeline.push({ $sort: { _id: 1 } })
-      const results = await nativeDb().collection(COLL_REALTIME).aggregate(pipeline).toArray()
-      return results.map((r) => ({ name: r._id || '', count: r.count }))
+      const match = clauses.length > 0 ? { $and: clauses } : null
+      return groupPage(ctx, match, 'group2', limit, skip)
     },
 
     activeAlarms: async (_, { group1, group2, limit }, ctx) => {
@@ -949,10 +1163,12 @@ const resolvers = {
       const af = tagAccessFilter(ctx)
       if (af) clauses.push(af)
       if (Object.keys(grp).length > 0) clauses.push(grp)
-      return await db.tag
-        .find({ $and: clauses })
-        .sort({ alarmed: -1, timeTagAlarm: -1 })
-        .limit(clampLimit(limit))
+      return budgeted(ctx, clampLimit(limit), (n) =>
+        db.tag
+          .find({ $and: clauses })
+          .sort({ alarmed: -1, timeTagAlarm: -1 })
+          .limit(n)
+      )
     },
 
     soeEvents: async (_, { filter, limit, ascending }, ctx) => {
@@ -986,7 +1202,7 @@ const resolvers = {
 
       const soeColl = nativeDb().collection(COLL_SOE)
       if (filter.aggregate === true) {
-        return await soeColl
+        return budgeted(ctx, clampLimit(limit), (n) => soeColl
           .aggregate([
             { $match: match },
             {
@@ -1009,10 +1225,12 @@ const resolvers = {
             },
           ])
           .sort(sort)
-          .limit(clampLimit(limit))
-          .toArray()
+          .limit(n)
+          .toArray())
       }
-      return await soeColl.find(match).sort(sort).limit(clampLimit(limit)).toArray()
+      return budgeted(ctx, clampLimit(limit), (n) =>
+        soeColl.find(match).sort(sort).limit(n).toArray()
+      )
     },
 
     historicalData: async (_, { tags, timeBegin, timeEnd, limit }, ctx) => {
@@ -1037,14 +1255,25 @@ const resolvers = {
 
       const pool = getPgPool()
       if (!pool) throw gqlError('Historian database not connected!', 'SERVICE_UNAVAILABLE')
+      const perTag = clampLimit(limit, MaxHistoryLimit)
+      const total = reserveRows(
+        ctx,
+        Math.min(MaxHistoryTotalRows, perTag * allowedTags.length)
+      )
       let resp
       try {
+        // `limit` applies to each tag: a busy tag cannot take the rows of the
+        // others; the whole answer is capped as well
         resp = await pool.query(
-          'SELECT tag, value, flags, time_tag, time_tag_at_source FROM hist ' +
-            'WHERE time_tag>=$1 AND time_tag<=$2 AND tag = ANY($3) ' +
-            'ORDER BY tag ASC, time_tag ASC LIMIT $4',
-          [begin, end, allowedTags, clampLimit(limit, MaxHistoryLimit)]
+          'SELECT h.tag, h.value, h.flags, h.time_tag, h.time_tag_at_source ' +
+            'FROM unnest($3::text[]) AS t(tag) CROSS JOIN LATERAL (' +
+            'SELECT tag, value, flags, time_tag, time_tag_at_source FROM hist ' +
+            'WHERE hist.tag = t.tag AND time_tag>=$1 AND time_tag<=$2 ' +
+            'ORDER BY time_tag ASC LIMIT $4) AS h ' +
+            'ORDER BY h.tag ASC, h.time_tag ASC LIMIT $5',
+          [begin, end, allowedTags, perTag, total]
         )
+        refundRows(ctx, total, resp.rows)
       } catch (err) {
         Log.log('GraphQL: Postgresql error - ' + err.message)
         throw gqlError('Historian database error!', 'SERVICE_UNAVAILABLE')
@@ -1068,10 +1297,13 @@ const resolvers = {
     },
 
     commandStatus: async (_, { commandHandle }, ctx) => {
-      const data = await nativeDb()
+      const mdb = nativeDb()
+      const data = await mdb
         .collection(COLL_COMMANDS)
         .findOne({ _id: toObjectId(commandHandle, 'commandHandle') })
       if (!data) return null
+      // another user's command in a station this user cannot see: unknown
+      if (AUTH && !(await canSeeCommand(mdb, ctx.rights, ctx.username, data))) return null
       let status = 'PENDING'
       if (typeof data.cancelReason === 'string') status = 'CANCELLED'
       else if (data.ack === true) status = 'ACK_OK'
@@ -1099,21 +1331,23 @@ const resolvers = {
       if (filter.timeBegin) clauses.push({ timeTag: { $gte: filter.timeBegin } })
       if (filter.timeEnd) clauses.push({ timeTag: { $lte: filter.timeEnd } })
       const query = clauses.length > 0 ? { $and: clauses } : {}
-      return await db.userAction
-        .find(query)
-        .sort({ timeTag: -1 })
-        .skip(skip > 0 ? Math.floor(skip) : 0)
-        .limit(clampLimit(limit))
+      return budgeted(ctx, clampLimit(limit), (n) =>
+        db.userAction
+          .find(query)
+          .sort({ timeTag: -1 })
+          .skip(skip > 0 ? Math.floor(skip) : 0)
+          .limit(n)
+      )
     },
 
-    users: async (_, __, ctx) => {
+    users: async (_, { limit, skip }, ctx) => {
       await requireAdmin(ctx)
-      return await db.user.find()
+      return configPage(ctx, db.user, limit, skip)
     },
 
-    roles: async (_, __, ctx) => {
+    roles: async (_, { limit, skip }, ctx) => {
       await requireAdmin(ctx)
-      return await db.role.find()
+      return configPage(ctx, db.role, limit, skip)
     },
 
     systemSettings: async (_, __, ctx) => {
@@ -1121,39 +1355,45 @@ const resolvers = {
       return await db.systemSetting.findOne({ key: 'global' })
     },
 
-    protocolDriverInstances: async () => {
-      return await db.protocolDriverInstance.find()
+    protocolDriverInstances: async (_, { limit, skip }, ctx) => {
+      await requireAdmin(ctx)
+      return configPage(ctx, db.protocolDriverInstance, limit, skip)
     },
 
-    protocolConnections: async () => {
-      return await db.protocolConnection.find()
+    protocolConnections: async (_, { limit, skip }, ctx) => {
+      await requireAdmin(ctx)
+      return configPage(ctx, db.protocolConnection, limit, skip)
     },
 
     // ---- legacy query names kept for backward compatibility ----
     getUsers: async (_, __, ctx) => {
       await requireAdmin(ctx)
-      return await db.user.find()
+      return configPage(ctx, db.user)
     },
     getUserByName: async (_, qry, ctx) => {
       await requireAdmin(ctx)
       return await db.user.findOne({ username: qry.username })
     },
     getTagsByGroup1: async (_, qry, ctx) => {
-      return await db.tag
-        .find(buildTagQuery(ctx, { group1: qry.group1 }))
-        .limit(MaxQueryLimit)
+      return budgeted(ctx, MaxQueryLimit, (n) =>
+        db.tag.find(buildTagQuery(ctx, { group1: qry.group1 })).limit(n)
+      )
     },
     getTags: async (_, qry, ctx) => {
-      return await db.tag.find(buildTagQuery(ctx, { tags: qry.tags })).limit(MaxQueryLimit)
+      return budgeted(ctx, MaxQueryLimit, (n) =>
+        db.tag.find(buildTagQuery(ctx, { tags: qry.tags })).limit(n)
+      )
     },
     getTag: async (_, qry, ctx) => {
       return checkTagAccess(ctx, await db.tag.findOne({ tag: qry.tag }))
     },
-    getProtocolDriverInstances: async () => {
-      return await db.protocolDriverInstance.find()
+    getProtocolDriverInstances: async (_, __, ctx) => {
+      await requireAdmin(ctx)
+      return configPage(ctx, db.protocolDriverInstance)
     },
-    getProtocolConnections: async () => {
-      return await db.protocolConnection.find()
+    getProtocolConnections: async (_, __, ctx) => {
+      await requireAdmin(ctx)
+      return configPage(ctx, db.protocolConnection)
     },
   },
 
@@ -1164,7 +1404,7 @@ const resolvers = {
 
       if (AUTH) {
         // check user right for commands in mongodb (not just in the token, for better security)
-        if (!(await canSendCommands(ctx.req))) {
+        if (!(await freshRights(ctx))?.sendCommands) {
           Log.log(`GraphQL: user has no right to issue commands! [${ctx.username}]`)
           throw gqlError('User has no right to issue commands!', 'FORBIDDEN')
         }
@@ -1177,6 +1417,16 @@ const resolvers = {
 
       // special command tags that start with $$ do not need to be found in the database
       if (typeof tagOrId === 'string' && tagOrId.startsWith('$$')) {
+        // a user whose roles restrict commands to some groups needs '$$' in that list
+        if (!(await canCommand(ctx, '$$')))
+          throw gqlError('User has no right to issue special ($$) commands!', 'FORBIDDEN')
+        UserActionsQueue.enqueue({
+          username: ctx.username,
+          tag: tagOrId,
+          action: 'Command',
+          properties: { value: new Double(cmdVal), valueString: cmdValStr },
+          timeTag: new Date(),
+        })
         const result = await mdb.collection(COLL_COMMANDS).insertOne({
           protocolSourceConnectionNumber: new Double(-1),
           protocolSourceCommonAddress: new Double(-1),
@@ -1196,16 +1446,14 @@ const resolvers = {
         return { ok: true, commandHandle: result.insertedId.toString() }
       }
 
-      // look for the command point in the database
-      const data = await mdb
-        .collection(COLL_REALTIME)
-        .findOne(findPointQuery(ctx, tagOrId, false))
+      // look for the command point in the database (primary: a fresh block counts)
+      const data = await findCommandPoint(mdb, findPointQuery(ctx, tagOrId, false))
       if (data === null || typeof data._id !== 'number')
         throw gqlError('Command point not found!', 'NOT_FOUND')
 
       if (AUTH) {
         // check if user can command this group1 destination
-        if (!(await canSendCommandTo(ctx.req, data.group1))) {
+        if (!(await canCommand(ctx, data.group1))) {
           Log.log(
             `GraphQL: user has no right to issue commands to the group1 destination! [${ctx.username}] [${data.group1}]`
           )
@@ -1214,6 +1462,13 @@ const resolvers = {
             'FORBIDDEN'
           )
         }
+      }
+
+      // only command points, and not while blocked by the operator
+      const refusal = await commandRefusal(mdb, data)
+      if (refusal) {
+        Log.log(`GraphQL: command refused: ${refusal} [${ctx.username}] [${data.tag}]`)
+        throw gqlError(refusal, 'FORBIDDEN')
       }
 
       let addressing = {}
@@ -1271,7 +1526,7 @@ const resolvers = {
           timeTagAtSource: new Date(),
           timeTagAtSourceOk: true,
           ack: 1,
-        })
+        }).catch(logBgError)
       }
 
       UserActionsQueue.enqueue({
@@ -1397,7 +1652,7 @@ const resolvers = {
         case 'ACK_ALL_ALARMS': {
           result = await mdb
             .collection(COLL_REALTIME)
-            .updateMany({ ...gf }, { $set: { alarmed: false } })
+            .updateMany({ alarmed: true, ...gf }, { $set: { alarmed: false } })
           // make digital event tags return to zero after acknowledged
           await mdb.collection(COLL_REALTIME).updateMany(
             {
@@ -1415,7 +1670,7 @@ const resolvers = {
                   value: 0,
                   valueString: '$stateTextFalse',
                   timeTagAtSource: null,
-                  TimeTagAtSourceOk: null,
+                  timeTagAtSourceOk: null,
                 },
               },
             ]
@@ -1450,7 +1705,7 @@ const resolvers = {
                   value: 0,
                   valueString: '$stateTextFalse',
                   timeTagAtSource: null,
-                  TimeTagAtSourceOk: null,
+                  timeTagAtSourceOk: null,
                 },
               },
             ]
@@ -1508,8 +1763,16 @@ const resolvers = {
     },
 
     updateTagProperties: async (_, { tagOrId, properties }, ctx) => {
+      // GraphQL checks the types; lengths and ranges are checked here (a
+      // null field means unchanged, as below)
+      const given = Object.fromEntries(
+        Object.entries(properties || {}).filter(([, v]) => v !== null && v !== undefined)
+      )
+      const problem = propertyProblem(given)
+      if (problem) throw gqlError(problem, 'BAD_USER_INPUT')
       const mdb = nativeDb()
-      const findPoint = findPointQuery(ctx, tagOrId, false)
+      // the group1 restriction of the user applies to property writes
+      const findPoint = findPointQuery(ctx, tagOrId, true)
       const prevData = await mdb.collection(COLL_REALTIME).findOne(findPoint)
       if (!prevData) throw gqlError('Point not found!', 'NOT_FOUND')
 
@@ -1566,14 +1829,23 @@ const resolvers = {
           'loLimit' in set ||
           'hysteresis' in set
         ) {
-          mdb.collection(COLL_REALTIME).updateOne(findPoint, {
-            $set: {
-              sourceDataUpdate: {
-                ...prevData.sourceDataUpdate,
-                rangeCheck: new Date().getTime(),
+          // merge on the server: a copy read earlier could overwrite what a
+          // driver wrote in the meantime
+          mdb
+            .collection(COLL_REALTIME)
+            .updateOne({ _id: prevData._id }, [
+              {
+                $set: {
+                  sourceDataUpdate: {
+                    $mergeObjects: [
+                      { $ifNull: ['$sourceDataUpdate', {}] },
+                      { rangeCheck: new Date().getTime() },
+                    ],
+                  },
+                },
               },
-            },
-          })
+            ])
+            .catch(logBgError)
         }
       }
 
@@ -1592,7 +1864,7 @@ const resolvers = {
           timeTagAtSource: eventDate,
           timeTagAtSourceOk: true,
           ack: 1,
-        })
+        }).catch(logBgError)
       }
 
       // insert event for changed (substituted) value
@@ -1615,7 +1887,7 @@ const resolvers = {
           timeTagAtSource: eventDate,
           timeTagAtSourceOk: true,
           ack: 1,
-        })
+        }).catch(logBgError)
       }
 
       return { ok: true, matchedCount: result.matchedCount }
@@ -1634,16 +1906,24 @@ async function initGQLServer(app, dbParam, authentication) {
   const srvApollo = new ApolloServer({
     typeDefs,
     resolvers,
-    introspection: true,
+    introspection: true, // only for signed-in users (the token is checked first)
+    // never send server stack traces to clients (Apollo adds them unless
+    // NODE_ENV=production, which the services do not set)
+    includeStacktraceInErrorResponses: false,
+    validationRules: [
+      depthLimitRule(MaxQueryDepth, MaxIntrospectionDepth, MaxQuerySelections),
+      rootFieldsRule(MaxRootFields),
+    ],
   })
   await srvApollo.start()
 
   const guards = AUTH ? [authJwt.verifyToken] : []
+  // the token is checked before the body is read
   app.use(
     API_AP,
     cors(),
-    express.json({ limit: '50mb' }),
     ...guards,
+    express.json({ limit: '50mb' }),
     expressMiddleware(srvApollo, {
       context: async ({ req }) => buildContext(req),
     })

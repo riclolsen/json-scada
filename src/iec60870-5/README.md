@@ -109,11 +109,15 @@ Notable mappings and current limitations:
 - **TLS** (`localCertFilePath` + `passphrase`, `peerCertFilesPaths`,
   `rootCertFilePath`, `chainValidation`, `allowOnlySpecificCertificates`) is
   supported; the certificate file may be a `.pfx`/`.p12` (as in the C# drivers)
-  or a PEM file containing the certificate and key.
+  or a PEM file containing the certificate and key. With `chainValidation` the
+  peer chain is verified against `rootCertFilePath`, or against the system
+  roots when no root file is set; a server checks the client certificate for
+  the clientAuth usage, a client the server certificate for serverAuth.
 - **101/103 serial** (`portName`, `baudRate`, `parity`, `stopBits`) maps to the
   go-iecp5 serial config. Serial `handshake` other than `none` is not applied.
   `timeoutForACK`/`timeoutRepeat` (ms) are converted to whole-second T1/T2.
-- **101/103 TCP transport**: when `portName` is `host:port`, the FT1.2 frames
+- **101/103 TCP transport**: when `portName` is `host:port` with a numeric
+  port (names starting with `/` or `\\` are always serial devices), the FT1.2 frames
   are carried over a TCP client connection to a terminal / serial-device server
   (this replaces the C# `TcpClientVirtualSerialPort`). TLS is used on that TCP
   transport when `localCertFilePath` is configured.
@@ -132,7 +136,9 @@ Notable mappings and current limitations:
 - 104 client connection statistics currently report `isConnected` only; the
   detailed APCI counters are not yet exposed by go-iecp5 (gap G4).
 - `serverModeMultiActive=false` (single-redundancy-group buffering) is emulated
-  with a bounded FIFO held while no master is connected (gap G3).
+  with the per-connection spontaneous FIFO held while no master is connected
+  (gap G3). The FIFO holds `maxQueueSize` objects (5000 when unset); the oldest
+  are dropped when it is full, and the drops are logged.
 
 ## Behavior parity notes
 
@@ -141,10 +147,10 @@ Replicated intentionally from the C# drivers:
 - CP24-tagged values always write `timeTagAtSourceOk=false` (the C# driver tests
   an unused CP56 placeholder). CP56-tagged values set it from the time validity.
 - Step-position `transient` is merged into invalid quality on decode.
-- The 104/101 servers use a single process-wide "selected point" slot for SBO.
 - Client commands read from `commandsQueue` are sent without kconv conversion.
 - Command-expiry windows: 10 s on the client side, 20 s for time-tagged commands
-  on the server side.
+  on the server side (on the server, a command time more than 20 s in the
+  future is rejected too).
 - Counter re-initialization offsets on (re)connect (`giInterval-3`/`-2`, etc.).
 
 Deliberately different from the C# drivers:
@@ -158,22 +164,50 @@ Deliberately different from the C# drivers:
   `HasSession` (the C# servers never updated the keep-alive, so the driver
   looked stopped). With the same server instance on several nodes all write.
 
+- The servers send a monitored value the same way whether it goes out as
+  spontaneous data, in an interrogation or in a read reply: the destination
+  `protocolDestinationKConv1`/`KConv2` apply (kconv1 -1 inverts digitals), and
+  the point's `invalid`, `substituted` and `overflow` flags become the quality.
+  The C# drivers applied the conversion only in interrogations. Interrogations
+  send the untagged type, spontaneous data the CP56 variant when the point has
+  a source time.
+- Server command handling: the point is found by connection, common address,
+  object address and type on the same `protocolDestinations` entry; the
+  activation confirmation is sent only after every check passed and the
+  command was queued (a rejected command gets one negative confirmation). A
+  select is held per connection for the master link that sent it, expires
+  after 30 s and is consumed by the execute (the C# drivers used one
+  process-wide slot).
+- The servers wait for room when a link's send buffer is full instead of
+  dropping the ASDU, so a large interrogation or a burst of spontaneous data
+  arrives complete. A link that has accepted nothing for 10 s (a 104 standby
+  connection without STARTDT) is not waited on. Spontaneous data is sent per
+  connection, each 104 master on its own.
+- Scaled, normalized and step values are rounded to the nearest integer
+  (C#: truncated); bitstrings keep bit 31.
+- The 104 client lets a connection attempt run up to `t0` before trying the
+  other server.
 - The client MongoDB writer (shared by the 101, 103 and 104 clients) blocks on
   its queues instead of polling them every 100 ms, so a decoded value or command
   ack is written immediately (about 1 ms added, against 50 ms on average and up
   to 100 ms before). Values arriving while a bulk write is in flight go into the
   next one, so bursts are still batched (up to 5000 per write). The database is
-  pinged only after 5 s without traffic; a failed write also forces a reconnect.
+  pinged only after 5 s without traffic; a failed write also forces a reconnect,
+  and the batch is written again after it. A tag that `autoCreateTags` could not
+  insert is tried again on the next value for its address.
   The per-batch `MongoDB - Bulk write N` line is logged at detailed level (2),
   since batches are now as small as one value.
 
 ## Testing
 
 ```sh
-go test ./internal/conv/     # encode/decode parity unit tests
-go test ./test/              # cs104 client <-> server protocol loopback (no MongoDB)
-go test ./internal/cliapp/   # client writer latency and burst batching (MongoDB)
-go test ./internal/srvapp/   # server autoCreateTags distribution (MongoDB)
+go test ./internal/conv/      # encode/decode unit tests
+go test ./internal/tlsutil/   # TLS peer verification (generated certificates)
+go test ./internal/cs101util/ # serial vs TCP port names
+go test ./test/               # cs104 client <-> server protocol loopback (no MongoDB)
+go test ./internal/cliapp/    # client writer latency, batching and tag auto-creation (MongoDB)
+go test ./internal/srvapp/    # server flow control and large-interrogation loopback; commands,
+                              # SBO, interrogation, value conversion, autoCreateTags (MongoDB)
 ```
 
 The loopback test wires a go-iecp5 server and client over `127.0.0.1` and checks

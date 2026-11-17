@@ -24,10 +24,10 @@ import java.nio.file.Paths;
 import org.bson.Document;
 
 /**
- * Command line / environment / config file resolution, same rules as the Go
- * plc4x-client: args [instance] [loglevel] [config file] [point filter], env vars
- * JS_PLC4X_INSTANCE, JS_PLC4X_LOGLEVEL, JS_CONFIG_FILE (the env var names are shared
- * with the Go driver as both executables serve the same PLC4X driver configuration).
+ * Command line / environment / config file resolution: args [instance] [log level]
+ * [config file] [point filter], env vars JS_PLC4X_INSTANCE, JS_PLC4X_LOGLEVEL and
+ * JS_CONFIG_FILE. The 4th argument (point filter) is accepted for command line
+ * compatibility with the other drivers and ignored.
  */
 public final class ConfigLoader {
 
@@ -35,7 +35,6 @@ public final class ConfigLoader {
     public ConfigData cfg;
     public int instanceNumber = 1;
     public int logLevel = Log.LEVEL_BASIC;
-    public int pointFilter = 0;
   }
 
   private ConfigLoader() {}
@@ -95,12 +94,7 @@ public final class ConfigLoader {
     }
 
     if (args.length > 3) {
-      try {
-        r.pointFilter = Integer.parseInt(args[3].trim());
-        Log.log("Point filter set to: " + r.pointFilter);
-      } catch (NumberFormatException e) {
-        // ignored, same tolerance as the Go driver
-      }
+      Log.log("Point filter argument ignored: not supported by this driver.");
     }
 
     String contents;

@@ -19,7 +19,13 @@ import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/server'
 import { AdminApiClient } from '../jsonscada/admin-api.js'
 import { errorResult, jsonResult, textResult } from './util.js'
-import { COMM_OWNED_FIELDS, RESERVED_NAME_MESSAGE, isSystemTagName } from '../jsonscada/system-tags.js'
+import {
+  COMM_OWNED_FIELDS,
+  NUMERIC_NAME_MESSAGE,
+  RESERVED_NAME_MESSAGE,
+  isNumericLeadTagName,
+  isSystemTagName,
+} from '../jsonscada/system-tags.js'
 
 // Live value/state fields maintained by drivers and data processors; tag
 // configuration tools never write them (use send_command to act on the field).
@@ -134,6 +140,7 @@ export function registerTagTools(server: McpServer, api: AdminApiClient) {
       try {
         const tag = args.tag.trim()
         if (isSystemTagName(tag)) return textResult(RESERVED_NAME_MESSAGE, true)
+        if (isNumericLeadTagName(tag)) return textResult(NUMERIC_NAME_MESSAGE, true)
         if (await findTag(api, tag))
           return textResult(`Tag '${tag}' already exists.`, true)
         const doc = { ...buildDoc({ ...args, tag }), ...(pointKey ? { _id: pointKey } : {}) }
@@ -164,6 +171,7 @@ export function registerTagTools(server: McpServer, api: AdminApiClient) {
         const existing = await findTag(api, tag)
         if (!existing) return textResult(`Tag '${tag}' not found.`, true)
         if (newTag && newTag.trim() !== tag && isSystemTagName(newTag)) return textResult(RESERVED_NAME_MESSAGE, true)
+        if (newTag && newTag.trim() !== tag && isNumericLeadTagName(newTag)) return textResult(NUMERIC_NAME_MESSAGE, true)
         const doc = buildDoc(args)
         if (isSystemTagName(existing.tag)) {
           const owned = COMM_OWNED_FIELDS.filter((f) => f in doc || (f === 'tag' && newTag))

@@ -96,6 +96,7 @@ Multiple behaviors can be combined by embedding multiple JSON objects in the sam
   - **Clone Properties:** `{"attr":"set", "tag":"#copy_xsac_from", "src":"MASTER_ELEMENT_ID", "align":"Right", "type":"Data"}`
   - **Vega Charts:** `{"attr":"set", "tag":"#vega4", "src":"TAG1,TAG2", "prompt":"URL_OR_JSON", "align":"Right", "type":"Data"}`
   - **ONVIF Camera:** `{"attr":"set", "tag":"#camera", "src":"CAM_NAME", "prompt":"width=500 height=500", "align":"Right", "type":"Data"}`
+  - **Embedded page:** `{"attr":"set", "tag":"#foreign_object", "src":"/#/events-viewer?embed=1", "prompt":"", "align":"Right", "type":"Data"}` _(on a `<rect>`; Src = any URL, shown in an iframe; AdminUI viewers take `?embed=1` to drop the side panel: `/#/events-viewer`, `/#/alarms-viewer`, `/#/tabular-viewer`, `/#/display-viewer?screen=NAME`, `/#/trend-viewer?point=TAG_OR_KEY`; Prompt = optional iframe attributes)_
 - All fields are required to ensure proper parsing and functionality.
 
 ### 8. Script
@@ -169,7 +170,7 @@ The data processor keeps system tags with the health of every protocol driver in
 
 ### 10. Structured Values (valueJson)
 
-Drivers such as MQTT/Sparkplug B, OPC UA, Node-RED and N8N store a tag's structured value (object or array) as JSON text in its `valueJson` field (a `json` or `string` tag without one uses its string value). The integrated Display Viewer (AdminUI) reads members of it; the legacy `display.html` viewer does not support this markup.
+Drivers such as MQTT/Sparkplug B, OPC UA, Node-RED and N8N store a tag's structured value (object or array) as JSON text in its `valueJson` field (a `json` or `string` tag without one uses its string value). The AdminUI Display Viewer reads members of it.
 
 - **Tag reference:** write `!JSON <TAG> <PATH>` wherever a tag goes: `get`, `color` list tags, `bar`, `opac`, `rotate`, `slider`, `text`, trend `open` (realtime samples only: the history is the tag's), `#arc`/`#radar`/Vega tag lists. The tag may also be a point key or a `%n` clone variable. Clicking the object opens the parent tag.
 - **Path** (starts with `$`, which alone means the whole value):
@@ -187,7 +188,7 @@ Drivers such as MQTT/Sparkplug B, OPC UA, Node-RED and N8N store a tag's structu
 
 ### 11. Text Values (valueString)
 
-Every tag has a `valueString`: the text value written by its driver (status words, `key=value` lists, CSV lines, messages; for analogs and digitals usually the number or the state text). The integrated Display Viewer (AdminUI) can take parts of it; the legacy `display.html` viewer does not support this markup.
+Every tag has a `valueString`: the text value written by its driver (status words, `key=value` lists, CSV lines, messages; for analogs and digitals usually the number or the state text). The AdminUI Display Viewer can take parts of it.
 
 - **Tag reference:** write `!STR <TAG> <SELECTOR>` wherever a tag goes (same places as `!JSON`, section 10). `!STR <TAG>` alone is the whole text. The tag may also be a point key or a `%n` clone variable. Clicking the object opens the parent tag.
 - **Selector:** starts with `$` (the whole text), followed by operations applied left to right. It is parsed, never run as code:

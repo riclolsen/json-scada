@@ -11,7 +11,7 @@ Web apps (dashboards, equipment faceplates, special views) served by `server_rea
 
 ## Local Contracts
 
-- Each app is one folder; the folder name is the URL. A folder is routed when it has `dist/index.html` (or a plain `index.html`); routes are created when `server_realtime_auth` starts
+- Each app is one folder; the folder name is the URL. A folder is routed when it has `dist/index.html` (or a plain `index.html`); routes are created when `server_realtime_auth` starts. Apps and their list are served to signed-in users only (no session: redirect to `/login`)
 - Templates are Astro 5 + React 18 + Tailwind + shadcn/ui (TypeScript). `astro.config.mjs` derives `base: /custom-developments/<folder>` from the folder name: keep that, so a copied template needs no config change
 - Data goes only through `src/lib/scadaOpcApi.ts` (same-origin `fetch('/Invoke/')` with the login cookie; the user's role rights apply). Every template holds an identical copy: change it in all templates at once. The MCP server parses its exported functions, JSDoc, data interfaces, `OpcStatusCodes` and `OpcAcknowledge` at request time and compares each app's copy with the templates'
 - Components that call the API mount with `client:only="react"`

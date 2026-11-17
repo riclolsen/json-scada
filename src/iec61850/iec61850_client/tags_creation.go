@@ -72,7 +72,7 @@ type CommandTag struct {
 	IsDigital  bool
 	UseSBO     bool
 	Asdu       string // MMS type of the control value
-	Attempts   int    // times the supervised twin was looked for
+	Attempts   int    // failed insert attempts
 }
 
 // Tag is the name of the command tag.

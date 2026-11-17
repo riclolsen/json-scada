@@ -18,13 +18,15 @@
 
 package org.jsonscada.plc4jclient;
 
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
 
-/** MongoDB connection with the same TLS connection-string handling as the Go driver. */
+/** MongoDB connection; TLS material from the config file is applied through an SSLContext. */
 public class MongoConnector implements AutoCloseable {
   public final MongoClient client;
   public final MongoCollection<Document> rtData;
@@ -40,32 +42,39 @@ public class MongoConnector implements AutoCloseable {
     this.commands = db.getCollection("commandsQueue");
   }
 
-  public static MongoConnector connect(ConfigData cfg) {
-    String connStr = cfg.mongoConnectionString;
-    if (!cfg.tlsCaPemFile.isEmpty() || !cfg.tlsClientPemFile.isEmpty()) {
-      connStr += "&tls=true";
-    }
-    if (!cfg.tlsCaPemFile.isEmpty()) {
-      connStr += "&tlsCAFile=" + cfg.tlsCaPemFile;
-    }
-    if (!cfg.tlsClientPemFile.isEmpty()) {
-      connStr += "&tlsCertificateKeyFile=" + cfg.tlsClientPemFile;
-    }
-    if (!cfg.tlsClientKeyPassword.isEmpty()) {
-      connStr += "&tlsCertificateKeyFilePassword=" + cfg.tlsClientKeyPassword;
-    }
-    if (cfg.tlsInsecure || cfg.tlsAllowChainErrors) {
-      connStr += "&tlsInsecure=true";
-    }
-    if (cfg.tlsAllowInvalidHostnames) {
-      connStr += "&tlsAllowInvalidHostnames=true";
+  static MongoClientSettings settings(ConfigData cfg) {
+    // The Java driver has no tlsCAFile/tlsCertificateKeyFile connection string
+    // options: the PEM/PFX files are loaded into an SSLContext instead.
+    MongoClientSettings.Builder settings = MongoClientSettings.builder()
+        .applyConnectionString(new ConnectionString(cfg.mongoConnectionString));
+    try {
+      var ctx = MongoTls.build(cfg);
+      if (ctx != null || cfg.tlsAllowInvalidHostnames) {
+        boolean enabled = settings.build().getSslSettings().isEnabled()
+            || !cfg.tlsCaPemFile.isEmpty() || !cfg.tlsClientPemFile.isEmpty()
+            || !cfg.tlsClientPfxFile.isEmpty();
+        boolean skipHostCheck = cfg.tlsAllowInvalidHostnames || cfg.tlsInsecure;
+        settings.applyToSslSettings(
+            ssl -> ssl.enabled(enabled).context(ctx).invalidHostNameAllowed(skipHostCheck));
+      }
+    } catch (Exception e) {
+      throw new IllegalStateException("TLS configuration error: " + e.getMessage(), e);
     }
 
-    MongoClient client = MongoClients.create(connStr);
-    MongoDatabase db = client.getDatabase(cfg.mongoDatabaseName);
-    // fail fast if the server is unreachable (like the Go ping with timeout)
-    db.runCommand(new Document("ping", 1));
-    return new MongoConnector(client, db);
+    return settings.build();
+  }
+
+  public static MongoConnector connect(ConfigData cfg) {
+    MongoClient client = MongoClients.create(settings(cfg));
+    try {
+      MongoDatabase db = client.getDatabase(cfg.mongoDatabaseName);
+      // fail fast if the server is unreachable
+      db.runCommand(new Document("ping", 1));
+      return new MongoConnector(client, db);
+    } catch (RuntimeException e) {
+      client.close();
+      throw e;
+    }
   }
 
   @Override
