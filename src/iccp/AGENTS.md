@@ -22,7 +22,7 @@ ICCP (IEC 60870-6 / TASE.2) client and server protocol drivers for JSON-SCADA, w
 - Configuration via the central `json-scada.json` or environment variables
 - Uses MongoDB Go driver for database access
 - `iccp-client` and `iccp-server` are intentionally commented out of `src/go.work`; build and test them standalone with `GOWORK=off`
-- Each module resolves the library through `replace github.com/riclolsen/tase2 => ../tase2`, so `tase2/` must be checked out at a compatible revision (currently `v0.5.0`+, `origin/main`)
+- Each module resolves the library through `replace github.com/riclolsen/tase2 => ../tase2`, so `tase2/` must be checked out at a compatible revision (currently `v0.5.1`+, `origin/main`)
 - **Connection stats:** `stats.isConnected` — client: written true on association and every stats tick, false on connect failure and after disconnect (`updateConnectionStats`); server: at least one association open (`statsDocument`)
 - **Startup:** each driver starts its goroutines, listeners and associations once, after the first successful MongoDB connection; a failed ping afterwards is only logged (the MongoDB driver reconnects, each loop retries its own operations). Never re-run startup on a lost ping: it duplicates writers, watchers and associations
 - **Redundancy:** `isActive`/`keepRunningWhileInactive` are `atomic.Bool`; `protocolRunning()` = active or `keepProtocolRunningWhileInactive`. Client: associations only while `protocolRunning()`, data written (`connRuntime.publish`) and commands sent only while active. Server: associations refused (closed at accept) and aborted while not `protocolRunning()`, same rule for commands
