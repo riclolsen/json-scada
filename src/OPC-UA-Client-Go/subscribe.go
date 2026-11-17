@@ -23,14 +23,18 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 
 	"github.com/gopcua/opcua"
+	"github.com/gopcua/opcua/id"
 	"github.com/gopcua/opcua/ua"
 )
 
@@ -57,7 +61,72 @@ const (
 	// that changes on every server request and would otherwise fill the
 	// shared queue and starve every other tag.
 	maxItemEventsPerSecond = 200
+
+	// heartbeatHandle is the client handle of the heartbeat item, which no
+	// real item can reach (handles count up from 1).
+	heartbeatHandle uint32 = math.MaxUint32
+
+	// minStaleAfter is the least silence tolerated before a session whose
+	// subscriptions deliver nothing is rebuilt.
+	minStaleAfter = 30 * time.Second
 )
+
+// sessionHealth tells the connection loop whether the subscriptions of the
+// current session are still delivering.
+//
+// deviation D28: the session state alone cannot tell. gopcua pauses its
+// publish loop on errors such as BadNoSubscription while the session stays
+// Connected, and with its default keep-alive count (3000) a silent server is
+// only noticed after hours. Each subscription therefore also monitors the
+// server's CurrentTime, which changes every second, and any notification
+// counts as proof of life; a session that goes quiet for longer than
+// staleAfter is rebuilt.
+type sessionHealth struct {
+	lastAlive atomic.Int64 // unix nanoseconds of the last notification
+	expected  atomic.Bool  // a heartbeat item exists, so silence means trouble
+	maxIntvl  atomic.Int64 // longest publishing interval, nanoseconds
+	failure   chan error   // a subscription reported an unrecoverable error
+}
+
+func newSessionHealth() *sessionHealth {
+	h := &sessionHealth{failure: make(chan error, 1)}
+	h.touch()
+	return h
+}
+
+func (h *sessionHealth) touch() { h.lastAlive.Store(time.Now().UnixNano()) }
+
+func (h *sessionHealth) fail(err error) {
+	select {
+	case h.failure <- err:
+	default: // one is enough
+	}
+}
+
+// staleFor returns how long the session has been silent, and whether that is
+// long enough to give up on it.
+func (h *sessionHealth) staleFor(now time.Time) (time.Duration, bool) {
+	if !h.expected.Load() {
+		return 0, false
+	}
+	silent := now.Sub(time.Unix(0, h.lastAlive.Load()))
+	limit := max(minStaleAfter, 5*time.Duration(h.maxIntvl.Load()))
+	return silent, silent > limit
+}
+
+// noteInterval records a publishing interval in use.
+func (h *sessionHealth) noteInterval(d time.Duration) {
+	for {
+		cur := h.maxIntvl.Load()
+		if int64(d) <= cur || h.maxIntvl.CompareAndSwap(cur, int64(d)) {
+			return
+		}
+	}
+}
+
+// errSubscriptionSetup marks a session whose subscriptions could not all be
+// created.
+var errSubscriptionSetup = errors.New("subscription setup incomplete")
 
 // allow reports whether the item may deliver another value now. first is
 // true on the first value refused in a one-second window.
@@ -80,22 +149,28 @@ func (it *monItem) allow(now time.Time) (ok, first bool) {
 // item, preconfigured and discovered alike, at the connection's
 // autoCreateTagPublishingInterval. With it off there is one subscription
 // per distinct publishing interval found in realtimeData.
-func setupSubscriptions(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection) {
+//
+// ctx is the session's context: the pumps end with it. A subscription that
+// cannot be created is reported (deviation D28) so the caller can rebuild the
+// session; the subscriptions before it stay in place.
+func setupSubscriptions(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, health *sessionHealth) error {
 	if conn.AutoCreateTags {
-		createSubscription(ctx, cli, conn, conn.AutoCreateTagPublishingInterval, conn.ListMon)
-		return
+		return createSubscription(ctx, cli, conn, health, conn.AutoCreateTagPublishingInterval, conn.ListMon)
 	}
 
 	for _, interval := range conn.SubscriptionOrder {
-		createSubscription(ctx, cli, conn, interval, conn.OpcSubscriptions[interval])
+		if err := createSubscription(ctx, cli, conn, health, interval, conn.OpcSubscriptions[interval]); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 // createSubscription publishes one group of monitored items and starts the
 // pump that drains its notifications into the acquired-value queue.
-func createSubscription(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, intervalSeconds float64, items []*monItem) {
+func createSubscription(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, health *sessionHealth, intervalSeconds float64, items []*monItem) error {
 	if len(items) == 0 {
-		return
+		return nil
 	}
 
 	jslog.Log(jslog.LevelNoLog, "%s - Create a subscription with publishing interval of %v seconds",
@@ -119,7 +194,7 @@ func createSubscription(ctx context.Context, cli *opcua.Client, conn *OPCUAConne
 		jslog.Log(jslog.LevelBasic, "%s - Error creating subscription (attempt %d/%d): %v",
 			conn.Name, attempt, subscribeAttempts, err)
 		if attempt < subscribeAttempts && !sleepCtx(ctx, subscribeRetryPause) {
-			return
+			return ctx.Err()
 		}
 	}
 	if err != nil {
@@ -128,8 +203,10 @@ func createSubscription(ctx context.Context, cli *opcua.Client, conn *OPCUAConne
 		jslog.Log(jslog.LevelNoLog,
 			"%s - Error creating subscription: %v - %d monitored items with a %v s publishing interval WILL NOT UPDATE",
 			conn.Name, err, len(items), intervalSeconds)
-		return
+		return fmt.Errorf("%w: CreateSubscription: %v", errSubscriptionSetup, err)
 	}
+	health.noteInterval(time.Duration(intervalSeconds * float64(time.Second)))
+	addHeartbeat(ctx, conn, sub, health)
 
 	requests := make([]*ua.MonitoredItemCreateRequest, 0, len(items))
 	for _, it := range items {
@@ -156,6 +233,7 @@ func createSubscription(ctx context.Context, cli *opcua.Client, conn *OPCUAConne
 	}
 
 	created := 0
+	failed := false
 	rejected := map[string][]string{}
 	for start := 0; start < len(requests); start += monitorChunk {
 		end := min(start+monitorChunk, len(requests))
@@ -164,6 +242,7 @@ func createSubscription(ctx context.Context, cli *opcua.Client, conn *OPCUAConne
 		resp, err := sub.Monitor(ctx, ua.TimestampsToReturnBoth, chunk...)
 		if err != nil {
 			jslog.Log(jslog.LevelNoLog, "%s - Error creating monitored items: %v", conn.Name, err)
+			failed = true
 			continue
 		}
 		// A rejected item must not abort the subscription: the C# driver
@@ -182,7 +261,28 @@ func createSubscription(ctx context.Context, cli *opcua.Client, conn *OPCUAConne
 
 	jslog.Log(jslog.LevelNoLog, "%s - %d Monitored items", conn.Name, created)
 
-	go notificationPump(ctx, conn, notifyCh)
+	go notificationPump(ctx, conn, health, notifyCh)
+
+	if failed {
+		return fmt.Errorf("%w: some monitored items could not be requested", errSubscriptionSetup)
+	}
+	return nil
+}
+
+// addHeartbeat monitors the server's clock in a subscription so a silent
+// session can be told from an idle one. A server that refuses it simply gets
+// no staleness check.
+func addHeartbeat(ctx context.Context, conn *OPCUAConnection, sub *opcua.Subscription, health *sessionHealth) {
+	req := opcua.NewMonitoredItemCreateRequestWithDefaults(
+		ua.NewNumericNodeID(0, id.Server_ServerStatus_CurrentTime), ua.AttributeIDValue, heartbeatHandle)
+	req.RequestedParameters.SamplingInterval = 1000
+	req.RequestedParameters.QueueSize = 1
+	resp, err := sub.Monitor(ctx, ua.TimestampsToReturnNeither, req)
+	if err != nil || len(resp.Results) != 1 || !statusIsGood(resp.Results[0].StatusCode) {
+		jslog.Log(jslog.LevelDetailed, "%s - Heartbeat item not available: %v", conn.Name, err)
+		return
+	}
+	health.expected.Store(true)
 }
 
 // logRejected reports the monitored items the server refused, one line per
@@ -214,17 +314,21 @@ func logRejected(conn *OPCUAConnection, rejected map[string][]string) {
 }
 
 // notificationPump turns published data changes into queued values.
-func notificationPump(ctx context.Context, conn *OPCUAConnection, notifyCh <-chan *opcua.PublishNotificationData) {
+func notificationPump(ctx context.Context, conn *OPCUAConnection, health *sessionHealth, notifyCh <-chan *opcua.PublishNotificationData) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case n, ok := <-notifyCh:
-			if !ok {
+			// select picks at random among ready cases: never let a value of
+			// an ended session through, its handles belong to the next one.
+			if !ok || ctx.Err() != nil {
 				return
 			}
 			if n.Error != nil {
-				jslog.Log(jslog.LevelDetailed, "%s - subscription error: %v", conn.Name, n.Error)
+				// gopcua reports only errors it cannot recover from.
+				jslog.Log(jslog.LevelBasic, "%s - subscription error: %v", conn.Name, n.Error)
+				health.fail(n.Error)
 				continue
 			}
 			dcn, isData := n.Value.(*ua.DataChangeNotification)
@@ -233,7 +337,11 @@ func notificationPump(ctx context.Context, conn *OPCUAConnection, notifyCh <-cha
 				// driver dequeues and discards them too.
 				continue
 			}
+			health.touch()
 			for _, item := range dcn.MonitoredItems {
+				if item != nil && item.ClientHandle == heartbeatHandle {
+					continue
+				}
 				handleNotification(conn, item)
 			}
 		}

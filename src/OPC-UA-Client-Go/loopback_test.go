@@ -75,7 +75,9 @@ func TestLoopbackAcquisition(t *testing.T) {
 		t.Fatal("the initial read did not publish Boiler.Temp")
 	}
 
-	setupSubscriptions(ctx, cli, conn)
+	if err := setupSubscriptions(ctx, cli, conn, newSessionHealth()); err != nil {
+		t.Fatalf("subscribe: %v", err)
+	}
 
 	// Move the value on the server and tell it to report the change.
 	setServerValue(t, ns, ua.NewStringNodeID(1, "Boiler.Temp"), float64(123.75))
@@ -129,7 +131,9 @@ func TestLoopbackNotificationAddressesAreCorrect(t *testing.T) {
 	}
 	autotagPass(ctx, cli, conn, browsed)
 	drainQueue()
-	setupSubscriptions(ctx, cli, conn)
+	if err := setupSubscriptions(ctx, cli, conn, newSessionHealth()); err != nil {
+		t.Fatalf("subscribe: %v", err)
+	}
 
 	// Two different points, two different new values.
 	setServerValue(t, ns, ua.NewStringNodeID(1, "Boiler.Drum.Level"), float64(11.5))
@@ -241,7 +245,9 @@ func TestLoopbackPreconfiguredSubscriptions(t *testing.T) {
 	defer cancel()
 
 	drainQueue()
-	setupSubscriptions(ctx, cli, conn)
+	if err := setupSubscriptions(ctx, cli, conn, newSessionHealth()); err != nil {
+		t.Fatalf("subscribe: %v", err)
+	}
 
 	setServerValue(t, ns, ua.NewStringNodeID(1, "Boiler.Temp"), float64(7.5))
 

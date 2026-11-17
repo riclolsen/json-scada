@@ -208,7 +208,7 @@ Collection `protocolConnections`, one document per server. Changes take effect a
 | Field | Default | Meaning |
 |---|---|---|
 | `endpointURLs` | — | **Required.** One or more `opc.tcp://host:port/path` URLs. With more than one, the driver moves to the next URL after each failed connection attempt, so a redundant server pair is covered. All URLs must belong to the same logical server: they share one tag set. |
-| `timeoutMs` | `20000` | Time allowed for connecting, for endpoint discovery, and for each request to the server. |
+| `timeoutMs` | `20000` | Time allowed for connecting, for endpoint discovery, and for each request to the server. Zero or negative means the default. |
 | `configFileName` | `../conf/Opc.Ua.DefaultClient.Config.xml` | Optional XML file. Only `ApplicationName`, `ApplicationUri` and `ProductUri` are read from it; the rest of an OPC Foundation configuration file is ignored. If it is missing the defaults `JSON-SCADA OPC-UA Client` and `urn:localhost:OPCUA:JSON_SCADA_OPCUAClient` are used. |
 | `hoursShift` | `0` | Hours added to the timestamps the server provides. Use it to correct a server that stamps local time instead of UTC. |
 
@@ -257,11 +257,17 @@ The driver asks the server for its list of endpoints and picks one, in this orde
 
 1. an endpoint whose policy **and** mode match `securityPolicy` and `securityMode`;
 2. otherwise the first endpoint whose mode matches;
-3. otherwise the first endpoint the server offers.
+3. otherwise the first endpoint whose mode is **at least as strong** as `securityMode`
+   (`None` < `Sign` < `SignAndEncrypt`).
 
-> **Steps 2 and 3 can connect with a different security setting than the one you configured.**
-> The log says which endpoint was used (`Selected endpoint uses: Basic256Sha256`, and the line
-> before it says how it was chosen). After setting up a secure connection, check that line.
+If the server offers no endpoint with the configured mode or a stronger one, the connection fails
+(`the server offers no endpoint with security mode ... or stronger`) and is retried, rather than
+falling back to a weaker channel. With `useSecurity: false` the mode is `None`, so any endpoint
+qualifies.
+
+> **Steps 2 and 3 can connect with a different policy, or a stronger mode, than the one you
+> configured.** The log says which endpoint was used (`Selected endpoint uses: Basic256Sha256`, and
+> the line before it says how it was chosen). After setting up a secure connection, check that line.
 
 If the server cannot be asked, the driver builds an endpoint from your settings and tries that.
 The URL you configured is always the one connected to, whatever host name the server advertises.
@@ -499,7 +505,13 @@ db.realtimeData.updateOne({ tag: "Boiler.SetPoint.cmd" }, { $set: {
 | `SByte`, `Byte`, `Int16`, `UInt16`, `Int32` (or `Integer`), `UInt32`, `Int64`, `UInt64` | that integer type | `value` |
 | `Float`, `Double` | that floating-point type | `value` |
 | `DateTime` | DateTime | `value` as Unix milliseconds |
-| `String`, `ByteString`, `LocalizedText`, `QualifiedName`, `NodeId`, `Guid`, `ExpandedNodeId`, `XmlElement` | a String | `valueString` |
+| `String` | String | `valueString` |
+| `ByteString` | ByteString | `valueString`, base64 |
+| `LocalizedText` | LocalizedText (no locale) | `valueString` |
+| `QualifiedName` | QualifiedName | `valueString`, `Name` or `2:Name` (namespace index) |
+| `NodeId`, `ExpandedNodeId` | that type | `valueString`, such as `ns=2;s=Pump` |
+| `Guid` | Guid | `valueString`, such as `72962B91-FA75-4AE6-8D28-B404DC7DAF63` |
+| `XmlElement` | XmlElement | `valueString` |
 | any of the above followed by `[]`, such as `Double[]` | an array | `valueString`, a JSON array such as `[1, 2.5, 3]` |
 | `method` | a method call | `valueString`, optional JSON array of arguments |
 
@@ -530,7 +542,8 @@ nothing is written to the server.
    | `expired` | the command is more than 10 seconds old |
    | `not connected` | the connection has no live session |
    | `commands disabled` | `commandsEnabled` is `false` for the connection |
-   | `type conversion error` | the value does not fit the type (out of range, `NaN`, ...), a node id or array element cannot be converted, or the type cannot be written |
+   | `type conversion error` | the value does not fit the type (out of range, `NaN`, ...), a base64 string, node id, GUID or array element cannot be converted, or the type cannot be written |
+   | `busy` | more than 256 commands were already waiting for the same connection |
    | `unsupported command type` | `protocolSourceASDU` is not one of those above |
    | `empty array json error` | an array command with an empty `valueString` |
    | `array invalid json format error` | an array command whose `valueString` is not a JSON array (`null` and an object included) |
@@ -540,15 +553,20 @@ nothing is written to the server.
    is `true` when the server accepted the command; `resultDescription` is the server's status
    (`Good`, or a name such as `BadTypeMismatch` or `BadUserAccessDenied`) or the error text.
 
-Commands for a connection that belongs to another instance are ignored.
+Commands for a connection that belongs to another instance are ignored. Each connection executes
+its commands one at a time, in the order they arrived, and independently of the other connections:
+a slow or unreachable server delays only its own commands.
 
 ### Method calls
 
 A command with `protocolSourceASDU: "method"` calls the OPC UA method at the node id. The driver
 finds the object that owns the method itself. Input arguments come from `valueString` as a JSON
-array — `[]` or empty for none. Elements are sent as Boolean, Int64 (whole numbers), Double or
-String, so a method that expects another numeric type (Int32, Float, ...) may reject the call.
-`resultDescription` is `OK`, or `OK:` followed by the method's output arguments.
+array — `[]` or empty for none. The driver reads the method's `InputArguments` property and
+converts each element to the declared type (Boolean, any integer type, Float, Double, String,
+ByteString), refusing the call with the conversion error when a value does not fit. For an
+argument whose type is not declared or not one of those, the element is sent as Boolean, Int64
+(whole numbers), Double or String. `resultDescription` is `OK`, or `OK:` followed by the method's
+output arguments.
 
 ## Redundancy
 
@@ -584,8 +602,10 @@ second; the excess is dropped`). Fix the node or move it out of the subscription
 |---|---|
 | The server is unreachable or refuses the session | Logs `FATAL: error creating session!` and tries again every 5 s, moving to the next `endpointURLs` entry each time. The wording is alarming but the condition is routine; the driver keeps trying. |
 | An established connection drops | The library retries every 10 s, restoring the session and its subscriptions. If it has not recovered after 60 s, the driver tears the connection down and starts over, on the next URL. |
-| A subscription cannot be created | Retried 3 times at 0.5 s intervals, then always logged as `... WILL NOT UPDATE`, naming how many points are affected. That group stays without data until the connection is rebuilt. |
-| The server closes the connection during discovery | The driver does **not** publish a partial address space. It rebuilds the connection and discovers again, waiting 5 s, then 10 s, doubling up to 5 minutes between attempts. |
+| A subscription cannot be created | Retried 3 times at 0.5 s intervals and logged as `... WILL NOT UPDATE`, naming how many points are affected. The driver then rebuilds the connection, up to 3 times in a row; if the server still refuses, it keeps running with the subscriptions it got and those points stay without data until the next rebuild. |
+| The session is up but nothing arrives | Each subscription also watches the server's clock. If no notification at all arrives for 30 s (or five publishing intervals, whichever is longer), or the library reports an unrecoverable subscription error, the connection is rebuilt (`Connection lost (subscriptions silent for ...)`). A server that does not offer the clock node is not checked this way. |
+| The server closes the connection, or a browse or read fails, during discovery | The driver does **not** publish a partial address space. It rebuilds the connection and discovers again, waiting 5 s, then 10 s, doubling up to 5 minutes between attempts. A node attribute read is tried twice first; a lost continuation point fails the browse. Before the rebuild the driver waits for the queued values to be written, so tags created by the partial pass are read back and monitored. |
+| The driver is stopped | The sessions are closed before the process exits (up to 10 s), so the server frees them at once. |
 | The server drops the connection when asked for many values at once | Each failed discovery halves the number of values requested per read, from 500 down to 10, and tries again (`Reading fewer values at a time from now on: 250`). It can take several attempts. |
 | MongoDB is unreachable | Each worker (data writer, command listener, redundancy) retries by itself. Received values keep queuing, up to 50,000; beyond that they are dropped and counted in `Lost updates`. |
 
@@ -651,7 +671,8 @@ public servers this driver was tried against.
 
 - **Method calls have not been run against a real server yet.** Resolving the owning object and
   building the call are tested; the call itself needs equipment that implements the method service.
-  Method arguments are limited to Boolean, Int64, Double and String.
+  Method arguments of a type the server does not declare are limited to Boolean, Int64, Double
+  and String.
 - Only the **Value** attribute is read and written. History, events and alarms, and PubSub are not
   implemented.
 - A multi-dimensional array is reported and written as a flat array.

@@ -152,6 +152,14 @@ func autotagPass(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, 
 		toRead = append(toRead, key)
 	}
 
+	// deviation D31: a node whose value reads null is registered for
+	// monitoring but never gets a tag, so a later pass on a rebuilt session
+	// would register it again. Remember what is already monitored.
+	monitored := make(map[string]bool, len(conn.ListMon))
+	for _, it := range conn.ListMon {
+		monitored[it.NodeID] = true
+	}
+
 	maxPerRead := operationLimit(ctx, cli, id.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead)
 
 	for offset := 0; offset < len(toRead); offset += maxNodesToRead {
@@ -162,13 +170,18 @@ func autotagPass(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, 
 		batch := toRead[offset:end]
 
 		infos, err := readNodeAttributes(ctx, cli, batch, maxPerRead)
+		if err != nil && !sessionLost(cli, err) && ctx.Err() == nil {
+			// One more try before giving up on the batch.
+			jslog.Log(jslog.LevelBasic, "%s - Error reading nodes %d, trying again: %v", conn.Name, offset, err)
+			infos, err = readNodeAttributes(ctx, cli, batch, maxPerRead)
+		}
 		if err != nil {
 			jslog.Log(jslog.LevelNoLog, "%s - Error reading nodes %d", conn.Name, offset)
 			jslog.Log(jslog.LevelNoLog, "%v", err)
-			if sessionLost(cli, err) {
-				return fmt.Errorf("session lost while reading node attributes at offset %d: %w", offset, err)
-			}
-			continue
+			// deviation D27: skipping the batch would leave its points
+			// without tags until the next restart, so the discovery fails
+			// and the connection is rebuilt.
+			return fmt.Errorf("reading node attributes at offset %d: %w", offset, err)
 		}
 
 		values, valuesErr := readNodeValues(ctx, cli, batch, maxPerRead, conn.ValueReadChunk())
@@ -275,12 +288,15 @@ func autotagPass(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, 
 			// parity: the item is registered for monitoring even when the
 			// value came back null, so the point starts updating as soon as
 			// the server has something to report.
-			conn.ListMon = append(conn.ListMon, &monItem{
-				NodeID:      info.Address,
-				DisplayName: info.BrowseName,
-				SamplingMs:  conn.AutoCreateTagSamplingInterval * 1000,
-				QueueSize:   uint32(conn.AutoCreateTagQueueSize),
-			})
+			if !monitored[info.Address] {
+				monitored[info.Address] = true
+				conn.ListMon = append(conn.ListMon, &monItem{
+					NodeID:      info.Address,
+					DisplayName: info.BrowseName,
+					SamplingMs:  conn.AutoCreateTagSamplingInterval * 1000,
+					QueueSize:   uint32(conn.AutoCreateTagQueueSize),
+				})
+			}
 
 			if dv.Value == nil || dv.Value.Value() == nil {
 				continue
@@ -361,7 +377,6 @@ func readNodeAttributes(ctx context.Context, cli *opcua.Client, addrs []string, 
 	for i, addr := range addrs {
 		nid, err := ua.ParseNodeID(addr)
 		if err != nil {
-			infos[i] = nodeInfo{Address: addr}
 			nid = ua.NewTwoByteNodeID(0)
 		}
 		infos[i] = nodeInfo{NodeID: nid, Address: addr}

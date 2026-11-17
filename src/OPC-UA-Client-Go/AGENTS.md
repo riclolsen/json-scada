@@ -4,12 +4,12 @@
 
 Pure-Go OPC UA client driver for JSON-SCADA. Drop-in alternative to the C# driver in
 `src/OPC-UA-Client`: same `protocolDriver` name (`OPC-UA`), same configuration documents, same
-MongoDB semantics, no .NET runtime dependency.
+MongoDB semantics, no .NET runtime dependency. The C# driver has been removed from the repository.
 
 ## Ownership
 
 - OPC-UA-Client-Go owns the Go implementation of the OPC UA client driver
-- `src/OPC-UA-Client` (C#) remains the reference implementation; behaviour is matched to it
+- Behaviour is matched to the former C# driver (`parity:` comments); no C# source remains to compare against
 - `src/go-common` owns the shared plumbing (config, logging, MongoDB access, redundancy, tag and
   `sourceDataUpdate` defaults); this driver owns everything OPC UA specific
 - `README.md` is the **user guide**, complete without any other document; `DEVIATIONS.md` is the
@@ -40,6 +40,7 @@ MongoDB semantics, no .NET runtime dependency.
   - `mongo_commands.go` — command change stream and dispatch (← `MongoCommands.cs`)
   - `commandconv.go` — checked numeric conversion of command values (rounding, range, JSON arrays)
   - `redundancy.go` — active/standby arbitration (← `Redundancy.cs`)
+  - `robustness_test.go` — session health, rediscovery, typed commands, writer drain
 - **Tests:** `*_test.go`, plus `testdata/*.golden` — change-detectors for the auto-created tag
   document and the `sourceDataUpdate` write. Regenerate only deliberately:
   `go test -run TestGoldenTagDoc -update`, then review the diff.
@@ -53,10 +54,10 @@ MongoDB semantics, no .NET runtime dependency.
 
 ## Work Guidance
 
-- The C# driver is the specification. Before changing behaviour, check what
-  `src/OPC-UA-Client` does; quirks are reproduced on purpose and marked `parity:` in comments.
-  Intentional differences are numbered (D1 to D26) and listed in `DEVIATIONS.md`, each marked
-  `deviation Dn` at its code site — add to that list rather than silently diverging.
+- Behaviour of the former C# driver is the specification; its quirks are reproduced on purpose
+  and marked `parity:` in comments. Intentional differences are numbered (D1 to D35) and listed in
+  `DEVIATIONS.md`, each marked `deviation Dn` at its code site — add to that list
+  rather than silently diverging.
 - Keep `README.md` true. It states behaviour to users (defaults, `cancelReason` values, the topic
   rules, the type table, the log lines). A change to any of those updates it in the same change.
 - Command numeric conversion lives in `commandconv.go` and is pinned to the .NET driver by
@@ -76,6 +77,14 @@ MongoDB semantics, no .NET runtime dependency.
   synchronously and a slow reader stalls the client. `StateChangedFunc` may only log.
 - `ua.StatusCode` has no `IsGood`; use `statusIsGood` (severity bits 30-31).
 - The notification pump must never block — it only converts and enqueues.
+- Everything a session starts (the pumps) runs on the session context created in `connectionLoop`
+  and ends with it; never start per-session goroutines on the process context.
+- Discovery that does not complete is never published (D18, D27): return an error and let
+  `connectionLoop` rebuild. `setupSubscriptions` errors rebuild too, at most `maxSetupFailures` times.
+- `watchClient` ends a session on state loss, a pump-reported subscription error, or silence
+  (`sessionHealth`, D28); the heartbeat item uses the reserved client handle `heartbeatHandle`.
+- Before `reloadConnectionTags`, wait for the writer with `waitWriterIdle` (D29); `main` waits for
+  the connection loops on shutdown (D32).
 
 ## Verification
 
@@ -83,6 +92,9 @@ MongoDB semantics, no .NET runtime dependency.
   matching, command conversions, discovery backoff, and loopback runs (browse, autotag, subscribe,
   write) against an in-process gopcua server. No MongoDB or device needed.
 - `go vet ./...` and `gofmt -l .` must be clean.
+- `go test -race` can report a race inside gopcua's in-process test server (`server/node.go`,
+  reached from `setServerValue` in `loopback_test.go`) in the two loopback acquisition tests; it is
+  in the harness, not the driver. Any race with a frame in a non-test file of this module is real.
 - End-to-end: seed an instance and connection, run against a real server, and diff the resulting
   `realtimeData` documents against the C# driver's, allowing for the deviations in `DEVIATIONS.md`.
   The runs already done, with servers and numbers, are recorded there.

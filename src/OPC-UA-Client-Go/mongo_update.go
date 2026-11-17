@@ -27,6 +27,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
@@ -49,6 +50,26 @@ var dataQueue jsrtdata.Queue[OPCValue]
 func enqueueValue(ov OPCValue) { dataQueue.Enqueue(ov) }
 
 func queueLen() int { return dataQueue.Len() }
+
+// writerBusy is true while the writer holds values it has not flushed yet.
+var writerBusy atomic.Bool
+
+// waitWriterIdle waits until every queued value has been written, so a caller
+// that is about to read the database back sees the tags those values created.
+// The writes are unacknowledged, hence the short pause once the writer is
+// idle. Returns false when the budget runs out or ctx ends.
+func waitWriterIdle(ctx context.Context, budget time.Duration) bool {
+	deadline := time.Now().Add(budget)
+	for time.Now().Before(deadline) {
+		if queueLen() == 0 && !writerBusy.Load() {
+			return sleepCtx(ctx, 500*time.Millisecond)
+		}
+		if !sleepCtx(ctx, 50*time.Millisecond) {
+			return false
+		}
+	}
+	return false
+}
 
 func dequeueValue() (OPCValue, bool) { return dataQueue.Dequeue() }
 
@@ -93,6 +114,7 @@ func updateCycle(ctx context.Context, collRTD *mongo.Collection, conns []*OPCUAC
 
 		start := time.Now()
 		writes = writes[:0]
+		writerBusy.Store(true)
 
 		for {
 			ov, ok := dequeueValue()
@@ -141,6 +163,7 @@ func updateCycle(ctx context.Context, collRTD *mongo.Collection, conns []*OPCUAC
 		}
 
 		if queueLen() == 0 {
+			writerBusy.Store(false)
 			select {
 			case <-ctx.Done():
 				return ctx.Err()

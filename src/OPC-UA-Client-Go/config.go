@@ -359,6 +359,11 @@ func connectionFromDoc(doc bson.M) *OPCUAConnection {
 		OpcSubscriptions:  map[float64][]*monItem{},
 		handles:           map[uint32]*monItem{},
 	}
+	// A zero (or negative) timeout would make every connect attempt expire
+	// before it starts.
+	if c.TimeoutMs <= 0 {
+		c.TimeoutMs = 20000
+	}
 	if id, ok := doc["_id"].(bson.ObjectID); ok {
 		c.ID = id
 	}

@@ -28,6 +28,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -66,8 +67,13 @@ func main() {
 
 	go mongoUpdateLoop(ctx, cfg, conns)
 	go commandsLoop(ctx, cfg, conns)
+	var sessions sync.WaitGroup
 	for _, conn := range conns {
-		go connectionLoop(ctx, cfg, conn)
+		sessions.Add(1)
+		go func() {
+			defer sessions.Done()
+			connectionLoop(ctx, cfg, conn)
+		}()
 	}
 
 	// The C# driver polls the console for Esc; a driver under supervisord
@@ -82,6 +88,15 @@ func main() {
 		case <-sigs:
 			jslog.Log(jslog.LevelNoLog, "Exiting application!")
 			cancel()
+			// deviation D32: close the sessions before leaving, so the
+			// servers free them now instead of after the session timeout.
+			closed := make(chan struct{})
+			go func() { sessions.Wait(); close(closed) }()
+			select {
+			case <-closed:
+			case <-time.After(10 * time.Second):
+				jslog.Log(jslog.LevelNoLog, "Sessions did not close in time, exiting anyway.")
+			}
 			jslog.Flush()
 			os.Exit(0)
 		case <-ticker.C:

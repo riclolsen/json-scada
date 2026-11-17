@@ -24,6 +24,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -39,6 +40,10 @@ const (
 	// values so the two implementations stay comparable.
 	kMaxSearchDepth       = 128
 	kMaxReferencesPerNode = 1000
+
+	// maxBrowseStalls is how many requests in a row may be answered only with
+	// BadNoContinuationPoints before the walk gives up.
+	maxBrowseStalls = 25
 )
 
 // refEntry is one discovered node: the reference the server returned and
@@ -74,9 +79,19 @@ func browseFullAddressSpace(ctx context.Context, cli *opcua.Client, conn *OPCUAC
 	duplicates := 0
 	diagnostics := 0
 
-	for searchDepth := 0; len(pending) > 0 && searchDepth < kMaxSearchDepth; searchDepth++ {
+	// deviation D27: kMaxSearchDepth limits how deep the hierarchy may be,
+	// measured on the browse path, not how many requests the walk may take.
+	// Counting requests made a server that publishes MaxNodesPerBrowse (one
+	// small batch per request) end the walk early with most of the namespace
+	// unvisited and report success. The walk now ends only when nothing is
+	// left to browse, and fails when it cannot make progress.
+	stalls := 0
+	for iteration := 1; len(pending) > 0; iteration++ {
 		jslog.Log(jslog.LevelDetailed, "%s - %d: Browse %d nodes after %dms",
-			conn.Name, searchDepth+1, len(pending), time.Since(began).Milliseconds())
+			conn.Name, iteration, len(pending), time.Since(began).Milliseconds())
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 
 		var results []*ua.BrowseResult
 		var batch []*ua.BrowseDescription
@@ -148,11 +163,30 @@ func browseFullAddressSpace(ctx context.Context, cli *opcua.Client, conn *OPCUAC
 				ReleaseContinuationPoints: false,
 			})
 			if err != nil {
+				// deviation D27: references behind a lost continuation point
+				// would be missing from the namespace, so the walk fails
+				// instead of publishing a partial result.
 				jslog.Log(jslog.LevelBasic, "%s - BrowseNext error: %v", conn.Name, err)
-				break
+				releaseContinuationPoints(cli, cps)
+				return nil, fmt.Errorf("BrowseNext: %w", err)
 			}
 			mergeContinued(results, nextResp.Results)
 			cps = continuationPoints(nextResp.Results)
+		}
+
+		// No node of this request was answered: the server has no continuation
+		// points to spare. Others are released as the walk goes on, so a few
+		// rounds are tolerated, but not forever.
+		if len(unprocessed) > 0 && len(unprocessed) >= len(batch) {
+			stalls++
+			if stalls >= maxBrowseStalls {
+				return nil, errors.New("the server keeps refusing to browse: no continuation points available")
+			}
+			if !sleepCtx(ctx, 200*time.Millisecond) {
+				return nil, ctx.Err()
+			}
+		} else {
+			stalls = 0
 		}
 
 		// Build the next level, and the browse path of everything found.
@@ -191,6 +225,9 @@ func browseFullAddressSpace(ctx context.Context, cli *opcua.Client, conn *OPCUAC
 
 				// Properties are leaves; everything else is expanded.
 				if ref.ReferenceTypeID == nil || ref.ReferenceTypeID.IntID() != id.HasProperty {
+					if strings.Count(path, "/") >= kMaxSearchDepth {
+						continue // too deep (a cycle through distinct nodes, most likely)
+					}
 					nextNodes = append(nextNodes, ua.NewNodeIDFromExpandedNodeID(ref.NodeID))
 				}
 			}
@@ -232,6 +269,20 @@ func browseDescription(nid *ua.NodeID) *ua.BrowseDescription {
 		NodeClassMask:   uint32(ua.NodeClassVariable | ua.NodeClassObject | ua.NodeClassMethod),
 		ResultMask:      uint32(ua.BrowseResultMaskAll),
 	}
+}
+
+// releaseContinuationPoints frees the points the walk will not use again, on
+// a best-effort basis: servers hold a small number of them per session.
+func releaseContinuationPoints(cli *opcua.Client, cps [][]byte) {
+	if len(cps) == 0 {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, _ = cli.BrowseNext(ctx, &ua.BrowseNextRequest{
+		ContinuationPoints:        cps,
+		ReleaseContinuationPoints: true,
+	})
 }
 
 // continuationPoints collects the points that still have references behind
