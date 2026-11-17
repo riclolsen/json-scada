@@ -82,13 +82,12 @@ a race-free load, the resulting `realtimeData`, `soeData` and `hist`
 collections are identical, and the generated `pg_hist_*.sql` /
 `pg_rtdata_*.sql` rows are identical after normalising timestamps.
 
-Two deliberate differences:
+Both write SQL files to a temporary name and rename them into place, so
+`src/process_pg_sql` never picks up a half-written file.
 
-- SQL files are written to a temporary name and renamed into place, so
-  `sql/process_pg_*` can never pick up a half-written file.
-- A `sourceDataUpdate` without a `timeTag` is processed instead of throwing
-  and being dropped (the Node.js version raises a `TypeError` on
-  `timeTag.getTime()` and swallows the whole event).
+One deliberate difference: a `sourceDataUpdate` without a `timeTag` is
+processed instead of throwing and being dropped (the Node.js version raises a
+`TypeError` on `timeTag.getTime()` and swallows the whole event).
 
 Communication status tags are implemented in both (`commstatus.go` here,
 `commstatus.js` in the Node.js version) with identical tag documents:

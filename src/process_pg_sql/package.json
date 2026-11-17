@@ -1,0 +1,18 @@
+{
+  "name": "process_pg_sql",
+  "version": "1.0.0",
+  "description": "{json:scada} - Loads the SQL files queued by cs_data_processor (pg_hist_*.sql, pg_rtdata_*.sql) into PostgreSQL/TimescaleDB.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js all",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ricardo Lastra Olsen",
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
+}

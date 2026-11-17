@@ -55,6 +55,7 @@ All source code for the JSON-SCADA platform: protocol drivers, web UI, data proc
 - [mongofw](mongofw/AGENTS.md) — MongoDB forwarder/firewall for one-way air-gap replication (Node.js)
 - [cs_custom_processor](cs_custom_processor/AGENTS.md) — Customizable change stream data processor (TypeScript)
 - [cs_data_processor](cs_data_processor/AGENTS.md) — Change stream data processor (Node.js)
+- [process_pg_sql](process_pg_sql/AGENTS.md) — Loads the SQL files queued in `sql/` into PostgreSQL (Node.js; `process_pg_hist`/`process_pg_rtdata` services)
 - [OPC-UA-Client-Go](OPC-UA-Client-Go/AGENTS.md) — OPC UA client driver (Go, drop-in alternative, no .NET runtime)
 - [OPC-UA-Server](OPC-UA-Server/AGENTS.md) — OPC UA server driver (Node.js)
 - [OPC-DA-Client](OPC-DA-Client/AGENTS.md) — OPC DA client driver (.NET Core, Windows)

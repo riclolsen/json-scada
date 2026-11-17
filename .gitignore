@@ -33,6 +33,8 @@ src/mqtt-sparkplug/test.js
 *.exclusivelock
 pg_hist_*.sql
 pg_rtdata_*.sql
+pg_*.sql.tmp
+pg_*.sql.failed
 demo-docker/grafana_data/grafana.db
 src/config_server_for_excel/json-scada-config.xlsx
 src/config_server_for_excel/JsonConverter.bas

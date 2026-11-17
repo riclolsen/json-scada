@@ -221,7 +221,7 @@ func (p *Processor) writeHistBatch(ctx context.Context, entries []histEntry) {
 		}
 	}
 
-	// PostgreSQL file, picked up by sql/process_pg_hist
+	// PostgreSQL file, picked up by src/process_pg_sql
 	var b strings.Builder
 	b.Grow(len(entries) * 160)
 	b.WriteString("START TRANSACTION;\n")
@@ -270,7 +270,7 @@ func (p *Processor) writeRtSQLBatch(rows []string) {
 var sqlFileSeq atomic.Int64
 
 // writeSQLFile drops a SQL file in the folder scanned by the
-// sql/process_pg_* scripts, keeping the file name pattern of the Node.js
+// src/process_pg_sql loader, keeping the file name pattern of the Node.js
 // version (<prefix><epoch ms>_<instance>.sql).
 func (p *Processor) writeSQLFile(prefix, content string) {
 	dir := p.cfg.SQLFilesDir

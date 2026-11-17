@@ -281,6 +281,32 @@ const pipeline = [
   // fallback for updates left queued while MongoDB was disconnected
   setInterval(scheduleRtDataFlush, 150)
 
+  // Drops a SQL file for src/process_pg_sql (<prefix><epoch ms>_<instance>.sql).
+  // Written to a temporary name and renamed, so the loader never reads a partial file.
+  function writeSqlFile(prefix, content) {
+    const file =
+      sqlFilesPath +
+      prefix +
+      new Date().getTime() +
+      '_' +
+      jsConfig.Instance +
+      '.sql'
+    fs.writeFile(file + '.tmp', content, (err) => {
+      if (!err)
+        fs.rename(file + '.tmp', file, (errRename) => {
+          if (errRename) {
+            Metrics.inc(Counter.Errors)
+            Log.log('Error renaming SQL file! ' + errRename.message)
+            fs.unlink(file + '.tmp', () => {})
+          } else Metrics.inc(Counter.SqlFilesWritten)
+        })
+      else {
+        Metrics.inc(Counter.Errors)
+        Log.log('Error writing SQL file! ' + err.message)
+      }
+    })
+  }
+
   // write values to sql files for later insertion on postgreSQL, and mongo hist
   async function processSqlAndMongoHistUpdates() {
     if (!histCollection || !clientMongo || !MongoStatus.HintMongoIsConnected) {
@@ -324,21 +350,7 @@ const pipeline = [
         sqlTransaction =
           sqlTransaction + 'ON CONFLICT (tag, time_tag) DO NOTHING;\n'
         sqlTransaction = sqlTransaction + 'COMMIT;\n'
-        fs.writeFile(
-          sqlFilesPath +
-            'pg_hist_' +
-            new Date().getTime() +
-            '_' +
-            jsConfig.Instance +
-            '.sql',
-          sqlTransaction,
-          (err) => {
-            if (err) {
-              Metrics.inc(Counter.Errors)
-              Log.log('Error writing SQL file!')
-            } else Metrics.inc(Counter.SqlFilesWritten)
-          }
-        )
+        writeSqlFile('pg_hist_', sqlTransaction)
       }
 
       doInsertData = false
@@ -372,21 +384,7 @@ const pipeline = [
 
       if (doInsertData) {
         histFlushDidWork = true
-        fs.writeFile(
-          sqlFilesPath +
-            'pg_rtdata_' +
-            new Date().getTime() +
-            '_' +
-            jsConfig.Instance +
-            '.sql',
-          sqlTransaction,
-          (err) => {
-            if (err) {
-              Metrics.inc(Counter.Errors)
-              Log.log('Error writing SQL file!')
-            } else Metrics.inc(Counter.SqlFilesWritten)
-          }
-        )
+        writeSqlFile('pg_rtdata_', sqlTransaction)
       }
     } catch (e) {
       Metrics.inc(Counter.Errors)

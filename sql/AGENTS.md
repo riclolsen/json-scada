@@ -2,7 +2,7 @@
 
 ## Purpose
 
-SQL scripts for PostgreSQL/TimescaleDB database setup, maintenance, and data processing: table creation, historical data archival, historical/real-time data processing, Grafana/Metabase app database schemas.
+SQL scripts for PostgreSQL/TimescaleDB database setup and maintenance (table creation, historical data archival, Grafana/Metabase app database schemas), and the queue folder of SQL files loaded by `src/process_pg_sql`.
 
 ## Ownership
 
@@ -11,19 +11,16 @@ SQL scripts for PostgreSQL/TimescaleDB database setup, maintenance, and data pro
 
 ## Local Contracts
 
-- Files: SQL scripts (`.sql`), shell scripts (`.sh`), Windows batch files (`.bat`)
+- Files: SQL scripts (`.sql`), shell scripts (`.sh`)
 - `create_tables.sql` — main schema creation script
-- `process_pg_hist.*` — PostgreSQL historian data processing
-- `process_pg_rtdata.*` — real-time data processing
 - `delete_old.*` — old data cleanup/archival
-- `terminate_pg_hist.*` / `terminate_pg_rtdata.*` — process termination
+- Runtime queue (gitignored): `pg_hist_*.sql` / `pg_rtdata_*.sql` written by _cs_data_processor_ (as `*.tmp`, then renamed) and loaded/deleted by [src/process_pg_sql](../src/process_pg_sql/AGENTS.md); the folder must be writable by the service user
 - `grafanaappdb.sql` — Grafana application database schema
 - `metabaseappdb.sql` — Metabase application database schema
 
 ## Work Guidance
 
 - Maintain compatibility with PostgreSQL 16+ and TimescaleDB 2.0+
-- Shell scripts should work on both Linux (`.sh`) and Windows (`.bat`)
 - Always test schema changes with both `psql` and application code
 - Document table structures and relationships
 

@@ -118,17 +118,24 @@ nssm set JSON_SCADA_config_server_excel Start SERVICE_DEMAND_START
 nssm set JSON_SCADA_config_server_excel AppEnvironmentExtra JS_CSEXCEL_IP_BIND=0.0.0.0 JS_CSEXCEL_HTTP_PORT=10001
 rem JS_CSEXCEL_IP_BIND=127.0.0.1 to enable just local access
 
-nssm install JSON_SCADA_process_rtdata "C:\json-scada\sql\process_pg_rtdata.bat"
-nssm set JSON_SCADA_process_rtdata AppDirectory "C:\json-scada\sql"
+REM Loaders of the SQL files queued by cs_data_processor in C:\json-scada\sql into PostgreSQL (src\process_pg_sql)
+nssm install JSON_SCADA_process_rtdata "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\process_pg_sql\index.js" rtdata 1
+nssm set JSON_SCADA_process_rtdata AppDirectory "C:\json-scada\src\process_pg_sql"
+nssm set JSON_SCADA_process_rtdata AppStdout C:\json-scada\log\process_pg_rtdata.log
+nssm set JSON_SCADA_process_rtdata AppRotateOnline 1
+nssm set JSON_SCADA_process_rtdata AppRotateBytes 10000000
 nssm set JSON_SCADA_process_rtdata Start SERVICE_AUTO_START
 rem Use environment variables to connect (for writing) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
-rem nssm set JSON_SCADA_process_rtdata AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
+rem nssm set JSON_SCADA_process_rtdata AppEnvironmentExtra PGHOST=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
-nssm install JSON_SCADA_process_hist "C:\json-scada\sql\process_pg_hist.bat"
-nssm set JSON_SCADA_process_hist AppDirectory "C:\json-scada\sql"
+nssm install JSON_SCADA_process_hist "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\process_pg_sql\index.js" hist 1
+nssm set JSON_SCADA_process_hist AppDirectory "C:\json-scada\src\process_pg_sql"
+nssm set JSON_SCADA_process_hist AppStdout C:\json-scada\log\process_pg_hist.log
+nssm set JSON_SCADA_process_hist AppRotateOnline 1
+nssm set JSON_SCADA_process_hist AppRotateBytes 10000000
 nssm set JSON_SCADA_process_hist Start SERVICE_AUTO_START
 REM Use environment variables to connect (for writing) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
-REM nssm set JSON_SCADA_process_hist AppEnvironmentExtra PGHOSTADDR=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
+REM nssm set JSON_SCADA_process_hist AppEnvironmentExtra PGHOST=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
 
 nssm install JSON_SCADA_php "c:\json-scada\platform-windows\nginx_php-runtime\php\php-cgi.exe" -b 127.0.0.1:9000 -c c:\json-scada\conf\php.ini
 nssm set JSON_SCADA_php Start SERVICE_DEMAND_START

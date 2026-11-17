@@ -528,7 +528,7 @@ MongoDB time series collection written by _cs_data_processor_ (and the Go _cs_da
 | | MongoDB `hist` collection | PostgreSQL/TimescaleDB `hist` table |
 |---|---|---|
 | Role | Secondary historian, needs no extra database | Primary historian |
-| Written by | _cs_data_processor_ directly (`insertMany`, `w: 0`) | _cs_data_processor_ writes SQL files, `sql/process_pg_hist.sh`/`.bat` loads them |
+| Written by | _cs_data_processor_ directly (`insertMany`, `w: 0`) | _cs_data_processor_ writes SQL files, `src/process_pg_sql` (`process_pg_hist` service) loads them |
 | Retention | `expireAfterSeconds` (60 days as seeded) | TimescaleDB `add_retention_policy('hist', INTERVAL '45 days')` in `sql/create_tables.sql` (`sql/delete_old.sql` for manual pruning) |
 | Quality fields | `invalid`, `timeTagAtSource`, `timeTagAtSourceOk`, `cot` | `time_tag_at_source`, `flags` bit mask |
 | Read by | _OPC-UA-Server_ HistoryRead (default backend, `historian: "mongodb"`) | _server_realtime_auth_ `/Invoke` HistoryRead and GraphQL, Grafana, Metabase, _OPC-UA-Server_ with `historian: "postgresql"` |
@@ -625,7 +625,7 @@ In this table historical data is written. Local and source timestamps are record
     -- data retention policy (older data will be deleted)
     SELECT add_retention_policy('hist', INTERVAL '45 days');
 
-Rows are queued by _cs_data_processor_ as SQL files and loaded by `sql/process_pg_hist.sh` (or `.bat`). See [MongoDB _hist_ versus PostgreSQL _hist_](#mongodb-hist-versus-postgresql-hist) for the differences from the MongoDB time series collection. Authoritative DDL: [sql/create_tables.sql](../sql/create_tables.sql).
+Rows are queued by _cs_data_processor_ as SQL files and loaded by [src/process_pg_sql](../src/process_pg_sql/README.md) (`process_pg_hist` service). See [MongoDB _hist_ versus PostgreSQL _hist_](#mongodb-hist-versus-postgresql-hist) for the differences from the MongoDB time series collection. Authoritative DDL: [sql/create_tables.sql](../sql/create_tables.sql).
 
 ## Realtime Data Table
 

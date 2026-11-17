@@ -99,6 +99,7 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 - [src/cs_custom_processor/](src/cs_custom_processor/AGENTS.md) — Custom processor (TypeScript)
 - [src/cs_data_processor/](src/cs_data_processor/AGENTS.md) — Data processor (Node.js)
 - [src/cs_data_processor-go/](src/cs_data_processor-go/AGENTS.md) — Data processor (Go, drop-in alternative)
+- [src/process_pg_sql/](src/process_pg_sql/AGENTS.md) — PostgreSQL loader of the SQL files queued in `sql/` (Node.js)
 - [src/OPC-UA-Client-Go/](src/OPC-UA-Client-Go/AGENTS.md) — OPC UA client (Go)
 - [src/OPC-UA-Server/](src/OPC-UA-Server/AGENTS.md) — OPC UA server (Node.js)
 - [src/OPC-DA-Client/](src/OPC-DA-Client/AGENTS.md) — OPC DA client (.NET Core)

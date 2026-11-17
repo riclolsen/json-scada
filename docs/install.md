@@ -237,6 +237,8 @@ Initiate the Postgresql database.
 
 * https://github.com/riclolsen/json-scada/blob/master/sql/create_tables.sql
 
+The historian rows reach PostgreSQL through SQL files queued in `json-scada/sql`, loaded by the _process_pg_hist_ and _process_pg_rtdata_ services. See [src/process_pg_sql](../src/process_pg_sql/README.md) for the connection settings (`PG*` environment variables or a _.pgpass_ file).
+
 Processes can be distributed on distinct servers, each server must have a different node name.
 
 Multiple JSON-SCADA systems can run on the same server; each one must have distinct MongoDB and PostgreSQL databases, a separate folder structure and distinct HTTP listen ports.
