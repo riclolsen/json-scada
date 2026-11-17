@@ -17,9 +17,12 @@ Node.js OPC UA server that exposes JSON-SCADA real-time data as OPC UA variables
   - `app-defs.js` — application definitions
   - `load-config.js` — configuration loader
   - `simple-logger.js` — logging utility
-  - `test-history.js` — self-test for HistoryRead (in-process server+client, mock backend, no DB)
-  - `HISTORICAL_ACCESS_PLAN.md` — design/plan for the HA feature
-- **Config:** INI file via Supervisor or environment variables
+  - `test-history.js` — self-test (in-process server+client, mock backend, no DB): HistoryRead raw/reverse/cap/continuation, integer conversion, async write status
+- **Config:** `../../conf/json-scada.json` (override `JS_CONFIG_FILE`); instance/log level via arguments or `JS_OPCUASERVER_*` environment variables; connection settings in `protocolConnections`
+- **Security:** `useSecurity` removes the unsecured endpoint (only Sign/SignAndEncrypt); optional `users` list enables username/password login and turns anonymous access off unless `allowAnonymous` is true; `ipAddresses` is enforced at channel level (fail closed on unknown address)
+- **Commands:** only `origin: command` variables are writable; the write is async and returns the real status (never a blind `Good`)
+- **History:** opt-in (`historyEnabled` defaults to false); results cut off at `historyMaxReturnDataValues` return `GoodMoreData`; reverse reads query newest-first
+- **Startup:** the server listens only after the address space is built; a start failure (e.g. port in use) drops the Mongo client so the main loop retries
 - **Keep-alive and stats:** no redundancy arbitration, so a 5 s loop in `index.js` updates the instance `activeNodeKeepAliveTimeTag`/`activeNodeName`/`softwareVersion` and each connection's `stats.isConnected` (at least one client session) and `stats.sessions`; with the same instance on several nodes all write
 
 ## Work Guidance
@@ -33,6 +36,6 @@ Node.js OPC UA server that exposes JSON-SCADA real-time data as OPC UA variables
 ## Verification
 
 - `npm install` — dependencies install cleanly (includes `pg` and `node-opcua-aggregates` for history)
-- `node test-history.js` — HistoryRead self-test (no DB required); expect `ALL PASS`
+- `npm test` / `node test-history.js` — self-test (no DB required); expect `ALL PASS`
 - Test connection with an OPC UA client (e.g., UaExpert)
 - Verify tag browsing and data subscription work; for history, use UaExpert's History Trend View against a historized tag

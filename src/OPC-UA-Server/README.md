@@ -46,7 +46,7 @@ Changes in the _protocolDriverInstances_ config requires that the driver instanc
 
 Each instance for this driver can have many client connection defined that must be described in the _protocolConnections_ collection.
 
-This driver will make all points available to the clients, unless filtered. There is no need to configure tags for protocol destinations (_protocolDestinations_ property).
+This driver will make all points available to the clients, unless filtered. Only command variables are writable by clients. There is no need to configure tags for protocol destinations (_protocolDestinations_ property).
 
     use json_scada_db_name
     db.protocolConnections.insert({
@@ -63,6 +63,8 @@ This driver will make all points available to the clients, unless filtered. Ther
         topics: ["KAW2", "KOR1"],
         timeoutMs: 15000,
         useSecurity: false,
+        allowAnonymous: true,
+        users: [],
         localCertFilePath: "",
         privateKeyFilePath: "",
         historyEnabled: false,
@@ -80,17 +82,19 @@ Parameters for communication with OPC-UA servers.
 - _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 - _**commandsEnabled**_ [Boolean] - Allows to disable/enable commands (messages in control direction) for a connection. Use false to disable all commands. If true the driver will create writable command tags for the enabled topics (_group1_ list). **Mandatory parameter**.
 - _**groupId**_ [String] - OPC-UA resource path. This path will be added to the endpoint resource name. Default value is "UA/JsonScada". **Optional parameter**.
-- _**ipAddresses**_ [Array of Strings] - List of client's IP addresses allowed. Leave empty to allow any IP address to connect to the server. **Optional parameter**.
+- _**ipAddresses**_ [Array of Strings] - List of client's IP addresses allowed; connections from other addresses (or from an unknown address) are closed. Leave empty to allow any IP address to connect to the server. **Optional parameter**.
 - _**ipAddressLocalBind**_ [String] - Interface bind IP address and port. Currently supports only IP "0.0.0.0". Default "0.0.0.0:4840". **Optional parameter**.
 - _**topics**_ [Array of Strings] - List of _group1_ filter for the available tags on the OPC-UA server. Leave empty to include all tags. **Optional parameter**.
 - _**timeoutMs**_ [Double] - Timeout. The HEL/ACK transaction timeout in ms. Use a large value (i.e. 15000 ms) for slow connections or embedded devices. **Mandatory parameter**.
-- _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.
+- _**useSecurity**_ [Boolean] - When true only signed/encrypted channels are accepted (Sign and SignAndEncrypt with Basic256Sha256, Aes128_Sha256_RsaOaep or Aes256_Sha256_RsaPss); sessions over the unsecured (None) endpoint are refused. When false the unsecured endpoint is also offered. **Mandatory parameter**.
+- _**allowAnonymous**_ [Boolean] - Allow anonymous client sessions. Default `true`, or `false` when `users` is not empty. **Optional parameter**.
+- _**users**_ [Array of {username, password}] - Users accepted for username/password login (kept in plain text in the configuration database). **Optional parameter**.
 - _**localCertFilePath**_ [String] - File that contains the certificate (\*.PEM) that will be presented to the remote side of the connection (equiv. to NodeJS TLS option 'cert'). **Optional parameter**.
 - _**privateKeyFilePath**_ [String] - File (\*.PEM) that contains the private key corresponding to the local certificate (equiv. to NodeJS TLS option 'key'). **Optional parameter**.
-- _**historyEnabled**_ [Boolean] - Master switch for OPC UA Historical Access (HistoryRead). Default `false` (behavior identical to when this feature did not exist). See [Historical Data Access](#historical-data-access-opc-ua-ha). **Optional parameter**.
+- _**historyEnabled**_ [Boolean] - Master switch for OPC UA Historical Access (HistoryRead). Default `false`: history is only exposed when set to `true` explicitly. See [Historical Data Access](#historical-data-access-opc-ua-ha). **Optional parameter**.
 - _**historian**_ [String] - History backend when `historyEnabled` is true: `"mongodb"` (default) reads the MongoDB `hist` timeseries collection; `"postgresql"` reads the PostgreSQL/TimescaleDB `hist` hypertable. **Optional parameter**.
 - _**postgresConnectionString**_ [String] - Optional `postgres://user:pass@host:port/db` for the `postgresql` historian. Empty ⇒ use `PGHOST/PGPORT/PGUSER/PGPASSWORD/PGDATABASE` env vars if set, else the local defaults `127.0.0.1 / json_scada / json_scada : 5432`. Ignored for the mongodb backend. **Optional parameter**.
-- _**historyMaxReturnDataValues**_ [Number] - Hard cap on values returned per tag per HistoryRead extraction (also published as `HistoryServerCapabilities.MaxReturnDataValues`). Default `20000`. **Optional parameter**.
+- _**historyMaxReturnDataValues**_ [Number] - Hard cap on values returned per tag per HistoryRead extraction (also published as `HistoryServerCapabilities.MaxReturnDataValues`). A result cut off by the cap is returned with status `GoodMoreData` (without continuation point): request the rest with a narrower time range. Default `20000`. **Optional parameter**.
 - _**historyQueryTimeoutMs**_ [Number] - Backend query timeout in ms. Default `10000`. **Optional parameter**.
 - _**historyTimestampField**_ [String] - Which timestamp the history range filters/orders on: `"timeTag"` (default, server receive time) or `"timeTagAtSource"` (source time; for MongoDB this mode benefits from an extra index `db.hist.createIndex({ tag: 1, timeTagAtSource: 1 })`). **Optional parameter**.
 - _**historyFullHAConfiguration**_ [Boolean] - When `true` (default) each historized variable gets a full per-node `HA Configuration` object (spec-compliant). Set `false` for a "lite" install (no `HA Configuration` object) to keep the address space small on systems with tens of thousands of tags. **Optional parameter**.
@@ -98,7 +102,7 @@ Parameters for communication with OPC-UA servers.
 
 ## Commands Routing
 
-Commands received on this driver (OPC UA tag writes) can be routed to protocol clients. When commands are enabled for the connection, command tags will be automatically made available on the OPC-UA server. When a write is performed on an OPC object (associated with a command tag) on the OPC-UA server, the command is routed to the protocol source of the command tag.
+Commands received on this driver (OPC UA tag writes) can be routed to protocol clients. The write result reflects the outcome: `BadNotWritable` for blocked commands, `BadNotFound` for unknown tags, `BadTypeMismatch` for values that are not a scalar number/boolean, `Good` only when the command was queued. Enabling commands on a connection that allows anonymous clients over an unsecured channel from any address logs a warning: set `useSecurity`, `users` or `ipAddresses`. When commands are enabled for the connection, command tags will be automatically made available on the OPC-UA server. When a write is performed on an OPC object (associated with a command tag) on the OPC-UA server, the command is routed to the protocol source of the command tag.
 
 ## Historical Data Access (OPC UA HA)
 
@@ -118,7 +122,7 @@ Retention is governed by the store, not the driver: the MongoDB `hist` timeserie
 
 - No `HistoryUpdate` (insert/replace/delete), no event history (`ReadEventDetails`), no `ReadAtTimeDetails`, no ModifiedValues (`isReadModified=true`) — these return `Bad` / unsupported.
 - Bounding values (`returnBounds=true`) are not synthesized.
-- Extractions are capped at `historyMaxReturnDataValues` per tag; clients should page with `numValuesPerNode` (continuation points are supported).
+- Extractions are capped at `historyMaxReturnDataValues` per tag. Beyond the cap the result carries `GoodMoreData` and no continuation point; request the remaining range in smaller windows. Within the cap, `numValuesPerNode` paging with continuation points works. Reverse requests (start later than end) return the newest values first, so the cap keeps the newest chunk.
 - As with live variables, tags are enumerated only at startup — tags created later appear after a driver restart.
 
 ## Command Line Arguments
