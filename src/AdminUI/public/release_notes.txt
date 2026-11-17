@@ -141,12 +141,25 @@ Notes for version 0.71:
 * AdminUI redesign: left side navigation panel replaces the top bar and dashboard; native Vue viewers for displays, tabular data, alarms, events and trends (legacy HTML viewers removed); About page shows the release notes.
 * AdminUI Admin page: summary tiles, search, filters, CSV export and auto refresh for users, roles (with rights matrix), driver instances, connections (live communication status), tags and user actions; clone for tags, connections and roles; System section with project backup, service settings, restarts and a previewed configuration clean-up.
 * AdminUI tooling and npm packages upgraded (Vuetify 4, ESLint 10).
-* Realtime server hardening: user rights read from the database, token revocation, sign-in throttling, request limits and safer admin routes.
 * AdminUI System section: start/stop and settings of the MCP server service; start/stop of the CIM-EMS services, check of its Python environment and install of missing Python dependencies.
 * AdminUI Tags: calculated point editor with a searchable formula catalog (expression, parcel rule and notes) and an ordered parcel list with tag search by name, description or key, current values and parcel count check.
 * AdminUI preferences kept per user in the browser: Events Viewer mode, station and historical filters, key columns, time mode and font size; Tabular/Alarms Viewer station filter and font size; admin list page sizes, columns and views; theme, language and side panel state.
-* Display Viewer alarm box placed at the top right of the viewer page only; CIM-EMS Bindings tab now loads the bindings of the first model when opened.
-* Removed the legacy updater for SAGE exported HTML displays (/sage-cepel-displays).
+* Realtime server hardening: user rights read from the database, token revocation, sign-in throttling, request limits and safer admin routes.
+* Realtime server: display files served only as plain .svg names from the installation SVG folder; validated admin list filters, sorting and paging; validated point property and user/role writes (GraphQL and /Invoke/); bounded GraphQL and history queries; npm packages upgraded.
+* New PostgreSQL loader process_pg_sql (Node.js) replaces the PostgreSQL queue scripts; queued SQL files are now written atomically.
+* IEC 60870-5 drivers: improved TLS, failover, command handling, flow control and value conversion; MongoDB writes and failed auto-created tags are retried.
+* DNP3 drivers: failed value batches and auto-created tags retried; wire values validated; points preserved during standby; fixes for frozen analogs, timestamps and passive endpoint retries.
+* Modbus client (0.3.0) and server: commands run one at a time in arrival order; connected status only after the device answers; boolean register writes (FC6); safer server write checks and per-bit tags sharing a register; updated go-modbus and go-serial libraries.
+* OPC UA client: discovery fails on incomplete browses and retries subscription setup; session health monitoring, per-connection command queues and typed method arguments.
+* OPC UA server: improved security, history limits, command handling and reconnect; history read self-test; npm packages upgraded.
+* IEC 61850 and ICCP drivers hardened; ICCP binaries refreshed for tase2 v0.5.1. Queued realtime data is preserved when database writes fail.
+* PLC4J client: TLS configuration, bounded writes, per-connection command queues, improved redundancy, scan recovery and auto-tag allocation.
+* MQTT Sparkplug B driver: bdSeq persisted across restarts; improved session, birth, rebirth and command handling; hardened TLS, payload decoding and auto-tag creation; vulnerable protobufjs 6 replaced by version 8.
+* SVG Edit: tag picker on clone values, movable SCADA Animations panel and Ctrl+click to select objects below others.
+* MongoDB Community Server updated to version 9.0.8.
+* MongoDB Compass updated to 1.53.2.
+* Grafana updated to version 13.3.1.
+* Metabase updated to version 0.65.4.
 
 To quickly run the system after installed, open the JSON-SCADA desktop folder and:
 
@@ -154,7 +167,6 @@ To quickly run the system after installed, open the JSON-SCADA desktop folder an
 * On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
 * Default login credentials: username=admin password=jsonscada.
 * Metabase credentials: username=json@scada.com password=jsonscada123.
-* To enable CIM_EMS service: install python dependencies in Admin > System > CIM-EMS (or execute C:\json-scada\src\cim-ems\install.bat).
 * To access the MCP server: start the service (Admin > System > MCP server) and config your agent to access http://localhost:6001/mcp.
 
 Requirements and recommendations:
