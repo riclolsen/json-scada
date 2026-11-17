@@ -25,7 +25,7 @@ package org.jsonscada.plc4jclient;
  * (big-endian for Modbus). "LITTLE_ENDIAN" means the device actually stores
  * little-endian words, so the bytes must be swapped; "REV_ENDIAN" is an
  * unconditional reverse; "BIG_ENDIAN" or empty is a no-op. This is applied
- * consistently to all multi-byte types (the Go driver was inconsistent here).
+ * consistently to all multi-byte types.
  */
 public final class EndianUtils {
 

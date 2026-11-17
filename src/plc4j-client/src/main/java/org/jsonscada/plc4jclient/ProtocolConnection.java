@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.plc4x.java.api.PlcConnection;
-import org.apache.plc4x.java.api.messages.PlcReadRequest;
 import org.bson.Document;
 
 /** A protocolConnections document plus the runtime state of the PLC connection. */
@@ -43,11 +43,19 @@ public class ProtocolConnection {
 
   // runtime state
   public volatile PlcConnection plcConn;
-  public volatile PlcReadRequest readRequest;
   public volatile String addrSeparator = ":";
   public final Map<String, String> endiannessByTag = new ConcurrentHashMap<>();
-  public int autoKeyId = 0;
+  /** Element count of array addresses, by configured address (absent for scalars). */
+  public final Map<String, Integer> arrayLengthByTag = new ConcurrentHashMap<>();
+  /** Last _id handed out in the connection's auto-tag key range (long: no int overflow). */
+  public long autoKeyId = 0;
   public int reconnectCount = 0;
+  /** True while a connection attempt is running (at most one per connection). */
+  public final AtomicBoolean connecting = new AtomicBoolean(false);
+  /** Earliest time (epoch ms) of the next connection attempt after a failure. */
+  public volatile long nextAttemptMs = 0;
+  /** Set when the configuration was reloaded: this object must not be used anymore. */
+  public volatile boolean retired = false;
 
   public static ProtocolConnection fromDocument(Document d) {
     ProtocolConnection pc = new ProtocolConnection();
@@ -88,16 +96,33 @@ public class ProtocolConnection {
     return out;
   }
 
-  /** Closes the PLC connection ignoring errors and clears the reference. */
+  /** Closes the current PLC connection ignoring errors and clears the reference. */
   public void closeQuietly() {
-    PlcConnection c = plcConn;
-    plcConn = null;
-    if (c != null) {
-      try {
-        c.close();
-      } catch (Exception e) {
-        // ignore errors on close
-      }
+    close(plcConn);
+  }
+
+  /**
+   * Closes one specific PLC connection ignoring errors; the reference is cleared
+   * only when it still points to that connection, so a stale scan thread can
+   * never drop a newer connection.
+   */
+  public synchronized void close(PlcConnection c) {
+    if (c == null) {
+      return;
     }
+    if (plcConn == c) {
+      plcConn = null;
+    }
+    try {
+      c.close();
+    } catch (Exception e) {
+      // ignore errors on close
+    }
+  }
+
+  /** Marks the object as obsolete and closes its PLC connection. */
+  public synchronized void retire() {
+    retired = true;
+    closeQuietly();
   }
 }

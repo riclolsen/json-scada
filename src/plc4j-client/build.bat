@@ -1,2 +1,4 @@
+@echo off
 call mvn package
-copy target\plc4j-client.jar \json-scada\bin\
+if errorlevel 1 exit /b %errorlevel%
+copy /Y target\plc4j-client.jar \json-scada\bin\plc4j-client.jar

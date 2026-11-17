@@ -23,12 +23,12 @@
 
   <groupId>org.jsonscada</groupId>
   <artifactId>plc4j-client</artifactId>
-  <version>0.1.1</version>
+  <version>0.2.0</version>
   <packaging>jar</packaging>
 
   <name>{json:scada} PLC4J Client</name>
   <description>Generic PLC protocol client driver for JSON-SCADA based on Apache PLC4X for Java (PLC4J).
-    Registers in MongoDB as protocolDriver "PLC4X" (drop-in alternative to the Go plc4x-client).</description>
+    Registers in MongoDB as protocolDriver "PLC4X".</description>
   <url>https://github.com/riclolsen/json-scada</url>
 
   <licenses>
@@ -45,8 +45,9 @@
          instead, use the "plc4x-dev" profile at the end of this file
          (mvn -Pplc4x-dev package) or pass -Dplc4x.version=<version>. -->
     <plc4x.version>1.0.0</plc4x.version>
-    <mongodb.version>5.2.1</mongodb.version>
-    <logback.version>1.5.6</logback.version>
+    <mongodb.version>5.14.0</mongodb.version>
+    <logback.version>1.5.38</logback.version>
+    <junit.version>5.14.4</junit.version>
   </properties>
 
   <dependencies>
@@ -127,6 +128,14 @@
       <artifactId>logback-classic</artifactId>
       <version>${logback.version}</version>
     </dependency>
+
+    <!-- Unit tests -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -136,6 +145,11 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.6</version>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -153,6 +167,9 @@
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <mainClass>org.jsonscada.plc4jclient.Plc4jClient</mainClass>
+                  <manifestEntries>
+                    <Implementation-Version>${project.version}</Implementation-Version>
+                  </manifestEntries>
                 </transformer>
               </transformers>
               <filters>

@@ -21,7 +21,7 @@ package org.jsonscada.plc4jclient;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/** Driver log output to stdout, level semantics identical to the Go plc4x-client. */
+/** Driver log output to stdout, levels 0 (min) to 3 (debug). */
 public final class Log {
   public static final int LEVEL_MIN = 0;
   public static final int LEVEL_BASIC = 1;
@@ -43,7 +43,7 @@ public final class Log {
     log(msg + " - " + e);
   }
 
-  /** Logs and terminates the process (parity with Go log.Fatal). */
+  /** Logs and terminates the process. */
   public static void fatal(String msg) {
     log(msg);
     System.exit(1);

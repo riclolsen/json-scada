@@ -24,15 +24,15 @@ import java.util.regex.Pattern;
 
 /**
  * Parses connection "topics" entries: "TAG_NAME|PLC4X_ADDRESS|ENDIANNESS"
- * (2nd and 3rd parts optional). Same conventions as the Go plc4x-client.
+ * (2nd and 3rd parts optional).
  *
  * <p>Array addresses accept both notations: the legacy count after the type,
- * "holding-register:20:INT[10]" (what the Go plc4x-client and PLC4X up to 0.13.x
+ * "holding-register:20:INT[10]" (what PLC4X up to 0.13.x
  * use, and what existing JSON-SCADA configurations contain), and the PLC4X 1.0.0
  * range before the type, "holding-register:20[0..9]:INT". The legacy form is
  * translated before it reaches PLC4X while the configured text stays the PLC4X
  * tag name, so realtimeData tags keep matching and the same connection
- * configuration works with either driver executable.
+ * configurations written for the earlier PLC4X releases keep working.
  */
 public final class TopicParser {
 
@@ -83,7 +83,8 @@ public final class TopicParser {
     Matcher legacy = LEGACY_ARRAY_PATTERN.matcher(address);
     if (legacy.matches()) {
       try {
-        return Integer.parseInt(legacy.group(3));
+        int count = Integer.parseInt(legacy.group(3));
+        return count >= 1 ? count : -1;
       } catch (NumberFormatException e) {
         return -1;
       }
@@ -93,7 +94,8 @@ public final class TopicParser {
       try {
         int lower = Integer.parseInt(range.group(1));
         int upper = Integer.parseInt(range.group(2));
-        return upper >= lower ? upper - lower + 1 : -1;
+        long count = (long) upper - lower + 1;
+        return count > 0 && count <= Integer.MAX_VALUE ? (int) count : -1;
       } catch (NumberFormatException e) {
         return -1;
       }
@@ -124,15 +126,14 @@ public final class TopicParser {
 
   /**
    * JSON-SCADA tag type inferred from the data type inside the PLC4X address.
-   * (The Go driver compares the uppercased address against mixed-case "Struct",
-   * which never matches — fixed here by uppercasing both sides.)
    */
   public static String inferType(String address, String addrSeparator) {
     String addr = address.toUpperCase(Locale.ROOT);
     if (addr.contains(addrSeparator + "BOOL")) {
       return "digital";
     }
-    if (addr.contains(addrSeparator + "STRING") || addr.contains(addrSeparator + "CHAR")) {
+    if (addr.contains(addrSeparator + "STRING") || addr.contains(addrSeparator + "CHAR")
+        || addr.contains(addrSeparator + "WSTRING") || addr.contains(addrSeparator + "WCHAR")) {
       return "string";
     }
     if (addr.contains(addrSeparator + "STRUCT")

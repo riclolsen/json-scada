@@ -18,6 +18,7 @@
 
 package org.jsonscada.plc4jclient;
 
+import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.BulkWriteOptions;
@@ -31,10 +32,12 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 /**
- * Owns the MongoDB lifecycle (like the Go mongoWriter goroutine): connects with
- * retry, loads the instance and connections configuration, starts the commands
- * change-stream watcher and consumes the bulk-write queue. On any Mongo failure
- * the whole layer reconnects and reconfigures.
+ * Owns the MongoDB lifecycle: connects with retry, loads the instance and
+ * connections configuration, starts the commands change-stream watcher and
+ * consumes the bulk-write queue. On a connection-level Mongo failure the whole
+ * layer reconnects and reconfigures; the PLC connections of the configuration
+ * being replaced are retired (closed) first, so they cannot leak. Write errors
+ * of single documents are logged and do not end the session.
  */
 public class MongoWriter implements Runnable {
 
@@ -59,21 +62,28 @@ public class MongoWriter implements Runnable {
   public void run() {
     while (true) {
       MongoConnector mongo = null;
+      CommandsWatcher watcher = null;
       try {
         Log.log("Mongodb - Try to connect server...");
         mongo = MongoConnector.connect(cfg);
         Log.log("Mongodb - Connected to server.");
 
         // loads config and sets this.instanceId, then publish state for the main loop
+        List<ProtocolConnection> oldConns = this.protocolConns;
         List<ProtocolConnection> conns = configInstance(mongo);
+        if (oldConns != null) {
+          for (ProtocolConnection old : oldConns) {
+            old.retire();
+          }
+        }
         this.protocolConns = conns;
         this.instancesColl = mongo.instances;
         this.connectionsColl = mongo.connections;
         this.rtDataColl = mongo.rtData;
 
         // start the commands change-stream watcher for this Mongo session
-        Thread cmdThread =
-            new Thread(new CommandsWatcher(mongo.commands, conns), "commands-watcher");
+        watcher = new CommandsWatcher(mongo.commands, conns);
+        Thread cmdThread = new Thread(watcher, "commands-watcher");
         cmdThread.setDaemon(true);
         cmdThread.start();
 
@@ -83,10 +93,18 @@ public class MongoWriter implements Runnable {
           if (ops.isEmpty()) {
             continue;
           }
-          BulkWriteResult res = mongo.rtData.bulkWrite(ops, new BulkWriteOptions().ordered(false));
-          if (Log.level >= Log.LEVEL_DETAILED) {
-            Log.log("Mongodb - Opers: " + ops.size() + ", Matched count: "
-                + res.getMatchedCount() + ", Updated Count: " + res.getModifiedCount());
+          try {
+            BulkWriteResult res =
+                mongo.rtData.bulkWrite(ops, new BulkWriteOptions().ordered(false));
+            if (Log.level >= Log.LEVEL_DETAILED) {
+              Log.log("Mongodb - Opers: " + ops.size() + ", Matched count: "
+                  + res.getMatchedCount() + ", Updated Count: " + res.getModifiedCount());
+            }
+          } catch (MongoBulkWriteException e) {
+            // some documents were rejected (unordered: the others were applied);
+            // the connection is fine, so keep the session
+            Log.log("Mongodb - bulk write errors: " + e.getWriteErrors().size() + " of "
+                + ops.size() + " - " + e.getMessage());
           }
         }
       } catch (InterruptedException e) {
@@ -96,6 +114,22 @@ public class MongoWriter implements Runnable {
         Log.log("Mongodb - error!");
         Log.log(e.toString());
       } finally {
+        RedundancyManager.isActive = false;
+        List<ProtocolConnection> stale = protocolConns;
+        protocolConns = null;
+        rtDataColl = null;
+        instancesColl = null;
+        connectionsColl = null;
+        instanceId = null;
+        if (stale != null) {
+          for (ProtocolConnection pc : stale) {
+            pc.retire();
+          }
+        }
+        queue.clear();
+        if (watcher != null) {
+          watcher.stop();
+        }
         if (mongo != null) {
           mongo.close();
         }

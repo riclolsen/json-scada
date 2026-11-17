@@ -21,7 +21,7 @@ package org.jsonscada.plc4jclient;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Result of converting a PlcValue for JSON-SCADA (same tuple as the Go extractValue). */
+/** Result of converting a PlcValue for JSON-SCADA (double, string, json, array, bad). */
 public class ExtractedValue {
   public double valDbl = 0;
   public String valStr = "";

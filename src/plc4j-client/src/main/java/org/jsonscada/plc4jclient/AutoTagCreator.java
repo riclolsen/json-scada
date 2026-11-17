@@ -23,12 +23,12 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import com.mongodb.client.model.UpdateOptions;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import org.bson.Document;
 
 /**
- * Automatic creation of realtimeData tags, same behavior as the Go autotag.go:
+ * Automatic creation of realtimeData tags:
  * _id key space (connNumber*1e6, (connNumber+1)*1e6), duplicate-key handling,
  * skip when the address is already configured on the connection.
  */
@@ -37,24 +37,24 @@ public class AutoTagCreator {
   // should be more than estimated maximum points on a connection
   public static final int AUTO_KEY_MULTIPLIER = 1_000_000;
 
-  private final Set<String> createdTags = new HashSet<>();
+  private final Set<String> createdTags = ConcurrentHashMap.newKeySet();
 
   /**
    * Positions the connection auto key at the highest _id already used in the
-   * connection's key range (fixes the inverted error check of the Go version).
+   * connection's key range.
    */
   public void getAutoKeyInitialValue(MongoCollection<Document> rtData, ProtocolConnection pc) {
-    pc.autoKeyId = pc.protocolConnectionNumber * AUTO_KEY_MULTIPLIER;
+    pc.autoKeyId = (long) pc.protocolConnectionNumber * AUTO_KEY_MULTIPLIER;
     try {
       Document res = rtData
           .find(Filters.and(
               Filters.gt("_id", pc.autoKeyId),
-              Filters.lt("_id", (pc.protocolConnectionNumber + 1) * AUTO_KEY_MULTIPLIER)))
+              Filters.lt("_id", ((long) pc.protocolConnectionNumber + 1) * AUTO_KEY_MULTIPLIER)))
           .sort(Sorts.descending("_id"))
           .limit(1)
           .first();
-      if (res != null && res.get("_id") instanceof Number n && n.intValue() > pc.autoKeyId) {
-        pc.autoKeyId = n.intValue();
+      if (res != null && res.get("_id") instanceof Number n && n.longValue() > pc.autoKeyId) {
+        pc.autoKeyId = n.longValue();
       }
     } catch (Exception e) {
       Log.log("Mongodb - Error querying max auto key for connection " + pc.name + " - " + e);
@@ -104,8 +104,14 @@ public class AutoTagCreator {
     tagDoc.put("origin", "supervised");
     tagDoc.put("unit", "");
 
+    long keyLimit = ((long) pc.protocolConnectionNumber + 1) * AUTO_KEY_MULTIPLIER;
     while (true) {
       pc.autoKeyId++;
+      if (pc.autoKeyId >= keyLimit) {
+        Log.log("Mongodb: auto tag key range exhausted for connection " + pc.name
+            + ", can not create tag - " + tag);
+        return;
+      }
       tagDoc.put("_id", (double) pc.autoKeyId);
       try {
         rtData.insertOne(tagDoc);

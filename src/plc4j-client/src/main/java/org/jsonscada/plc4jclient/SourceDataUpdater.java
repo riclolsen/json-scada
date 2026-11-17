@@ -26,8 +26,7 @@ import java.util.Locale;
 import org.bson.Document;
 
 /**
- * Builds the realtimeData sourceDataUpdate operations, with the exact document
- * shape written by the Go plc4x-client.
+ * Builds the realtimeData sourceDataUpdate operations.
  */
 public final class SourceDataUpdater {
 
@@ -38,18 +37,23 @@ public final class SourceDataUpdater {
       ProtocolConnection pc,
       String plc4xTagName,
       String asduAtSource,
-      ExtractedValue ev) {
+      ExtractedValue ev,
+      int configuredArrayLength) {
 
-    if (ev.valArrDbl.size() > 1) {
+    // A failed or short read of a configured array must still invalidate every
+    // element tag, so the configured length wins over what was actually read.
+    int elements = Math.max(ev.valArrDbl.size(), configuredArrayLength);
+    if (elements > 1) {
       // one update per array element, object address = "ADDR[i]"
-      for (int i = 0; i < ev.valArrDbl.size(); i++) {
-        double elem = ev.valArrDbl.get(i);
+      for (int i = 0; i < elements; i++) {
+        boolean missing = i >= ev.valArrDbl.size();
+        double elem = missing ? 0 : ev.valArrDbl.get(i);
         String valStr = String.format(Locale.US, "%f", elem);
         Document sdu = new Document()
             .append("valueAtSource", elem)
             .append("valueStringAtSource", valStr)
             .append("valueJsonAtSource", valStr)
-            .append("invalidAtSource", ev.bad)
+            .append("invalidAtSource", ev.bad || missing)
             .append("notTopicalAtSource", false)
             .append("substitutedAtSource", false)
             .append("blockedAtSource", false)
@@ -73,7 +77,7 @@ public final class SourceDataUpdater {
       try {
         valBson = Document.parse(ev.valJson);
       } catch (Exception e) {
-        // tolerate unparseable JSON (parity with Go bson.Unmarshal best effort)
+        // tolerate unparseable JSON: the value is still published as text
       }
     }
     Document sdu = new Document()

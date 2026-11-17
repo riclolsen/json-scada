@@ -21,9 +21,8 @@ package org.jsonscada.plc4jclient;
 import org.bson.Document;
 
 /**
- * Factory for new realtimeData tag documents with the same field set and
- * defaults as the Go plc4x-client RtDataTag / NewRtDataTag().
- * Numeric fields are written as BSON doubles (parity with Go float64).
+ * Factory for new realtimeData tag documents with the JSON-SCADA field set and
+ * defaults. Numeric fields are written as BSON doubles.
  */
 public final class RtDataTagDefaults {
 

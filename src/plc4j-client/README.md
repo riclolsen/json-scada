@@ -33,7 +33,7 @@ The default build stays on the latest PLC4X release so that JSON-SCADA builds ar
 
 ## Configure a driver instance
 
-Same configuration as the Go PLC4X client. To create a new instance, insert a new document in the _protocolDriverInstances_ collection using the Admin UI or a Mongodb command like below.
+To create a new instance, insert a new document in the _protocolDriverInstances_ collection using the Admin UI or a Mongodb command like below.
 
     use json_scada_db_name
     db.protocolDriverInstances.insert({
@@ -104,11 +104,21 @@ Examples of topics to scan:
 
 PLC4X 1.0.0 changed the array notation: the element count that used to follow the data type became a range placed **before** it, so `holding-register:20:INT[10]` is now written `holding-register:20[0..9]:INT`.
 
-This driver accepts **both** forms. A legacy address is translated to the 1.0.0 form before it is sent to PLC4X, while the text you configured remains the tag identity in `realtimeData` (`protocolSourceObjectAddress`). So existing configurations - including those shared with the Go `plc4x-client`, which still uses the legacy notation - keep working unchanged, and the two executables stay interchangeable. The translation is logged at log level 1 or higher.
+This driver accepts **both** forms. A legacy address is translated to the 1.0.0 form before it is sent to PLC4X, while the text you configured remains the tag identity in `realtimeData` (`protocolSourceObjectAddress`). Existing configurations from earlier PLC4X releases keep working unchanged. The translation is logged at log level 1 or higher.
 
 Array elements are always mapped to tags by position: an address yielding N values produces `TAG[0]` ... `TAG[N-1]` with object addresses `ADDRESS[0]` ... `ADDRESS[N-1]`, regardless of the lower bound used in a range.
 
 Endianness semantics: PLC4X delivers values interpreted with the protocol default byte order (big-endian for Modbus). Use LITTLE_ENDIAN when the device stores little-endian words (bytes are swapped); REV_ENDIAN is an unconditional byte reversal; BIG_ENDIAN or empty keeps the value as delivered by PLC4X.
+
+## Runtime behavior
+
+The active node refreshes its MongoDB heartbeat every second on a dedicated scheduler. PLC connections open asynchronously with a five-second retry delay. Standby nodes close their PLC connections and ignore commands; database session failure retires the old connections before reconnecting. Each scan task belongs to one PLC connection and stops when that connection is replaced. Three consecutive failed reads recycle the connection, and timed-out operations are cancelled.
+
+Invalid topics are logged and skipped individually. Failed or short array reads invalidate the corresponding element tags. NaN and infinite real samples are marked invalid and represented with valid JSON. Auto-created tag IDs remain BSON doubles, including connection numbers above 2147.
+
+Commands expire after ten seconds and execute in order per connection, so a slow device does not block other connections. Out-of-range and non-finite numeric values are cancelled. Synthetic array-element addresses (`ADDRESS[i]` appended to an array topic) are explicitly rejected for commands; configure a scalar PLC4X address for writable points. The command change stream reopens after errors.
+
+MongoDB TLS settings in the config file support `tlsCaPemFile`, `tlsClientPemFile` (combined certificate chain and private key), `tlsClientPfxFile` (PKCS#12), and `tlsClientKeyPassword`. Supported PEM keys are PKCS#8, encrypted PKCS#8 and unencrypted RSA PKCS#1. Convert SEC1 EC and encrypted PKCS#1 keys to PKCS#8 before use. `tlsInsecure` skips certificate and hostname validation; `tlsAllowChainErrors` skips chain validation; `tlsAllowInvalidHostnames` skips hostname validation. Certificate files enable TLS; validation switches alone preserve the URI's TLS setting.
 
 ## Configure tags for update
 
@@ -147,6 +157,8 @@ This driver has the following command line arguments.
 - _**1st arg. - Instance Number**_ [Integer] - Instance number to be executed. **Optional argument, default=1**.
 - _**2nd arg. - Log. Level**_ [Integer] - Log level (0=minimum,1=basic,2=detailed,3=debug). **Optional argument, default=1**.
 - _**3rd arg. - Config File Path/Name**_ [String] - Complete path/name of the JSON-SCADA config file. **Optional argument, default="../conf/json-scada.json"**.
+
+The optional fourth argument is accepted for compatibility but logs that point filtering is unsupported.
 
 Environment variables JS_PLC4X_INSTANCE, JS_PLC4X_LOGLEVEL and JS_CONFIG_FILE can also be used (command line arguments have precedence).
 
