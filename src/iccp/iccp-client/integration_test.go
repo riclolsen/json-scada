@@ -75,18 +75,24 @@ func TestDSTSSubscriptionAndPollLoopback(t *testing.T) {
 		"SUB_A/ICCP_RealQ_01": &mappings[0],
 	}
 	dataChan := make(chan dataUpdate, 100)
+	rt := newConnRuntime(conn, dataChan)
+	isActive.Store(true)
+	defer isActive.Store(false)
 
 	domains, err := client.ListDomains()
 	if err != nil {
 		t.Fatalf("ListDomains: %v", err)
 	}
 
-	subs := setupDSTSSubscriptions(client, conn, domains, mappings, mappingByRef, 30, dataChan)
+	subs, covered := setupDSTSSubscriptions(client, rt, domains, mappings, mappingByRef, 30)
 	if len(subs) != 1 {
 		t.Fatalf("expected 1 DSTS subscription, got %d", len(subs))
 	}
 	if subs[0].domain != "SUB_A" || subs[0].slot != "DSTrans" {
 		t.Errorf("subscription = %+v, want SUB_A/DSTrans", subs[0])
+	}
+	if !covered["SUB_A/ICCP_RealQ_01"] || len(covered) != 1 {
+		t.Errorf("covered = %v, want exactly SUB_A/ICCP_RealQ_01", covered)
 	}
 
 	// Push a value change on the server; the RBE report must land in dataChan
@@ -115,8 +121,8 @@ func TestDSTSSubscriptionAndPollLoopback(t *testing.T) {
 		}
 	}
 
-	// Poll path: with nil skipDomains everything is read.
-	performPoll(client, conn, mappings, nil, dataChan)
+	// Poll path: with a nil skip set everything is read.
+	performPoll(client, rt, mappings, nil)
 	select {
 	case upd := <-dataChan:
 		if upd.value < 231.2 || upd.value > 231.3 {
@@ -126,13 +132,31 @@ func TestDSTSSubscriptionAndPollLoopback(t *testing.T) {
 		t.Fatal("timed out waiting for polled value")
 	}
 
-	// Covered domains must be skipped by the poll.
-	performPoll(client, conn, mappings, map[string]bool{"SUB_A": true}, dataChan)
+	// Points covered by DSTS must be skipped by the poll.
+	performPoll(client, rt, mappings, covered)
 	select {
 	case upd := <-dataChan:
-		t.Errorf("poll of covered domain produced an update: %+v", upd)
+		t.Errorf("poll of covered point produced an update: %+v", upd)
 	case <-time.After(300 * time.Millisecond):
 		// expected: nothing
+	}
+
+	// A mapped point the server does not have is invalidated by the poll,
+	// keeping its last value.
+	missing := tagMapping{
+		tag: rtData{Tag: "MISSING", ProtocolSourceObjectAddress: "SUB_A/NoSuchPoint"},
+		ref: tase2.ObjectRef{Domain: "SUB_A", Item: "NoSuchPoint"},
+	}
+	v := 12.5
+	rt.seed([]rtData{{ProtocolSourceObjectAddress: "SUB_A/NoSuchPoint", SourceDataUpdate: &sourceData{ValueAtSource: &v}}})
+	performPoll(client, rt, []tagMapping{missing}, nil)
+	select {
+	case upd := <-dataChan:
+		if !upd.invalid || upd.value != 12.5 || upd.protocolSourceObjectAddress != "SUB_A/NoSuchPoint" {
+			t.Errorf("missing point update = %+v, want SUB_A/NoSuchPoint invalid keeping 12.5", upd)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("timed out waiting for the invalidation of a missing point")
 	}
 
 	// Teardown as the driver does.

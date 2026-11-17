@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -38,6 +39,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
+
+// shutdownTimeout bounds how long a graceful stop waits for the connections
+// to disable their report blocks.
+const shutdownTimeout = 60 * time.Second
 
 // instanceNumber is the driver instance this process runs.
 var instanceNumber = 1
@@ -65,9 +70,10 @@ func main() {
 	go mongoUpdateLoop(ctx, cfg, conns)
 	go commandsLoop(ctx, cfg, conns)
 
+	var loops sync.WaitGroup
 	for _, conn := range conns {
 		jslog.Log(jslog.LevelNoLog, "%s - New Connection", conn.Name)
-		go connectionLoop(ctx, conn)
+		loops.Go(func() { connectionLoop(ctx, conn) })
 	}
 
 	sigs := make(chan os.Signal, 1)
@@ -80,8 +86,18 @@ func main() {
 		case <-sigs:
 			jslog.Log(jslog.LevelNoLog, "Exiting application!")
 			cancel()
-			for _, conn := range conns {
-				closeConnection(conn)
+			// Each connection loop closes its own association on the way
+			// out, disabling its report blocks. Closing from here as well
+			// would race with a loop still enabling them.
+			done := make(chan struct{})
+			go func() { loops.Wait(); close(done) }()
+			select {
+			case <-done:
+			case <-time.After(shutdownTimeout):
+				jslog.Log(jslog.LevelNoLog, "Shutdown timeout, closing the remaining connections")
+				for _, conn := range conns {
+					closeConnection(conn)
+				}
 			}
 			jslog.Flush()
 			os.Exit(0)
@@ -183,15 +199,25 @@ func preloadEntries(ctx context.Context, collRTD *mongo.Collection, conn *Iec618
 		if objAddr == "" {
 			continue
 		}
-		if conn.AutoCreateTags {
-			conn.InsertedTags[pointKey(objAddr, commonAddr)] = true
-		}
 		entry := &Iec61850Entry{
 			Path:  objAddr,
 			FC:    parseFCOrST(commonAddr),
 			JsTag: tag,
 		}
-		key := objAddr + commonAddr
+		// Keyed by the constraint the address resolves to, so a tag with an
+		// empty or lower-case common address is the same point the browse
+		// and the reports name, and gets no second tag.
+		if conn.AutoCreateTags {
+			conn.InsertedTags[pointKey(objAddr, entry.FC.String())] = true
+		}
+		if jsmongo.GetString(doc, "origin", "") == "command" &&
+			jsmongo.GetDouble(doc, "supervisedOfCommand", 0) == 0 &&
+			tag == (CommandTag{ConnName: conn.Name, Ref: objAddr}).Tag() {
+			// A command tag this driver created before its supervised
+			// point existed: link it once that point appears.
+			queueCommandLink(conn, objAddr, jsmongo.GetDouble(doc, "_id", 0))
+		}
+		key := entryKey(objAddr, entry.FC)
 		if _, dup := conn.Entries[key]; !dup {
 			conn.Entries[key] = entry
 			conn.EntryOrder = append(conn.EntryOrder, key)

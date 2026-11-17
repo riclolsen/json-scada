@@ -246,7 +246,16 @@ func (g *Gateway) Start() {
 	g.listener = ln
 	g.serving.Store(true)
 	go func() {
-		_ = g.srv.Serve(ln)
+		err := g.srv.Serve(ln)
+		// Serve returns on any accept error. Unless the gateway was stopped,
+		// mark it down so the 1 Hz loop in main binds a new listener rather
+		// than reporting a server that no longer accepts anyone.
+		if g.stopped.Load() {
+			return
+		}
+		_ = ln.Close()
+		g.serving.Store(false)
+		jslog.Log(jslog.LevelNoLog, "ERROR: MMS server stopped accepting connections on %s: %v - restarting", g.bindAddr, err)
 	}()
 	jslog.Log(jslog.LevelNoLog, "IEC 61850 MMS server STARTED on %s%s", g.bindAddr, tlsSuffix(g.useTLS))
 }

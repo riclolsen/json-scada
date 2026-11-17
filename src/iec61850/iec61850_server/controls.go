@@ -46,9 +46,18 @@ var commandQueue struct {
 	items []bson.M
 }
 
+// commandQueueLimit bounds the commands kept while MongoDB is unreachable.
+// They expire within seconds at the driver that executes them anyway, so
+// only the newest are worth keeping.
+const commandQueueLimit = 1000
+
 func enqueueCommand(doc bson.M) {
 	commandQueue.mu.Lock()
 	commandQueue.items = append(commandQueue.items, doc)
+	if n := len(commandQueue.items) - commandQueueLimit; n > 0 {
+		commandQueue.items = commandQueue.items[n:]
+		jslog.Log(jslog.LevelNoLog, "commandsQueue unreachable: %d oldest command(s) discarded", n)
+	}
 	commandQueue.mu.Unlock()
 }
 
@@ -84,6 +93,13 @@ func installControlHandlers(g *Gateway) {
 func (g *Gateway) handleControl(mp *MappedPoint, ctx *server.ControlCtx) model.AddCause {
 	if !g.conn.CommandsEnabled {
 		jslog.Log(jslog.LevelBasic, "Control refused for %s: commands are disabled for this connection.", mp.Tag)
+		return model.AddCauseBlockedByMode
+	}
+	if ctx.Test {
+		// A test command must not act on the process (IEC 61850-7-2), and
+		// this gateway has no test mode to run it in: the command it would
+		// queue is a real one for the source device.
+		jslog.Log(jslog.LevelBasic, "Control refused for %s: test commands are not executed (from %s).", mp.Tag, ctx.Peer)
 		return model.AddCauseBlockedByMode
 	}
 	if ctx.Select {
@@ -248,6 +264,9 @@ func commandInserterLoop(ctx context.Context, cfg jsconfig.Config) {
 			// Put it back at the head and retry with a fresh connection.
 			commandQueue.mu.Lock()
 			commandQueue.items = append([]bson.M{doc}, commandQueue.items...)
+			if len(commandQueue.items) > commandQueueLimit {
+				commandQueue.items = commandQueue.items[:commandQueueLimit]
+			}
 			commandQueue.mu.Unlock()
 			if cli != nil {
 				_ = cli.Disconnect(context.Background())

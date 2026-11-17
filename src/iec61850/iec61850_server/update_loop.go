@@ -61,10 +61,23 @@ var updateQueue struct {
 	items []PointUpdate
 }
 
+// updateQueueLimit bounds the updates kept while the model cannot take
+// them (the listener is not bound yet). Above it the oldest are dropped: the
+// resync of the change stream and the newest updates carry the current
+// values.
+const updateQueueLimit = 200000
+
 func enqueueUpdate(u PointUpdate) {
 	updateQueue.mu.Lock()
 	updateQueue.items = append(updateQueue.items, u)
+	n := len(updateQueue.items) - updateQueueLimit
+	if n > 0 {
+		updateQueue.items = updateQueue.items[n:]
+	}
 	updateQueue.mu.Unlock()
+	if n > 0 {
+		jslog.Log(jslog.LevelDetailed, "Update queue full: %d oldest update(s) discarded", n)
+	}
 }
 
 func dequeueUpdate() (PointUpdate, bool) {

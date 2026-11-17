@@ -73,6 +73,20 @@ func (q *Queue[T]) Dequeue() (T, bool) {
 	return v, true
 }
 
+// Requeue puts values back at the head of the queue, in their order, ahead
+// of everything enqueued since they were dequeued. A writer uses it to keep
+// a batch the database did not take.
+func (q *Queue[T]) Requeue(vs []T) {
+	if len(vs) == 0 {
+		return
+	}
+	q.mu.Lock()
+	items := make([]T, 0, len(vs)+len(q.items))
+	items = append(items, vs...)
+	q.items = append(items, q.items...)
+	q.mu.Unlock()
+}
+
 // Trim discards the oldest values while the queue is longer than limit,
 // calling onDrop for each. Used when the database is unreachable and the
 // queue would otherwise grow without bound.

@@ -38,10 +38,12 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-// datasetDef holds a dataset name and its member ObjectRefs.
+// datasetDef holds a dataset name ("Domain/Name"), its domain and its member
+// ObjectRefs.
 type datasetDef struct {
-	name  string
-	items []tase2.ObjectRef
+	domain string
+	name   string
+	items  []tase2.ObjectRef
 }
 
 // serverEntry tracks a live per-connection TASE2 server in the registry.
@@ -143,9 +145,11 @@ func main() {
 		LogMsg(LogLevelMin, "Config - Dataset chunking: disabled (single dataset per domain)")
 	}
 
+	// The driver starts once. Until it has, a failed step drops the MongoDB
+	// client and retries; afterwards the MongoDB driver reconnects by itself
+	// and every goroutine retries its own operations, so a lost ping is only
+	// logged (restarting would duplicate listeners, watchers and loops).
 	var clientMongo *mongo.Client
-	var collectionRtData, collectionInstances, collectionConnections, collectionCommands *mongo.Collection
-
 	for {
 		if clientMongo == nil {
 			var err error
@@ -158,13 +162,13 @@ func main() {
 			LogMsg(LogLevelMin, "MongoDB - Connected correctly to MongoDB server")
 
 			db := clientMongo.Database(cfg.MongoDatabaseName)
-			collectionRtData = db.Collection("realtimeData")
-			collectionInstances = db.Collection("protocolDriverInstances")
-			collectionConnections = db.Collection("protocolConnections")
-			collectionCommands = db.Collection("commandsQueue")
+			collectionRtData := db.Collection("realtimeData")
+			collectionInstances := db.Collection("protocolDriverInstances")
+			collectionConnections := db.Collection("protocolConnections")
+			collectionCommands := db.Collection("commandsQueue")
 
 			// Verify instance config exists
-			_, err = getInstanceConfig(collectionInstances, instanceNumber)
+			instance, err := getInstanceConfig(collectionInstances, instanceNumber)
 			if err != nil {
 				LogMsg(LogLevelMin, "Config - %v", err)
 				clientMongo.Disconnect(context.TODO())
@@ -183,42 +187,14 @@ func main() {
 				continue
 			}
 
-			// Build the shared data model from realtimeData
-			dataModel := tase2.NewDataModel()
-			domainMap := make(map[string]*tase2.Domain)
-			ipByTag := make(map[string]*tase2.IndicationPoint)
-			cpByTag := make(map[string]*tase2.ControlPoint)
-			var allTags []rtData
+			// Union of the topics of all connections, for the MongoDB filters
+			topicList := topicsOf(connections)
 
-			// Build filter for topics across all connections
-			connNumbers := make(map[int]bool)
-			allTopics := make(map[string]bool) // union of Topics from all connections
-			hasTopics := false
-			for _, conn := range connections {
-				connNumbers[conn.ProtocolConnectionNumber] = true
-				for _, t := range conn.Topics {
-					t := strings.TrimSpace(t)
-					if t != "" {
-						allTopics[t] = true
-						hasTopics = true
-					}
-				}
-			}
-
-			// Build unique topic list for MongoDB $in filter
-			var topicList []string
-			if hasTopics {
-				topicList = make([]string, 0, len(allTopics))
-				for t := range allTopics {
-					topicList = append(topicList, t)
-				}
-			}
-
-			// Query realtimeData for tags not owned by these connections
+			// Query realtimeData for the tags to expose
 			filter := bson.D{
 				{Key: "_id", Value: bson.M{"$gt": 0}}, // exclude internal system data
 			}
-			if hasTopics {
+			if len(topicList) > 0 {
 				// Restrict group1 to configured topics at the MongoDB query level
 				filter = append(filter, bson.E{Key: "group1", Value: bson.M{"$in": topicList}})
 				LogMsg(LogLevelNormal, "DataModel - Topic filter applied: %d unique group1(s)", len(topicList))
@@ -232,6 +208,9 @@ func main() {
 				{Key: "valueString", Value: 1},
 				{Key: "valueJson", Value: 1},
 				{Key: "invalid", Value: 1},
+				{Key: "transient", Value: 1},
+				{Key: "frozen", Value: 1},
+				{Key: "substituted", Value: 1},
 				{Key: "description", Value: 1},
 				{Key: "ungroupedDescription", Value: 1},
 				{Key: "group1", Value: 1},
@@ -250,204 +229,33 @@ func main() {
 				{Key: "commandBlocked", Value: 1},
 				{Key: "supervisedOfCommand", Value: 1},
 				{Key: "kconv1", Value: 1},
+				{Key: "kconv2", Value: 1},
 			}
 
-			cursor, err := collectionRtData.Find(context.TODO(), filter, options.Find().SetProjection(projection).SetSort(bson.D{{Key: "protocolSourceConnectionNumber", Value: 1}}))
-			if err != nil {
-				LogMsg(LogLevelMin, "MongoDB - Error querying realtimeData: %v", err)
-				clientMongo.Disconnect(context.TODO())
-				clientMongo = nil
-				time.Sleep(5 * time.Second)
-				continue
-			}
-
-			if err := cursor.All(context.TODO(), &allTags); err != nil {
-				LogMsg(LogLevelMin, "MongoDB - Error reading realtimeData: %v", err)
+			var allTags []rtData
+			cursor, err := collectionRtData.Find(context.TODO(), filter, options.Find().SetProjection(projection))
+			if err == nil {
+				err = cursor.All(context.TODO(), &allTags)
 				cursor.Close(context.TODO())
+			}
+			if err != nil {
+				LogMsg(LogLevelMin, "MongoDB - Error reading realtimeData: %v", err)
 				clientMongo.Disconnect(context.TODO())
 				clientMongo = nil
 				time.Sleep(5 * time.Second)
 				continue
 			}
-			cursor.Close(context.TODO())
 
 			LogMsg(LogLevelNormal, "DataModel - Loaded %d tags from realtimeData", len(allTags))
 
-			// Build domains and points
-			for _, tag := range allTags {
-				// Determine group1 (domain name)
-				group1 := strings.TrimSpace(tag.Group1)
-				if group1 == "" {
-					// Skip tags with no group1
-					continue
-				}
-
-				// Check if tag belongs to any of our own connections (skip those)
-				if connNumbers[int(tag.ProtocolSourceConnectionNumber)] {
-					continue
-				}
-
-				// Get or create domain
-				domain, ok := domainMap[group1]
-				if !ok {
-					domain = dataModel.AddDomain(group1)
-					domainMap[group1] = domain
-				}
-
-				// Use the tag field as the ICCP point name
-				pointName := sanitizePointName(tag.Tag)
-
-				// If tag is a command, add as control point
-				if tag.Origin == "command" && !tag.CommandBlocked {
-					// Check if any connection has commands enabled
-					hasCmdEnabled := false
-					for _, conn := range connections {
-						if conn.CommandsEnabled {
-							// Check topic filter
-							if len(conn.Topics) > 0 && !contains(conn.Topics, group1) {
-								continue
-							}
-							hasCmdEnabled = true
-							break
-						}
-					}
-					if hasCmdEnabled {
-						deviceClass := tase2.DeviceClassDirect
-						if tag.ProtocolSourceCommandUseSBO {
-							deviceClass = tase2.DeviceClassSBO
-						}
-						cp := domain.AddControlPoint(pointName, tase2.ControlTypeCommand, deviceClass)
-						cp.CurrentValue = convertToDataValue(tag)
-						cpByTag[tag.Tag] = cp
-						continue
-					}
-				}
-
-				// Add as indication point only when the tag type maps to a standard
-				// ICCP data type (digital→StateQTimeTag, analog→RealQTimeTag).
-				// String, JSON, and other non-standard types are not exposed via ICCP.
-				iccpType := getICCPType(tag)
-				if iccpType != tase2.ICCPTypeUnknown {
-					ip := domain.AddDataPoint(pointName, iccpType)
-					val := convertToICCPValue(tag, iccpType)
-					ip.UpdateValue(val, nil) // quality and timestamp embedded in ICCP value
-					ipByTag[tag.Tag] = ip
-				}
-			}
-
-			LogMsg(LogLevelNormal, "DataModel - Created %d domains, %d indication points, %d control points",
-				len(domainMap), len(ipByTag), len(cpByTag))
-
-			// Create datasets per domain and attach DSTransferSets.
-			// When datasetChunkSize > 0 and a domain has more points than the
-			// chunk size, points are split across multiple chunked datasets
-			// (e.g. SUB_A_DataSet_0001, SUB_A_DataSet_0002, ...) with one
-			// DSTransferSet per chunk (e.g. DSTrans_0001, DSTrans_0002, ...).
-			// This avoids the hidden 1750-item truncation in GetNVLAttrs and
-			// gives the peer manageable, fully-visible dataset chunks.
-			for domainName, domain := range domainMap {
-				if len(domain.IndicationPoints) == 0 && len(domain.ControlPoints) == 0 {
-					continue
-				}
-				dsPrefix := sanitizePointName(domainName) + "_DataSet"
-
-				if datasetChunkSize > 0 && len(domain.IndicationPoints) > datasetChunkSize {
-					// Chunked mode: create one dataset and one DSTransferSet per chunk.
-					// Dataset names: SUB_A_DataSet_0001, SUB_A_DataSet_0002, ...
-					// DSTS names:    DSTrans_0001, DSTrans_0002, ...
-					// Points are sorted by name for deterministic chunk membership.
-					pointNames := make([]string, 0, len(domain.IndicationPoints))
-					for name := range domain.IndicationPoints {
-						pointNames = append(pointNames, name)
-					}
-					sort.Strings(pointNames)
-
-					chunkIdx := 0
-					for offset := 0; offset < len(pointNames); offset += datasetChunkSize {
-						chunkIdx++
-						end := offset + datasetChunkSize
-						if end > len(pointNames) {
-							end = len(pointNames)
-						}
-						chunkPointNames := pointNames[offset:end]
-
-						dsName := fmt.Sprintf("%s_%04d", dsPrefix, chunkIdx)
-						dstsName := fmt.Sprintf("DSTrans_%04d", chunkIdx)
-
-						dsts := domain.AddDSTransferSet(dstsName)
-						dsts.AttachDataSet(domainName, dsName)
-
-						LogMsg(LogLevelDetailed, "DataModel - Domain %s chunk %d: dataset '%s' (%d points)",
-							domainName, chunkIdx, domainName+"/"+dsName, len(chunkPointNames))
-					}
-				} else {
-					// Single-dataset mode: domain-scope DSTS with domain-scoped dataset.
-					dsts := domain.AddDSTransferSet("DSTrans")
-					dsts.AttachDataSet(domainName, dsPrefix)
-				}
-			}
-
-			// Populate the rtData cache for command processing
-			populateRtDataCache(allTags)
-
-			// Store dataset definitions for per-connection creation.
-			// When chunking is enabled, split large domains into multiple
-			// datasets of at most datasetChunkSize items each.
-			const maxDatasetItems = 50000 // cap dataset size (non-chunked mode)
-			var datasetDefs []datasetDef
-			for domainName, domain := range domainMap {
-				if datasetChunkSize > 0 && len(domain.IndicationPoints) > datasetChunkSize {
-					// Chunked mode: sort points, split into chunks
-					pointNames := make([]string, 0, len(domain.IndicationPoints))
-					for name := range domain.IndicationPoints {
-						pointNames = append(pointNames, name)
-					}
-					sort.Strings(pointNames)
-
-					dsPrefix := sanitizePointName(domainName) + "_DataSet"
-					chunkIdx := 0
-					for offset := 0; offset < len(pointNames); offset += datasetChunkSize {
-						chunkIdx++
-						end := offset + datasetChunkSize
-						if end > len(pointNames) {
-							end = len(pointNames)
-						}
-						dsName := fmt.Sprintf("%s_%04d", dsPrefix, chunkIdx)
-						var dsItems []tase2.ObjectRef
-						for _, pn := range pointNames[offset:end] {
-							dsItems = append(dsItems, tase2.ObjectRef{Domain: domainName, Item: pn})
-						}
-						datasetDefs = append(datasetDefs, datasetDef{name: domainName + "/" + dsName, items: dsItems})
-					}
-					LogMsg(LogLevelNormal, "DataModel - Domain %s: %d points in %d chunk(s) of %d",
-						domainName, len(pointNames), chunkIdx, datasetChunkSize)
-				} else {
-					// Single-dataset mode: store dataset under domain-scoped key.
-					dsName := domainName + "/" + sanitizePointName(domainName) + "_DataSet"
-					var dsItems []tase2.ObjectRef
-					for name := range domain.IndicationPoints {
-						dsItems = append(dsItems, tase2.ObjectRef{Domain: domainName, Item: name})
-					}
-					if len(dsItems) > maxDatasetItems {
-						LogMsg(LogLevelMin, "DataModel - dataset %s has %d items, capping to %d",
-							dsName, len(dsItems), maxDatasetItems)
-						dsItems = dsItems[:maxDatasetItems]
-					}
-					sort.Slice(dsItems, func(i, j int) bool {
-						return dsItems[i].Item < dsItems[j].Item
-					})
-					if len(dsItems) > 0 {
-						datasetDefs = append(datasetDefs, datasetDef{name: dsName, items: dsItems})
-					}
-				}
-			}
+			model := buildModel(allTags, connections, datasetChunkSize)
+			populateRtDataCache(allTags, model.tagByKey)
 
 			// Start servers for each connection
 			registry := newServerRegistry()
 			var listening []protocolConnection
 
 			for _, conn := range connections {
-				conn := conn // capture for closure
 				bindHost, port, err := parseLocalBind(conn.IPAddressLocalBind)
 				if err != nil {
 					LogMsg(LogLevelMin, "ICCP - Connection %q: invalid ipAddressLocalBind %q: %v; not listening",
@@ -464,7 +272,7 @@ func main() {
 					localAEQual = 12
 				}
 
-				cfg := tase2.ServerConfig{
+				srvCfg := tase2.ServerConfig{
 					Port:         port,
 					LocalAPTitle: localAPTitle,
 					LocalAEQual:  localAEQual,
@@ -518,49 +326,275 @@ func main() {
 				// Serve clients: ServeClients runs the accept loop, one server
 				// goroutine per association, and closes each transport when the
 				// association ends; the post-disconnect hook keeps the registry
-				// in sync for change-stream fan-out and client counting.
+				// in sync for statistics and redundancy.
 				listening = append(listening, conn)
 				go func(ep *tase2.Endpoint, conn protocolConnection, srvCfg tase2.ServerConfig) {
-					err := ep.ServeClients(serveClientCallbacks(registry, dataModel, srvCfg, conn, datasetDefs, collectionCommands))
+					err := ep.ServeClients(serveClientCallbacks(registry, model.dataModel, srvCfg, conn, model.datasetDefs, collectionCommands))
 					if errors.Is(err, net.ErrClosed) {
 						LogMsg(LogLevelNormal, "ICCP - Listener closed for %s", conn.Name)
 					} else if err != nil {
 						LogMsg(LogLevelMin, "ICCP - Serve loop ended for %s: %v", conn.Name, err)
 					}
-				}(endpoint, conn, cfg)
+				}(endpoint, conn, srvCfg)
 			}
 
 			// Publish per-connection association statistics
 			go publishConnectionStats(collectionConnections, registry, listening, cfg.NodeName)
 
 			// Start the MongoDB change stream watcher
-			go watchRealtimeDataChanges(clientMongo, collectionRtData, registry, ipByTag, cpByTag, connNumbers, topicList)
+			go watchRealtimeDataChanges(collectionRtData, model, ownConnections(connections), topicList)
 
-			// Start redundancy keepalive loop
-			go func() {
-				instance, err := getInstanceConfig(collectionInstances, instanceNumber)
-				if err != nil {
-					LogMsg(LogLevelMin, "Redundancy - Cannot load instance config: %v", err)
-					return
-				}
+			// Start redundancy keepalive loop. While this node is not to run
+			// the protocol, new associations are refused (serveClientCallbacks)
+			// and the live ones are aborted here.
+			go func(id bson.ObjectID) {
 				for {
-					processRedundancy(collectionInstances, instance.ID, cfg)
+					processRedundancy(collectionInstances, id, cfg)
+					if !protocolRunning() {
+						for _, e := range registry.snapshot() {
+							LogMsg(LogLevelNormal, "ICCP - Node inactive, aborting association of %s", e.connection.Name)
+							_ = e.server.Abort()
+						}
+					}
 					time.Sleep(5 * time.Second)
 				}
-			}()
+			}(instance.ID)
 
 			LogMsg(LogLevelMin, "ICCP - All servers started. Waiting for connections...")
 		}
 
 		// Keep-alive: check MongoDB connection
 		time.Sleep(5 * time.Second)
-		err := clientMongo.Ping(context.TODO(), nil)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		err := clientMongo.Ping(ctx, nil)
+		cancel()
 		if err != nil {
-			LogMsg(LogLevelMin, "MongoDB - Connection lost: %v", err)
-			clientMongo.Disconnect(context.TODO())
-			clientMongo = nil
+			LogMsg(LogLevelMin, "MongoDB - Connection lost (driver keeps retrying): %v", err)
 		}
 	}
+}
+
+// ownConnections returns the numbers of this instance's connections; tags
+// acquired by them are not served back.
+func ownConnections(connections []protocolConnection) map[int]bool {
+	nums := make(map[int]bool, len(connections))
+	for _, c := range connections {
+		nums[c.ProtocolConnectionNumber] = true
+	}
+	return nums
+}
+
+// topicsOf returns the union of the connections' topics (group1 values),
+// sorted; empty when any connection has no topics (it serves every group1).
+func topicsOf(connections []protocolConnection) []string {
+	set := make(map[string]bool)
+	for _, c := range connections {
+		n := 0
+		for _, t := range c.Topics {
+			if t = strings.TrimSpace(t); t != "" {
+				set[t] = true
+				n++
+			}
+		}
+		if n == 0 {
+			return nil
+		}
+	}
+	out := make([]string, 0, len(set))
+	for t := range set {
+		out = append(out, t)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// domainNameOf returns the ICCP domain name of a group1 value: an MMS
+// identifier, sanitized the same way as point names.
+func domainNameOf(group1 string) string {
+	return sanitizePointName(strings.TrimSpace(group1))
+}
+
+// topicAllowsDomain reports whether a connection's topics include the ICCP
+// domain (no topics: every domain).
+func topicAllowsDomain(topics []string, domain string) bool {
+	listed := false
+	for _, t := range topics {
+		if t = strings.TrimSpace(t); t == "" {
+			continue
+		}
+		listed = true
+		if domainNameOf(t) == domain {
+			return true
+		}
+	}
+	return !listed
+}
+
+// commandsAllowed reports whether some connection may operate control points
+// of the domain.
+func commandsAllowed(connections []protocolConnection, domain string) bool {
+	for _, c := range connections {
+		if c.CommandsEnabled && topicAllowsDomain(c.Topics, domain) {
+			return true
+		}
+	}
+	return false
+}
+
+// iccpModel is the ICCP data model built from realtimeData, shared by every
+// connection and association.
+type iccpModel struct {
+	dataModel   *tase2.DataModel
+	ipByTag     map[string]*tase2.IndicationPoint
+	cpRefByTag  map[string]tase2.ObjectRef
+	tagByKey    map[string]string // "Domain/Item" -> tag
+	datasetDefs []datasetDef      // all domains; each connection serves those of its topics
+}
+
+// maxDatasetItems caps a dataset's size in non-chunked mode.
+const maxDatasetItems = 50000
+
+// buildModel builds the data model: one domain per group1 (sanitized), an
+// indication point per supervised or calculated tag of a standard ICCP type,
+// a control point per command tag some connection may operate, and the
+// domain datasets with their DSTransferSets. Tags acquired by this
+// instance's own connections are skipped. Tags are processed in name order;
+// a tag whose sanitized name collides with an earlier one is not exposed.
+func buildModel(allTags []rtData, connections []protocolConnection, datasetChunkSize int) *iccpModel {
+	m := &iccpModel{
+		dataModel:  tase2.NewDataModel(),
+		ipByTag:    make(map[string]*tase2.IndicationPoint),
+		cpRefByTag: make(map[string]tase2.ObjectRef),
+		tagByKey:   make(map[string]string),
+	}
+	own := ownConnections(connections)
+	tags := append([]rtData(nil), allTags...)
+	sort.SliceStable(tags, func(i, j int) bool { return tags[i].Tag < tags[j].Tag })
+
+	domainMap := make(map[string]*tase2.Domain)
+	collisions := 0
+	for _, tag := range tags {
+		if strings.TrimSpace(tag.Group1) == "" || own[int(tag.ProtocolSourceConnectionNumber)] {
+			continue
+		}
+		domainName := domainNameOf(tag.Group1)
+
+		isCommand := tag.Origin == "command"
+		iccpType := tase2.ICCPTypeUnknown
+		if isCommand {
+			// Command tags are control points only; with no connection
+			// allowed to operate them they are not exposed at all.
+			// commandBlocked is checked on every operate.
+			if !commandsAllowed(connections, domainName) {
+				continue
+			}
+		} else if iccpType = getICCPType(tag); iccpType == tase2.ICCPTypeUnknown {
+			// String, JSON and other non-standard types are not exposed.
+			continue
+		}
+
+		pointName := sanitizePointName(tag.Tag)
+		key := domainName + "/" + pointName
+		if prev, dup := m.tagByKey[key]; dup {
+			collisions++
+			LogMsg(LogLevelMin, "DataModel - Tags %q and %q both map to %s; %q is not exposed", prev, tag.Tag, key, tag.Tag)
+			continue
+		}
+		m.tagByKey[key] = tag.Tag
+
+		domain, ok := domainMap[domainName]
+		if !ok {
+			domain = m.dataModel.AddDomain(domainName)
+			domainMap[domainName] = domain
+		}
+
+		if isCommand {
+			deviceClass := tase2.DeviceClassDirect
+			if tag.ProtocolSourceCommandUseSBO {
+				deviceClass = tase2.DeviceClassSBO
+			}
+			cp := domain.AddControlPoint(pointName, tase2.ControlTypeCommand, deviceClass)
+			cp.CurrentValue = convertToDataValue(tag)
+			m.cpRefByTag[tag.Tag] = tase2.ObjectRef{Domain: domainName, Item: pointName}
+			continue
+		}
+		ip := domain.AddDataPoint(pointName, iccpType)
+		ip.UpdateValue(convertToICCPValue(tag, iccpType), nil) // quality and timestamp embedded in ICCP value
+		m.ipByTag[tag.Tag] = ip
+	}
+
+	LogMsg(LogLevelNormal, "DataModel - Created %d domains, %d indication points, %d control points",
+		len(domainMap), len(m.ipByTag), len(m.cpRefByTag))
+	if collisions > 0 {
+		LogMsg(LogLevelMin, "DataModel - %d tag(s) not exposed because of point name collisions", collisions)
+	}
+
+	// Datasets per domain, each with its DSTransferSet. When
+	// datasetChunkSize > 0 and a domain has more points than the chunk size,
+	// points are split across chunked datasets (SUB_A_DataSet_0001, ...) with
+	// one DSTransferSet per chunk (DSTrans_0001, ...). This avoids the hidden
+	// 1750-item truncation in GetNVLAttrs and gives the peer manageable,
+	// fully-visible dataset chunks. Points are sorted by name for
+	// deterministic membership.
+	domainNames := make([]string, 0, len(domainMap))
+	for name := range domainMap {
+		domainNames = append(domainNames, name)
+	}
+	sort.Strings(domainNames)
+	for _, domainName := range domainNames {
+		domain := domainMap[domainName]
+		pointNames := make([]string, 0, len(domain.IndicationPoints))
+		for name := range domain.IndicationPoints {
+			pointNames = append(pointNames, name)
+		}
+		if len(pointNames) == 0 {
+			continue
+		}
+		sort.Strings(pointNames)
+		dsPrefix := domainName + "_DataSet"
+
+		if datasetChunkSize > 0 && len(pointNames) > datasetChunkSize {
+			chunkIdx := 0
+			for offset := 0; offset < len(pointNames); offset += datasetChunkSize {
+				chunkIdx++
+				end := min(offset+datasetChunkSize, len(pointNames))
+				dsName := fmt.Sprintf("%s_%04d", dsPrefix, chunkIdx)
+				domain.AddDSTransferSet(fmt.Sprintf("DSTrans_%04d", chunkIdx)).AttachDataSet(domainName, dsName)
+				m.datasetDefs = append(m.datasetDefs, datasetDef{
+					domain: domainName,
+					name:   domainName + "/" + dsName,
+					items:  objectRefs(domainName, pointNames[offset:end]),
+				})
+				LogMsg(LogLevelDetailed, "DataModel - Domain %s chunk %d: dataset '%s/%s' (%d points)",
+					domainName, chunkIdx, domainName, dsName, end-offset)
+			}
+			LogMsg(LogLevelNormal, "DataModel - Domain %s: %d points in %d chunk(s) of %d",
+				domainName, len(pointNames), chunkIdx, datasetChunkSize)
+			continue
+		}
+
+		// Single-dataset mode: domain-scope DSTS with domain-scoped dataset.
+		if len(pointNames) > maxDatasetItems {
+			LogMsg(LogLevelMin, "DataModel - dataset %s/%s has %d items, capping to %d",
+				domainName, dsPrefix, len(pointNames), maxDatasetItems)
+			pointNames = pointNames[:maxDatasetItems]
+		}
+		domain.AddDSTransferSet("DSTrans").AttachDataSet(domainName, dsPrefix)
+		m.datasetDefs = append(m.datasetDefs, datasetDef{
+			domain: domainName,
+			name:   domainName + "/" + dsPrefix,
+			items:  objectRefs(domainName, pointNames),
+		})
+	}
+	return m
+}
+
+func objectRefs(domain string, items []string) []tase2.ObjectRef {
+	refs := make([]tase2.ObjectRef, len(items))
+	for i, item := range items {
+		refs[i] = tase2.ObjectRef{Domain: domain, Item: item}
+	}
+	return refs
 }
 
 // buildServer creates a per-connection TASE2 Server.
@@ -577,7 +611,7 @@ func buildServer(
 	// Add bilateral table entries if remote AP titles are configured.
 	// When Topics are configured, only those domains are granted — the library
 	// enforces the BLT on discovery, reads, and writes, so topics become real
-	// per-connection data isolation (not just a DSTS push filter).
+	// per-connection data isolation.
 	if conn.RemoteApTitle != "" {
 		blt := tase2.NewBilateralTable(
 			fmt.Sprintf("BLT_%d", conn.ProtocolConnectionNumber),
@@ -586,7 +620,7 @@ func buildServer(
 		)
 		granted := 0
 		for _, domainName := range dataModel.GetDomains() {
-			if len(conn.Topics) > 0 && !contains(conn.Topics, domainName) {
+			if !topicAllowsDomain(conn.Topics, domainName) {
 				continue
 			}
 			blt.AddDomainAccess(domainName)
@@ -596,12 +630,18 @@ func buildServer(
 		LogMsg(LogLevelNormal, "ICCP - BLT for %s: %d domain(s) granted to %s", conn.Name, granted, conn.RemoteApTitle)
 	} else if len(conn.Topics) > 0 {
 		LogMsg(LogLevelMin, "ICCP - Connection %q: topics configured but no remoteApTitle set; "+
-			"open mode - topics cannot be enforced on reads/discovery, only on DSTS pushes", conn.Name)
+			"open mode - topics limit the predefined datasets and commands, not discovery or reads", conn.Name)
 	}
 
-	// Create datasets in this connection's TransferSetStore
+	// Create the datasets of this connection's topics in its TransferSetStore
+	datasets, totalItems := 0, 0
 	for _, ds := range datasetDefs {
+		if !topicAllowsDomain(conn.Topics, ds.domain) {
+			continue
+		}
 		srv.TransferSets.AddDataSet(ds.name, ds.items)
+		datasets++
+		totalItems += len(ds.items)
 	}
 
 	// Build discovery snapshots after the model and datasets are finalised.
@@ -609,61 +649,74 @@ func buildServer(
 	// serve paginated discovery without rebuilding/re-sorting on every request.
 	srv.BuildDiscoverySnapshots()
 
-	totalItems := 0
-	for _, ds := range datasetDefs {
-		totalItems += len(ds.items)
-	}
 	LogMsg(LogLevelNormal, "ICCP - Server built for %s: %d datasets, %d total items, topics=%v",
-		conn.Name, len(datasetDefs), totalItems, conn.Topics)
+		conn.Name, datasets, totalItems, conn.Topics)
 
-	// Register device control handlers for command forwarding.
-	// Control-point writes currently route to the write-data handler; the
-	// operate handler shares the same forwarding path so commands are not
-	// silently acknowledged-but-dropped if a future library version routes
-	// device-control operates there.
-	if conn.CommandsEnabled {
-		forward := func(service, domain, item string, value *tase2.DataValue) tase2.HandlerResult {
-			LogMsg(LogLevelNormal, "ICCP - %s %s/%s = %v", service, domain, item, value.String())
-			return forwardCommand(cmdCollection, conn, domain, item, value)
+	// Device control handlers are always registered: without one the library
+	// would store the value and report success, so a connection with commands
+	// disabled must refuse explicitly. The operate handler is the one the
+	// library calls; the write-data handler is its fallback.
+	operate := func(domain, item string, value *tase2.DataValue) tase2.HandlerResult {
+		tag, ok := commandTarget(conn, "Operate", domain, item)
+		if !ok {
+			return tase2.ResultFailure
 		}
-
-		srv.SetOperateHandler(func(domain, item string, value *tase2.DataValue) tase2.HandlerResult {
-			return forward("Operate", domain, item, value)
-		})
-
-		srv.SetSelectHandler(func(domain, item string, value *tase2.DataValue) tase2.HandlerResult {
-			LogMsg(LogLevelNormal, "ICCP - Select %s/%s", domain, item)
-			// Only validate that the control point maps to a known command tag.
-			if findTagByDomainItem(domain, item) == "" {
-				return tase2.ResultFailure
-			}
-			return tase2.ResultSuccess
-		})
-
-		srv.SetWriteDataHandler(func(domain, item string, value *tase2.DataValue) tase2.HandlerResult {
-			return forward("Write", domain, item, value)
-		})
+		LogMsg(LogLevelNormal, "ICCP - Operate %s/%s = %v", domain, item, value.String())
+		return forwardCommand(cmdCollection, conn, tag, value)
 	}
+	srv.SetOperateHandler(operate)
+	srv.SetWriteDataHandler(operate)
+	srv.SetSelectHandler(func(domain, item string, value *tase2.DataValue) tase2.HandlerResult {
+		if _, ok := commandTarget(conn, "Select", domain, item); !ok {
+			return tase2.ResultFailure
+		}
+		LogMsg(LogLevelNormal, "ICCP - Select %s/%s", domain, item)
+		return tase2.ResultSuccess
+	})
 
 	return srv
 }
 
-// forwardCommand maps a control-point operation to its JSON-SCADA command tag
-// and inserts it into the commandsQueue collection.
-func forwardCommand(cmdCollection *mongo.Collection, conn protocolConnection, domain, item string, value *tase2.DataValue) tase2.HandlerResult {
+// commandTarget checks that a connection may operate a control point and
+// returns the JSON-SCADA command tag it maps to.
+func commandTarget(conn protocolConnection, service, domain, item string) (string, bool) {
+	refuse := func(reason string) (string, bool) {
+		LogMsg(LogLevelMin, "ICCP - %s %s/%s refused for %s: %s", service, domain, item, conn.Name, reason)
+		return "", false
+	}
+	if !conn.CommandsEnabled {
+		return refuse("commands disabled")
+	}
+	if !protocolRunning() {
+		return refuse("node inactive")
+	}
+	if !topicAllowsDomain(conn.Topics, domain) {
+		return refuse("domain not in the connection topics")
+	}
 	tag := findTagByDomainItem(domain, item)
 	if tag == "" {
-		LogMsg(LogLevelMin, "ICCP - Cannot find tag for %s/%s", domain, item)
-		return tase2.ResultFailure
+		return refuse("no command tag")
 	}
+	rtDoc := findRtDataForTag(tag)
+	if rtDoc.Origin != "command" {
+		return refuse("not a command tag")
+	}
+	if rtDoc.CommandBlocked {
+		return refuse("command blocked")
+	}
+	return tag, true
+}
 
-	cmdValue, cmdValueStr := extractCommandValue(value)
-
+// forwardCommand inserts the command for a JSON-SCADA command tag into the
+// commandsQueue collection.
+func forwardCommand(cmdCollection *mongo.Collection, conn protocolConnection, tag string, value *tase2.DataValue) tase2.HandlerResult {
 	rtDoc := findRtDataForTag(tag)
 	if rtDoc.ID == 0 {
 		LogMsg(LogLevelMin, "ICCP - Cannot find realtimeData for tag %s", tag)
 		return tase2.ResultFailure
 	}
+
+	cmdValue, cmdValueStr := extractCommandValue(value)
 
 	// Apply the tag's conversion factors to the value received from the client.
 	if convValue := applyCommandConversion(cmdValue, rtDoc); convValue != cmdValue {
@@ -683,33 +736,23 @@ func forwardCommand(cmdCollection *mongo.Collection, conn protocolConnection, do
 	return tase2.ResultSuccess
 }
 
-// watchRealtimeDataChanges monitors MongoDB change stream and pushes updates to all servers.
+// watchRealtimeDataChanges monitors the realtimeData change stream and
+// updates the shared data model; DataModel.UpdateOnlineValue keeps it current
+// whether or not a client is connected and notifies every attached server.
 func watchRealtimeDataChanges(
-	client *mongo.Client,
 	collectionRtData *mongo.Collection,
-	registry *serverRegistry,
-	ipByTag map[string]*tase2.IndicationPoint,
-	cpByTag map[string]*tase2.ControlPoint,
-	connNumbers map[int]bool,
+	model *iccpModel,
+	own map[int]bool,
 	topicList []string,
 ) {
-	// Start a ticker goroutine that flushes coalesced updates at most once per
-	// second. Without this, every change-stream notification would trigger an
-	// immediate DSTS report — a burst of hundreds of updates would flood the
-	// client with reports.
-	stopFlushCh := make(chan struct{})
+	// Flush coalesced updates at most once per second. Without this, every
+	// change-stream notification would trigger an immediate DSTS report — a
+	// burst of hundreds of updates would flood the clients with reports.
 	go func() {
 		ticker := time.NewTicker(pendingFlushInterval)
 		defer ticker.Stop()
-		for {
-			select {
-			case <-stopFlushCh:
-				// Final flush before exit: drain remaining buffered changes.
-				flushPendingChanges()
-				return
-			case <-ticker.C:
-				flushPendingChanges()
-			}
+		for range ticker.C {
+			flushPendingChanges(model.dataModel)
 		}
 	}()
 
@@ -756,70 +799,33 @@ func watchRealtimeDataChanges(
 
 			tag := event.FullDocument
 
-			// Skip internal system data
-			if tag.ID == 0 {
+			// Skip internal system data and tags from our own connections
+			if tag.ID == 0 || own[int(tag.ProtocolSourceConnectionNumber)] {
 				continue
 			}
 
-			// Skip tags from our own connections
-			if connNumbers[int(tag.ProtocolSourceConnectionNumber)] {
-				continue
-			}
-
-			// Check if this tag is a command (control point update)
-			if tag.Origin == "command" {
-				if _, ok := cpByTag[tag.Tag]; ok {
-					newVal := convertToDataValue(tag)
-					servers := registry.snapshot()
-					for _, entry := range servers {
-						entry.server.DataModel.WriteValue(
-							tase2.ObjectRef{Domain: tag.Group1, Item: sanitizePointName(tag.Tag)},
-							newVal,
-						)
-					}
+			// Command tag: refresh the cached document (commandBlocked,
+			// conversion factors) and the control point value.
+			if ref, ok := model.cpRefByTag[tag.Tag]; ok {
+				updateRtDataCache(tag)
+				if err := model.dataModel.WriteValue(ref, convertToDataValue(tag)); err != nil {
+					LogMsg(LogLevelDebug, "ChangeStream - Control point %s/%s: %v", ref.Domain, ref.Item, err)
 				}
 				continue
 			}
 
 			// Update indication point via the buffering layer: coalesce into
 			// the pending map so the ticker flushes at most once per second.
-			ip, ok := ipByTag[tag.Tag]
+			ip, ok := model.ipByTag[tag.Tag]
 			if !ok {
 				continue
 			}
-
-			var newVal *tase2.DataValue
-			var newQual *tase2.Quality
-			if ip.ICCPType != tase2.ICCPTypeUnknown {
-				newVal = convertToICCPValue(tag, ip.ICCPType)
-			} else {
-				newVal, newQual = convertToDataValueWithQuality(tag)
-			}
-
-			servers := registry.snapshot()
 			pendingChangesMu.Lock()
-			for _, entry := range servers {
-				// Check topic filter for this connection
-				if len(entry.connection.Topics) > 0 {
-					if !contains(entry.connection.Topics, tag.Group1) {
-						continue
-					}
-				}
-				srv := entry.server
-				srvMap := pendingChangesMap[srv]
-				if srvMap == nil {
-					srvMap = make(map[*tase2.IndicationPoint]pendingPointUpdate)
-					pendingChangesMap[srv] = srvMap
-				}
-				// Keep only the latest value for each point — overwrite any
-				// earlier change that hasn't been flushed yet.
-				srvMap[ip] = pendingPointUpdate{ip: ip, value: newVal, quality: newQual}
-			}
+			pendingChanges[ip] = convertToICCPValue(tag, ip.ICCPType)
 			pendingChangesMu.Unlock()
 
 			if currentLogLevel() >= LogLevelDebug {
-				LogMsg(LogLevelDebug, "ChangeStream - Buffered %s = %v (invalid=%v) for %d server(s)",
-					tag.Tag, tag.Value, tag.Invalid, len(servers))
+				LogMsg(LogLevelDebug, "ChangeStream - Buffered %s = %v (invalid=%v)", tag.Tag, tag.Value, tag.Invalid)
 			}
 		}
 
@@ -833,34 +839,22 @@ func watchRealtimeDataChanges(
 }
 
 // flushPendingChanges atomically drains the pending-changes buffer and applies
-// every queued update via server.UpdateOnlineValue. The drain-and-replace
-// pattern keeps the mutex held only briefly (O(map size) memory, not O(n) I/O).
-func flushPendingChanges() {
-	// Atomically extract the pending map and replace it with a fresh empty one.
+// every queued update to the data model, which notifies the attached servers.
+// The drain-and-replace pattern keeps the mutex held only briefly.
+func flushPendingChanges(dm *tase2.DataModel) {
 	pendingChangesMu.Lock()
-	old := pendingChangesMap
-	pendingChangesMap = make(map[*tase2.Server]map[*tase2.IndicationPoint]pendingPointUpdate, len(old))
+	old := pendingChanges
+	pendingChanges = make(map[*tase2.IndicationPoint]*tase2.DataValue, len(old))
 	pendingChangesMu.Unlock()
 
-	totalUpdates := 0
-	for _, srvMap := range old {
-		totalUpdates += len(srvMap)
+	if len(old) > 0 && currentLogLevel() >= LogLevelDetailed {
+		LogMsg(LogLevelDetailed, "ChangeStream - Flushing %d pending updates to %d server(s)",
+			len(old), dm.AttachedServerCount())
 	}
-	if totalUpdates > 0 && currentLogLevel() >= LogLevelDetailed {
-		LogMsg(LogLevelDetailed, "ChangeStream - Flushing %d pending updates across %d servers",
-			totalUpdates, len(old))
-	}
-
-	// Apply all updates outside the lock so UpdateOnlineValue (which may
-	// acquire server-level locks and perform MMS I/O) doesn't block the
-	// change-stream consumer.
-	for srv, srvMap := range old {
-		if currentLogLevel() >= LogLevelDebug && len(srvMap) > 0 {
-			LogMsg(LogLevelDebug, "ChangeStream - Flushing %d updates to server %p", len(srvMap), srv)
-		}
-		for _, upd := range srvMap {
-			srv.UpdateOnlineValue(upd.ip, upd.value, upd.quality)
-		}
+	// Applied outside the lock: the model and server locks and MMS I/O
+	// must not block the change-stream consumer.
+	for ip, value := range old {
+		dm.UpdateOnlineValue(ip, value, nil)
 	}
 }
 
@@ -900,16 +894,27 @@ func convertToDataValue(tag rtData) *tase2.DataValue {
 	}
 }
 
-// convertToDataValueWithQuality converts a realtimeData document to a TASE2 DataValue and Quality.
-func convertToDataValueWithQuality(tag rtData) (*tase2.DataValue, *tase2.Quality) {
-	val := convertToDataValue(tag)
-	var qual *tase2.Quality
-	if tag.Invalid {
-		qual = &tase2.Quality{Validity: tase2.QualityInvalid, Source: tase2.SourceTelemetered}
-	} else {
-		qual = &tase2.Quality{Validity: tase2.QualityValid, Source: tase2.SourceTelemetered}
+// tagQuality maps the realtimeData quality flags to an ICCP quality.
+// Validity: invalid > transient (suspect) > frozen (held) > valid. Source:
+// substituted or manual tags are entered, calculated tags calculated, the
+// rest telemetered.
+func tagQuality(tag rtData) *tase2.Quality {
+	q := &tase2.Quality{Validity: tase2.QualityValid, Source: tase2.SourceTelemetered}
+	switch {
+	case tag.Invalid:
+		q.Validity = tase2.QualityInvalid
+	case tag.Transient:
+		q.Validity = tase2.QualitySuspect
+	case tag.Frozen:
+		q.Validity = tase2.QualityHeld
 	}
-	return val, qual
+	switch {
+	case tag.Substituted || tag.Origin == "manual":
+		q.Source = tase2.SourceEntered
+	case tag.Origin == "calculated":
+		q.Source = tase2.SourceCalculated
+	}
+	return q
 }
 
 // getICCPType maps a realtimeData tag type to an ICCP data type with quality
@@ -937,10 +942,7 @@ func getICCPType(tag rtData) tase2.ICCPType {
 // using the appropriate constructor for the given ICCP type. The returned value
 // embeds quality and timestamp per the ICCP data type specification.
 func convertToICCPValue(tag rtData, iccpType tase2.ICCPType) *tase2.DataValue {
-	q := &tase2.Quality{Validity: tase2.QualityValid, Source: tase2.SourceTelemetered}
-	if tag.Invalid {
-		q = &tase2.Quality{Validity: tase2.QualityInvalid, Source: tase2.SourceTelemetered}
-	}
+	q := tagQuality(tag)
 	ts := time.Now()
 	if tag.TimeTagAtSource != nil && tag.TimeTagAtSourceOk {
 		ts = *tag.TimeTagAtSource
@@ -965,13 +967,13 @@ func convertToICCPValue(tag rtData, iccpType tase2.ICCPType) *tase2.DataValue {
 	case tase2.ICCPTypeDiscreteQTimeTag:
 		return tase2.NewDiscreteQTimeTag(int64(tag.Value), q, tase2.TimeStampFrom(ts))
 	default:
-		val, _ := convertToDataValueWithQuality(tag)
-		return val
+		return convertToDataValue(tag)
 	}
 }
 
-// sanitizePointName converts any non-alphanumeric character to underscore
-// and ensures the result begins with a letter (a-z, A-Z).
+// sanitizePointName converts any non-alphanumeric character to underscore,
+// ensures the result begins with a letter (a-z, A-Z) and truncates it to the
+// 32 characters of an MMS identifier.
 func sanitizePointName(name string) string {
 	if name == "" {
 		return "X_unnamed_"
@@ -1001,32 +1003,26 @@ func sanitizePointName(name string) string {
 	return result
 }
 
-// pendingPointUpdate holds a buffered indication-point update that will be
-// flushed to the server on the next tick (coalescing rapid-fire change stream
-// notifications into at-most-once-per-second DSTS reports).
-type pendingPointUpdate struct {
-	ip      *tase2.IndicationPoint
-	value   *tase2.DataValue
-	quality *tase2.Quality
-}
-
-// Change-stream buffering: updates are collected per-server into
-// pendingChangesMap and flushed every pendingFlushInterval by the ticker
+// Change-stream buffering: the latest value of each indication point is kept
+// in pendingChanges and flushed every pendingFlushInterval by the ticker
 // goroutine started in watchRealtimeDataChanges.
 var (
-	pendingChangesMu  sync.Mutex
-	pendingChangesMap = make(map[*tase2.Server]map[*tase2.IndicationPoint]pendingPointUpdate)
+	pendingChangesMu sync.Mutex
+	pendingChanges   = make(map[*tase2.IndicationPoint]*tase2.DataValue)
 )
 
 const pendingFlushInterval = 1 * time.Second
 
-// A global cache for tag-to-realtimeData lookup, populated at startup.
-var rtDataByTag = make(map[string]rtData)
-var tagByDomainItem = make(map[string]string) // "domain/item" -> tag
-var rtDataByTagMu sync.Mutex
+// Cache for command routing: the realtimeData documents of the exposed tags
+// and the "Domain/Item" -> tag lookup, populated at startup; command tags are
+// refreshed from the change stream.
+var (
+	rtDataByTag     = make(map[string]rtData)
+	tagByDomainItem = make(map[string]string)
+	rtDataByTagMu   sync.Mutex
+)
 
 // findTagByDomainItem finds the original JSON-SCADA tag given a domain and item name.
-// This is used during command processing to find the source tag for command routing.
 func findTagByDomainItem(domain, item string) string {
 	rtDataByTagMu.Lock()
 	defer rtDataByTagMu.Unlock()
@@ -1040,18 +1036,33 @@ func findRtDataForTag(tag string) rtData {
 	return rtDataByTag[tag]
 }
 
-// populateRtDataCache stores realtimeData documents for later lookup.
-func populateRtDataCache(tags []rtData) {
+// populateRtDataCache stores the documents of the exposed tags (tagByKey,
+// from buildModel) for command routing.
+func populateRtDataCache(tags []rtData, tagByKey map[string]string) {
+	exposed := make(map[string]bool, len(tagByKey))
+	for _, t := range tagByKey {
+		exposed[t] = true
+	}
 	rtDataByTagMu.Lock()
 	defer rtDataByTagMu.Unlock()
-	rtDataByTag = make(map[string]rtData, len(tags))
-	tagByDomainItem = make(map[string]string, len(tags))
+	rtDataByTag = make(map[string]rtData, len(tagByKey))
+	tagByDomainItem = make(map[string]string, len(tagByKey))
+	for k, t := range tagByKey {
+		tagByDomainItem[k] = t
+	}
 	for _, t := range tags {
-		rtDataByTag[t.Tag] = t
-		pointName := sanitizePointName(t.Tag)
-		if t.Group1 != "" && pointName != "" {
-			tagByDomainItem[t.Group1+"/"+pointName] = t.Tag
+		if exposed[t.Tag] {
+			rtDataByTag[t.Tag] = t
 		}
+	}
+}
+
+// updateRtDataCache replaces the cached document of an exposed tag.
+func updateRtDataCache(tag rtData) {
+	rtDataByTagMu.Lock()
+	defer rtDataByTagMu.Unlock()
+	if _, ok := rtDataByTag[tag.Tag]; ok {
+		rtDataByTag[tag.Tag] = tag
 	}
 }
 

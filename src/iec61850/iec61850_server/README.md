@@ -32,9 +32,12 @@ connection's `topics` list** (an empty `topics` list exposes every point).
 
    - per-device **data sets** (`DS_ST_k` status, `DS_MX_k` measurand, ≤40 entries each) and
      **buffered + unbuffered report control blocks** (`brcbST0101`, `urcbST0101`, …), one pair per
-     data set with as many instances as `maxClientConnections` (capped at 4).
+     data set with as many instances as `maxClientConnections` (capped at 3, so the status and the
+     measurand blocks of a logical device fit the 7 per `LLN0`; the C# driver allowed 4).
 3. A **MongoDB change stream** pushes value, quality and timestamp updates into the model; the
-   library handles reporting, buffering, integrity scans and general interrogation.
+   library handles reporting, buffering, integrity scans and general interrogation. Each time the
+   stream is opened (at startup and after a MongoDB outage or failover) the current values are read
+   again, so changes made while it was closed are not missed.
 4. IEC 61850 **control operations** (SPC/APC) become `commandsQueue` documents, which JSON-SCADA
    routes to the driver that owns the source point. The command tag's `kconv1`/`kconv2` are applied
    to the queued value, as in the lib60870 server drivers:
@@ -44,6 +47,9 @@ connection's `topics` list** (an empty `topics` list exposes every point).
    | `digital`, `kconv1` ≠ -1 | forced to `1`/`0` (`ctlVal` true → 1) |
    | `digital`, `kconv1` = -1 | forced to `1`/`0` and **inverted** |
    | `analog` | `value * kconv1 + kconv2` |
+
+   A control flagged **test** is refused (`Blocked-by-mode`): the gateway has no test mode, and
+   the command it would queue is a real one for the source device.
 
 A **mapping manifest** (`log/iec61850_server_map_<conn>.json`) listing every tag → object reference
 is written at startup.
@@ -78,8 +84,8 @@ iec61850-server selftest [port [bulkPoints]]
 | `ipAddresses` | optional allow-list of client IPs (others are disconnected) |
 | `serverModeMultiActive` / `maxClientConnections` | max simultaneous MMS clients, and the number of report control block instances per data set |
 | `maxQueueSize` | buffered-report depth, in **reports** per buffered control block |
-| `useSecurity` + `localCertFilePath` / `privateKeyFilePath` / `rootCertFilePath` / `peerCertFilesPaths` / `chainValidation` / `allowOnlySpecificCertificates` / `allowTLSv1x` / `cipherList` | IEC 62351-3 TLS |
-| `password` | ACSE password (accepted, not enforced) |
+| `useSecurity` + `localCertFilePath` / `privateKeyFilePath` / `rootCertFilePath` / `peerCertFilesPaths` / `chainValidation` / `allowOnlySpecificCertificates` / `allowTLSv1x` / `cipherList` | IEC 62351-3 TLS; `allowOnlySpecificCertificates` needs at least one certificate in `peerCertFilesPaths` |
+| `password` | passphrase of an encrypted `privateKeyFilePath` (PKCS#8 or legacy PEM encryption), as in the C# driver |
 
 Example:
 
@@ -110,7 +116,7 @@ The model is bounded so that no MMS response grows past what a client with a sma
 | objects per logical node | 30 | a logical node's type description is returned in one response |
 | entries per data set | 40 | reading a data set returns every member at once |
 | report control blocks per LLN0 | 7 | `LLN0[BR]`/`[RP]` returns every block of that family at once |
-| RCB copies per data set | 4 | each instance multiplies that response |
+| RCB copies per data set | 3 | each instance multiplies that response; a status and a measurand data set must fit 7 |
 | description length | 32 | `d` is published per object and one `[DC]` read returns them all |
 | string point cost | 8 | a string value can be far larger than a status or measurand |
 
@@ -136,6 +142,8 @@ bounds protect clients rather than the server.
   still publishes `activeNodeName` / `activeNodeKeepAliveTimeTag` on its instance document and the
   `stats` on its connection document every 5 s; with more than one node running, those fields show
   whichever node wrote last.
+- **Listener**: if the listening socket fails, the server stops reporting itself as running and
+  binds a new one within a second; the model and its values are kept.
 - **Port 102 on Linux** needs privileges: `setcap 'cap_net_bind_service=+ep' bin/iec61850-server`,
   or use a port above 1024 in `ipAddressLocalBind`.
 - GOOSE/SV publishing, setting groups, log services and SCL export are out of scope.
@@ -148,6 +156,7 @@ what it read (IEDExplorer does), could not attach the values to its model. `fixR
 value read and the value reported agree.
 
 Reproduced on purpose, so both drivers present the same gateway: the model layout and object
-references, the sizing bounds, description truncation, `invalid` treated as true when the field is
+references, the sizing bounds (except the RCB copies, see above), description truncation (descriptions are
+also reduced to printable ASCII, with accents dropped, since `d` is a VisibleString), `invalid` treated as true when the field is
 missing, command points excluded from data sets and never written from the database, and one
 logical device per topic with the same splitting rule.

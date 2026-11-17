@@ -20,17 +20,28 @@ The ICCP client:
 - **Reads** tag configurations from the `realtimeData` MongoDB collection
   (tags assigned to this connection via `protocolSourceConnectionNumber`).
 - **Subscribes** to live data updates via ICCP Data Set Transfer Sets
-  (DSTS), one per domain with mapped tags: the driver creates a dataset
-  (`JSSCADA_DS`) on the server containing exactly the mapped points of the
-  domain (falling back to an existing dataset) and activates change-based
-  (RBE) reporting plus periodic integrity snapshots.
-- **Polls** domains without a DSTS subscription periodically via chunked
-  ICCP `ReadMultiple` calls (integrity polling at configurable interval).
+  (DSTS), one per domain with mapped tags: the driver obtains a transfer set
+  through the domain's `Next_DSTransfer_Set` (or the first one listed, for
+  servers without it), recreates a dataset (`JSSCADA_DS`) on the server
+  containing exactly the mapped points of the domain and activates
+  change-based (RBE) reporting plus periodic integrity snapshots. When the
+  dataset cannot be created it falls back to the existing dataset holding
+  the most mapped points.
+- **Polls** every mapped point not reported by a DSTS subscription
+  periodically via chunked ICCP `ReadMultiple` calls (integrity polling at
+  configurable interval).
 - **Decodes** ICCP typed points (RealQ, StateQTimeTag, ...Extended,
   ...QTimeTagExtended, etc.): value, quality (invalid / held-suspect /
   non-telemetered source flags) and the source timestamp (GMT seconds, with
   milliseconds for the 802 Ed.2 QTimeTagExtended types) are mapped into the
-  `sourceDataUpdate` document.
+  `sourceDataUpdate` document. Points without a time stamp store a null
+  `timeTagAtSource`.
+- **Maps** ICCP states to digital values: On (closed) is 1, Off (open) 0;
+  the in-between state is 0 flagged invalid and transient, the invalid
+  state 0 flagged invalid.
+- **Invalidates** the tags of a connection (keeping their last value) when
+  the association fails or drops, and a single point when the server does
+  not return it.
 - **Writes** acquired values to MongoDB using bulk writes with the
   `sourceDataUpdate` sub-document pattern.
 - **Watches** the `commandsQueue` MongoDB collection via change streams
@@ -38,7 +49,10 @@ The ICCP client:
   calls (values are coerced to the type the server declares for the
   control point).
 - **Supports** redundancy/high-availability via the standard JSON-SCADA
-  protocol driver instance mechanism.
+  protocol driver instance mechanism: only the active node keeps the ICCP
+  associations up and writes data, unless `keepProtocolRunningWhileInactive`
+  is `true` (associations stay up on the inactive node, which then neither
+  writes data nor sends commands).
 
 ## Configuration
 
@@ -61,6 +75,7 @@ db.protocolDriverInstances.insert({
 - **enabled** [Boolean] - Enable/disable the instance. **Mandatory**.
 - **logLevel** [Double] - Log level (0=min, 1=basic, 2=detailed, 3=debug). **Mandatory**.
 - **nodeNames** [Array of Strings] - Node names allowed to run this instance. **Mandatory**.
+- **keepProtocolRunningWhileInactive** [Boolean] - Keep the ICCP associations up while this node is not the active one. Default: false. **Optional**.
 
 ### Protocol Connection
 
@@ -101,9 +116,9 @@ db.protocolConnections.insert({
 - **description** [String] - Description. **Optional**.
 - **enabled** [Boolean] - Enable/disable connection. **Mandatory**.
 - **commandsEnabled** [Boolean] - Enable command forwarding. **Mandatory**.
-- **endpointURLs** [Array of Strings] - Server host:port. **Mandatory**.
+- **endpointURLs** [Array of Strings] - Server endpoints as `host`, `host:port` or `[ipv6]:port` (port default 102; a scheme prefix such as `iccp://` is ignored). After a failed connect the driver tries the next endpoint in the list. **Mandatory**.
 - **giInterval** [Double] - Integrity poll interval in seconds. Default: 30. **Optional**.
-- **timeoutMs** [Double] - Connection timeout in ms. **Optional**.
+- **timeoutMs** [Double] - Timeout in ms for establishing the association and for each request. Default: 30000. **Optional**.
 - **localApTitle** [String] - Local AP Title (e.g. "1.1.999.2"). Gets a default if empty. **Optional**.
 - **localAeQualifier** [Integer] - Local AE Qualifier. Default: 12. **Optional**.
 - **remoteApTitle** [String] - Remote AP Title (server's identity). **Mandatory**.

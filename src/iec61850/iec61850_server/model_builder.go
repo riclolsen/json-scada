@@ -31,6 +31,7 @@ import (
 
 	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/dscsystems/go-iec61850/model"
+	"golang.org/x/text/unicode/norm"
 )
 
 // Model bounds. These exist to keep every MMS response small enough for
@@ -50,8 +51,11 @@ const (
 	// LLN0[BR]/[RP] returns every block of that family in one response.
 	MaxRcbPerLLN0 = 7
 	// Upper bound on RCB instances per data set (one per client reporting
-	// on the same data set concurrently).
-	MaxRcbCopiesPerDataSet = 4
+	// on the same data set concurrently). A logical device can hold a status
+	// and a measurand data set, so two data sets times this must fit
+	// MaxRcbPerLLN0. The C# driver allowed 4, which put 8 blocks of a family
+	// in the LLN0 of a mixed logical device.
+	MaxRcbCopiesPerDataSet = MaxRcbPerLLN0 / 2
 )
 
 // doCost is charged against MaxDataObjectsPerLN. A string point carries a
@@ -350,10 +354,7 @@ func mapPoint(ctx *ldContext, p *Point, descCount *int) *MappedPoint {
 	if desc == "" {
 		desc = p.Tag
 	}
-	if len(desc) > MaxDescriptionLength {
-		desc = desc[:MaxDescriptionLength]
-	}
-	if setAttrValue(do, "d", mms.NewVisibleString(desc)) {
+	if setAttrValue(do, "d", mms.NewVisibleString(visibleString(desc, MaxDescriptionLength))) {
 		*descCount++
 	}
 
@@ -464,6 +465,30 @@ func sanitizeMms(s string, maxLen int) string {
 		r = r[:cut] + fmt.Sprintf("_%04X", fnv32(s)&0xFFFF)
 	}
 	return r
+}
+
+// visibleString reduces a description to a VisibleString of at most maxLen
+// characters: printable ASCII only, which is all the type allows. Accents
+// are dropped from the letters that carry them ("Tensão" -> "Tensao"),
+// anything else becomes '?', and the cut never splits a character.
+func visibleString(s string, maxLen int) string {
+	var b strings.Builder
+	for _, r := range norm.NFD.String(s) {
+		if b.Len() >= maxLen {
+			break
+		}
+		switch {
+		case unicode.Is(unicode.Mn, r):
+			// a combining accent, separated from its letter by NFD
+		case r >= 0x20 && r <= 0x7e:
+			b.WriteRune(r)
+		case unicode.IsSpace(r):
+			b.WriteByte(' ')
+		default:
+			b.WriteByte('?')
+		}
+	}
+	return b.String()
 }
 
 func uniqueName(base string, used map[string]bool) string {

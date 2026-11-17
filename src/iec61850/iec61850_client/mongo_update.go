@@ -23,6 +23,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strconv"
 	"sync"
 	"time"
@@ -85,8 +86,19 @@ func mongoUpdateLoop(ctx context.Context, cfg jsconfig.Config, conns []*Iec61850
 	}
 }
 
+// insertedTag is a tag insert in a bulk write: the point is marked as having
+// a tag before the write, so a failed insert must clear the mark again.
+type insertedTag struct {
+	conn *Iec61850Connection
+	key  string
+}
+
 func updateCycle(ctx context.Context, db *mongo.Database, collRTD *mongo.Collection, conns []*Iec61850Connection) error {
-	var writes []mongo.WriteModel
+	var (
+		writes  []mongo.WriteModel
+		batch   []IECValue          // the values behind writes, to requeue
+		inserts map[int]insertedTag // write index -> tag insert
+	)
 
 	for {
 		if ctx.Err() != nil {
@@ -98,6 +110,8 @@ func updateCycle(ctx context.Context, db *mongo.Database, collRTD *mongo.Collect
 
 		start := time.Now()
 		writes = writes[:0]
+		batch = batch[:0]
+		inserts = map[int]insertedTag{}
 
 		for {
 			iv, ok := dequeueValue()
@@ -106,11 +120,13 @@ func updateCycle(ctx context.Context, db *mongo.Database, collRTD *mongo.Collect
 			}
 
 			if iv.SelfPublish {
-				if insert := maybeInsertTag(ctx, collRTD, conns, iv); insert != nil {
+				if insert, conn, key := maybeInsertTag(ctx, collRTD, conns, iv); insert != nil {
+					inserts[len(writes)] = insertedTag{conn, key}
 					writes = append(writes, insert)
 				}
 			}
 			writes = append(writes, updateModel(iv))
+			batch = append(batch, iv)
 
 			if len(writes) >= BulkWriteLimit {
 				break
@@ -123,16 +139,38 @@ func updateCycle(ctx context.Context, db *mongo.Database, collRTD *mongo.Collect
 		if len(writes) > 0 {
 			jslog.Log(jslog.LevelBasic, "MongoDB - Bulk writing %d, Total enqueued data %d", len(writes), queueLen())
 			res, err := collRTD.BulkWrite(ctx, writes, options.BulkWrite().SetOrdered(false))
-			if err != nil {
+			var bwe mongo.BulkWriteException
+			switch {
+			case err == nil:
+				jslog.Log(jslog.LevelBasic, "MongoDB - OK:%t - Inserted:%d - Updated:%d",
+					res.Acknowledged, res.InsertedCount, res.ModifiedCount)
+			case errors.As(err, &bwe) && bwe.WriteConcernError == nil && len(bwe.WriteErrors) > 0:
+				// Individual writes were refused; the write is unordered, so
+				// the others were applied. An insert refused as a duplicate
+				// means the tag exists, which is what the mark says.
+				for _, we := range bwe.WriteErrors {
+					jslog.Log(jslog.LevelBasic, "MongoDB - write %d refused: %s", we.Index, we.Message)
+					if ins, ok := inserts[we.Index]; ok && !mongo.IsDuplicateKeyError(we) {
+						delete(ins.conn.InsertedTags, ins.key)
+					}
+				}
+			default:
+				// Nothing is known to have been written: keep the batch for
+				// the next connection, and let its tag inserts run again (a
+				// tag that did get in is refused as a duplicate by the unique
+				// tag index).
+				for _, ins := range inserts {
+					delete(ins.conn.InsertedTags, ins.key)
+				}
+				dataQueue.Requeue(batch)
 				return err
 			}
-			jslog.Log(jslog.LevelBasic, "MongoDB - OK:%t - Inserted:%d - Updated:%d",
-				res.Acknowledged, res.InsertedCount, res.ModifiedCount)
 		}
 
 		// Controllable objects found while browsing get their tag here:
 		// they carry no value, so nothing else would create them.
 		createCommandTags(ctx, collRTD, conns)
+		linkCommands(ctx, collRTD)
 
 		if queueLen() == 0 {
 			select {
@@ -216,18 +254,17 @@ func takeCommandTags() []CommandTag {
 	return items
 }
 
-// commandLinkAttempts is how many writer cycles a command tag waits for its
-// supervised twin to appear before it is created without the link. The twin
-// is created by the value path, so it normally shows up within a cycle or
-// two of the first poll or report.
-const commandLinkAttempts = 40
+// commandInsertAttempts is how many writer cycles a failed command tag
+// insert is retried before it is given up for this session.
+const commandInsertAttempts = 20
 
 // createCommandTags creates the tags of the controllable objects found
-// while browsing, each linked to the point where its effect shows: the
-// command carries supervisedOfCommand, the supervised point gets
-// commandOfSupervised. A device that exposes no status for a controllable
-// object yields an unlinked command, which still works but gives the
-// operator no feedback.
+// while browsing. The command carries supervisedOfCommand and the supervised
+// point commandOfSupervised; when the supervised point does not exist yet
+// (it is created by the value path, which may only run after a long
+// discovery), the command is created now and linked by linkCommands once it
+// does. A device that exposes no status for a controllable object yields a
+// command that stays unlinked: it works, but gives the operator no feedback.
 func createCommandTags(ctx context.Context, collRTD *mongo.Collection, conns []*Iec61850Connection) {
 	pending := takeCommandTags()
 	for _, ct := range pending {
@@ -241,55 +278,143 @@ func createCommandTags(ctx context.Context, collRTD *mongo.Collection, conns []*
 			continue
 		}
 
-		// The supervised twin is the same data object seen under its
-		// status or measurand constraint, so it is found by object
-		// address whatever its tag is called.
-		supervisedID := 0.0
-		findCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		var sup bson.M
-		err := collRTD.FindOne(findCtx, bson.M{
-			"protocolSourceConnectionNumber": float64(ct.ConnNumber),
-			"protocolSourceObjectAddress":    ct.Ref,
-			"origin":                         "supervised",
-		}).Decode(&sup)
-		cancel()
-		if err == nil {
-			supervisedID = jsmongo.GetDouble(sup, "_id", 0)
-		}
-		if supervisedID == 0 && ct.Attempts < commandLinkAttempts {
-			// The supervised tag is created by the value path; wait for it
-			// rather than committing a blind command.
-			ct.Attempts++
-			enqueueCommandTag(ct)
-			continue
-		}
-
+		supervisedID := findSupervised(ctx, collRTD, ct.ConnNumber, ct.Ref)
 		id := conn.TagKeys.Next(ctx, collRTD, conn.ProtocolConnectionNumber)
 		insCtx, cancelIns := context.WithTimeout(ctx, 10*time.Second)
-		_, err = collRTD.InsertOne(insCtx, newCommandDoc(ct, id, supervisedID))
+		_, err := collRTD.InsertOne(insCtx, newCommandDoc(ct, id, supervisedID))
 		cancelIns()
+		if mongo.IsDuplicateKeyError(err) {
+			// The tag exists already (an earlier run): link it if it is not.
+			conn.InsertedTags[key] = true
+			var existing bson.M
+			findCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+			if collRTD.FindOne(findCtx, bson.M{"tag": tag}).Decode(&existing) == nil &&
+				jsmongo.GetDouble(existing, "supervisedOfCommand", 0) == 0 {
+				queueCommandLink(conn, ct.Ref, jsmongo.GetDouble(existing, "_id", 0))
+			}
+			cancel()
+			continue
+		}
 		if err != nil {
-			jslog.Log(jslog.LevelBasic, "%s - command tag insert failed for %s: %v", ct.ConnName, tag, err)
+			ct.Attempts++
+			if ct.Attempts < commandInsertAttempts {
+				enqueueCommandTag(ct) // retried next cycle
+			} else {
+				jslog.Log(jslog.LevelBasic, "%s - command tag insert failed for %s, giving up: %v", ct.ConnName, tag, err)
+			}
 			continue
 		}
 		conn.InsertedTags[key] = true
 
-		if supervisedID != 0 {
-			updCtx, cancelUpd := context.WithTimeout(ctx, 10*time.Second)
-			_, err = collRTD.UpdateOne(updCtx,
-				bson.M{"_id": supervisedID},
-				bson.M{"$set": bson.M{"commandOfSupervised": id}})
-			cancelUpd()
-			if err != nil {
-				jslog.Log(jslog.LevelBasic, "%s - cannot link %s to its supervised point: %v", ct.ConnName, tag, err)
-			}
-			jslog.Log(jslog.LevelBasic, "%s - INSERT NEW COMMAND TAG: %s - Addr:%s - supervised _id:%v",
-				ct.ConnName, tag, ct.Ref, supervisedID)
-		} else {
-			jslog.Log(jslog.LevelBasic, "%s - INSERT NEW COMMAND TAG: %s - Addr:%s - no supervised point found",
+		if supervisedID == 0 {
+			jslog.Log(jslog.LevelBasic, "%s - INSERT NEW COMMAND TAG: %s - Addr:%s - supervised point not found yet",
 				ct.ConnName, tag, ct.Ref)
+			queueCommandLink(conn, ct.Ref, id)
+			continue
 		}
+		linkSupervised(ctx, collRTD, ct.ConnName, tag, supervisedID, id)
+		jslog.Log(jslog.LevelBasic, "%s - INSERT NEW COMMAND TAG: %s - Addr:%s - supervised _id:%v",
+			ct.ConnName, tag, ct.Ref, supervisedID)
 	}
+}
+
+// findSupervised returns the _id of the supervised point of a controllable
+// object, or 0. It is the same data object seen under its status or
+// measurand constraint, so it is found by object address whatever its tag
+// is called.
+func findSupervised(ctx context.Context, collRTD *mongo.Collection, connNumber int, ref string) float64 {
+	findCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	var sup bson.M
+	if err := collRTD.FindOne(findCtx, bson.M{
+		"protocolSourceConnectionNumber": float64(connNumber),
+		"protocolSourceObjectAddress":    ref,
+		"origin":                         "supervised",
+	}).Decode(&sup); err != nil {
+		return 0
+	}
+	return jsmongo.GetDouble(sup, "_id", 0)
+}
+
+// linkSupervised points a supervised tag at its command.
+func linkSupervised(ctx context.Context, collRTD *mongo.Collection, connName, tag string, supervisedID, commandID float64) bool {
+	updCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	if _, err := collRTD.UpdateOne(updCtx,
+		bson.M{"_id": supervisedID},
+		bson.M{"$set": bson.M{"commandOfSupervised": commandID}}); err != nil {
+		jslog.Log(jslog.LevelBasic, "%s - cannot link %s to its supervised point: %v", connName, tag, err)
+		return false
+	}
+	return true
+}
+
+// commandLink is a command tag still waiting for its supervised point.
+type commandLink struct {
+	conn      *Iec61850Connection
+	ref       string
+	commandID float64
+}
+
+// commandLinks are the command tags created before their supervised point.
+// Fed at startup (preloadEntries) and by createCommandTags; consumed by the
+// writer goroutine.
+var commandLinks struct {
+	mu        sync.Mutex
+	items     []commandLink
+	lastCheck time.Time
+}
+
+func queueCommandLink(conn *Iec61850Connection, ref string, commandID float64) {
+	if commandID == 0 {
+		return
+	}
+	commandLinks.mu.Lock()
+	commandLinks.items = append(commandLinks.items, commandLink{conn, ref, commandID})
+	commandLinks.mu.Unlock()
+}
+
+// commandLinkInterval is how often unlinked commands look for their
+// supervised point: one query per command, so not every writer cycle.
+const commandLinkInterval = 5 * time.Second
+
+// linkCommands links the command tags whose supervised point now exists.
+// They wait for as long as the driver runs: a large IED may take minutes to
+// be discovered and polled.
+func linkCommands(ctx context.Context, collRTD *mongo.Collection) {
+	commandLinks.mu.Lock()
+	if len(commandLinks.items) == 0 || time.Since(commandLinks.lastCheck) < commandLinkInterval {
+		commandLinks.mu.Unlock()
+		return
+	}
+	commandLinks.lastCheck = time.Now()
+	items := commandLinks.items
+	commandLinks.items = nil
+	commandLinks.mu.Unlock()
+
+	var waiting []commandLink
+	for _, l := range items {
+		supervisedID := findSupervised(ctx, collRTD, l.conn.ProtocolConnectionNumber, l.ref)
+		if supervisedID == 0 {
+			waiting = append(waiting, l)
+			continue
+		}
+		tag := (CommandTag{ConnName: l.conn.Name, Ref: l.ref}).Tag()
+		updCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		_, err := collRTD.UpdateOne(updCtx,
+			bson.M{"_id": l.commandID},
+			bson.M{"$set": bson.M{"supervisedOfCommand": supervisedID}})
+		cancel()
+		if err != nil || !linkSupervised(ctx, collRTD, l.conn.Name, tag, supervisedID, l.commandID) {
+			waiting = append(waiting, l)
+			continue
+		}
+		jslog.Log(jslog.LevelBasic, "%s - LINKED COMMAND TAG: %s - supervised _id:%v", l.conn.Name, tag, supervisedID)
+	}
+
+	commandLinks.mu.Lock()
+	commandLinks.items = append(waiting, commandLinks.items...)
+	commandLinks.mu.Unlock()
 }
 
 func connByNumber(conns []*Iec61850Connection, number int) *Iec61850Connection {
@@ -302,8 +427,9 @@ func connByNumber(conns []*Iec61850Connection, number int) *Iec61850Connection {
 }
 
 // maybeInsertTag inserts a tag discovered in a report when the connection
-// has autoCreateTags and the tag is not known yet.
-func maybeInsertTag(ctx context.Context, collRTD *mongo.Collection, conns []*Iec61850Connection, iv IECValue) mongo.WriteModel {
+// has autoCreateTags and the tag is not known yet. It returns the insert and
+// the mark it set, which the caller clears if the insert fails.
+func maybeInsertTag(ctx context.Context, collRTD *mongo.Collection, conns []*Iec61850Connection, iv IECValue) (mongo.WriteModel, *Iec61850Connection, string) {
 	var conn *Iec61850Connection
 	for _, c := range conns {
 		if c.ProtocolConnectionNumber == iv.ConnNumber {
@@ -312,17 +438,17 @@ func maybeInsertTag(ctx context.Context, collRTD *mongo.Collection, conns []*Iec
 		}
 	}
 	if conn == nil {
-		return nil
+		return nil, nil, ""
 	}
 
 	key := pointKey(iv.Address, iv.CommonAddress)
 	if conn.InsertedTags[key] {
-		return nil
+		return nil, nil, ""
 	}
 	conn.InsertedTags[key] = true
 	tag := TagFromParameters(iv)
 
 	jslog.Log(jslog.LevelBasic, "%s - INSERT NEW TAG: %s - Addr:%s", iv.ConnName, tag, iv.Address)
 
-	return mongo.NewInsertOneModel().SetDocument(newRealtimeDoc(iv, conn.TagKeys.Next(ctx, collRTD, conn.ProtocolConnectionNumber)))
+	return mongo.NewInsertOneModel().SetDocument(newRealtimeDoc(iv, conn.TagKeys.Next(ctx, collRTD, conn.ProtocolConnectionNumber))), conn, key
 }

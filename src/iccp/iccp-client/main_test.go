@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/riclolsen/tase2/tase2"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 func testMapping(item string) tagMapping {
@@ -62,8 +64,8 @@ func TestDataValueToUpdateStateQTimeTag(t *testing.T) {
 	dv := tase2.NewStateQTimeTag(tase2.StateOn, tase2.QualityGood, 1000)
 	upd := dataValueToUpdate(dv, testMapping("ICCP_State_01"), now, 0)
 
-	if upd.value != float64(tase2.StateOn) {
-		t.Errorf("value = %v, want %v (StateOn)", upd.value, float64(tase2.StateOn))
+	if upd.value != 1 {
+		t.Errorf("value = %v, want 1 (StateOn)", upd.value)
 	}
 	if upd.invalid {
 		t.Error("invalid = true, want false")
@@ -129,5 +131,96 @@ func TestDataValueToUpdateQTimeTagExtended(t *testing.T) {
 	upd := dataValueToUpdate(cases[0].dv, testMapping("Ext_01"), time.Now(), -3)
 	if want := src.Add(-3 * time.Hour); !upd.timeTagAtSource.Equal(want) {
 		t.Errorf("hoursShift: got %v, want %v", upd.timeTagAtSource, want)
+	}
+}
+
+// ICCP states map to JSON-SCADA digital values: On 1, Off 0; the
+// in-between and invalid states are flagged invalid (in-between also
+// transient).
+func TestDataValueToUpdateStates(t *testing.T) {
+	cases := []struct {
+		state              tase2.StateValue
+		value              float64
+		invalid, transient bool
+	}{
+		{tase2.StateOn, 1, false, false},
+		{tase2.StateOff, 0, false, false},
+		{tase2.StateIntermediate, 0, true, true},
+		{tase2.StateInvalid, 0, true, false},
+	}
+	for _, c := range cases {
+		dv := tase2.NewStateQTimeTagExtended(c.state, tase2.QualityGood, time.Now())
+		upd := dataValueToUpdate(dv, testMapping("State_01"), time.Now(), 0)
+		if upd.value != c.value || upd.invalid != c.invalid || upd.transient != c.transient {
+			t.Errorf("%v: value/invalid/transient = %v/%v/%v, want %v/%v/%v",
+				c.state, upd.value, upd.invalid, upd.transient, c.value, c.invalid, c.transient)
+		}
+	}
+}
+
+func TestParseHostPort(t *testing.T) {
+	cases := []struct {
+		in   string
+		host string
+		port int
+	}{
+		{"192.168.1.60:102", "192.168.1.60", 102},
+		{"192.168.1.60", "192.168.1.60", 102},
+		{"scada.example:10102", "scada.example", 10102},
+		{"[fe80::1]:2102", "fe80::1", 2102},
+		{"fe80::1", "fe80::1", 102},
+		{"iccp://10.0.0.5:103/", "10.0.0.5", 103},
+		{" 10.0.0.5:bad ", "10.0.0.5", 102},
+	}
+	for _, c := range cases {
+		if h, p := parseHostPort(c.in); h != c.host || p != c.port {
+			t.Errorf("parseHostPort(%q) = %q, %d; want %q, %d", c.in, h, p, c.host, c.port)
+		}
+	}
+}
+
+// Without a source time, timeTagAtSource is stored as null, not year 1.
+func TestBuildSourceDataUpdateNoSourceTime(t *testing.T) {
+	model := buildSourceDataUpdate(dataUpdate{protocolSourceObjectAddress: "A/B", transient: true})
+	upd := model.(*mongo.UpdateOneModel).Update.(bson.D)
+	sdu := upd[0].Value.(bson.D)[0].Value.(bson.D)
+	got := map[string]interface{}{}
+	for _, e := range sdu {
+		got[e.Key] = e.Value
+	}
+	if got["timeTagAtSource"] != nil {
+		t.Errorf("timeTagAtSource = %v, want nil", got["timeTagAtSource"])
+	}
+	if got["transientAtSource"] != true {
+		t.Errorf("transientAtSource = %v, want true", got["transientAtSource"])
+	}
+}
+
+// Updates are only published on the active node; invalidation keeps the last
+// value and skips points already invalid.
+func TestConnRuntimePublishAndInvalidate(t *testing.T) {
+	ch := make(chan dataUpdate, 10)
+	rt := newConnRuntime(protocolConnection{ProtocolConnectionNumber: 7}, ch)
+
+	isActive.Store(false)
+	if rt.publish(dataUpdate{protocolSourceObjectAddress: "A/X", value: 3}) {
+		t.Fatal("publish succeeded on an inactive node")
+	}
+
+	isActive.Store(true)
+	defer isActive.Store(false)
+	if !rt.publish(dataUpdate{protocolSourceObjectAddress: "A/X", value: 3}) {
+		t.Fatal("publish failed on the active node")
+	}
+	<-ch
+	if n := rt.invalidate(nil); n != 1 {
+		t.Fatalf("invalidate = %d, want 1", n)
+	}
+	upd := <-ch
+	if !upd.invalid || upd.value != 3 || upd.protocolSourceConnectionNumber != 7 || upd.timeTagAtSourceOk {
+		t.Errorf("invalidated update = %+v, want value 3, invalid, connection 7, no source time", upd)
+	}
+	if n := rt.invalidate(nil); n != 0 {
+		t.Errorf("second invalidate = %d, want 0 (already invalid)", n)
 	}
 }

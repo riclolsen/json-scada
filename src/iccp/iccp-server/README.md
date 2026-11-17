@@ -28,7 +28,12 @@ The ICCP server:
 - **Supports** Data Set Transfer Set (DSTS) reporting for periodic, integrity,
   and change-based data updates.
 - **Supports** redundancy/high-availability via the standard JSON-SCADA
-  protocol driver instance mechanism.
+  protocol driver instance mechanism: only the active node serves
+  associations (others are closed as soon as accepted, and live ones are
+  aborted when the node becomes inactive), unless
+  `keepProtocolRunningWhileInactive` is `true`.
+- **Keeps** the data model current from the `realtimeData` change stream
+  whether or not a client is connected.
 
 ## Configuration
 
@@ -51,6 +56,7 @@ db.protocolDriverInstances.insert({
 - **enabled** [Boolean] - Enable/disable the instance. **Mandatory**.
 - **logLevel** [Double] - Log level (0=min, 1=basic, 2=detailed, 3=debug). **Mandatory**.
 - **nodeNames** [Array of Strings] - Node names allowed to run this instance. **Mandatory**.
+- **keepProtocolRunningWhileInactive** [Boolean] - Serve associations while this node is not the active one. Default: false. **Optional**.
 
 ### Protocol Connection
 
@@ -92,8 +98,8 @@ db.protocolConnections.insert({
 - **commandsEnabled** [Boolean] - Enable command forwarding. **Mandatory**.
 - **ipAddressLocalBind** [String] - Listen address and port: `"host:port"`, `":port"`, `"host"` or `"[ipv6]:port"` (e.g. "0.0.0.0:102"). The host must be an IP address or `localhost`; an empty host listens on all interfaces (0.0.0.0), and the port defaults to 102. An invalid value is logged and that connection is not started. **Mandatory**.
 - **ipAddresses** [Array of Strings] - Allowed client IP addresses (not yet enforced!). Empty = allow all. **Optional**.
-- **topics** [Array of Strings] - `group1` filter for exposed tags. Empty = all tags. When `remoteApTitle` is set, topics are enforced on discovery/reads/writes via the bilateral table (only the listed domains are granted); without a `remoteApTitle` (open mode) topics only filter DSTS pushes. **Optional**.
-- **timeoutMs** [Double] - Connection timeout in ms. **Optional**.
+- **topics** [Array of Strings] - `group1` filter for exposed tags. Empty = all tags. Topics always limit the connection's predefined datasets and the control points it may operate. When `remoteApTitle` is set, they are also enforced on discovery/reads/writes via the bilateral table (only the listed domains are granted); without a `remoteApTitle` (open mode) discovery and reads are not restricted. **Optional**.
+- **timeoutMs** [Double] - Not used by the server. **Optional**.
 - **localApTitle** [String] - Local AP Title (e.g. "1.1.999.1"). Gets a default if empty. **Optional**.
 - **localAeQualifier** [Integer] - Local AE Qualifier. Default: 12. **Optional**.
 - **remoteApTitle** [String] - Authorized remote AP Title for bilateral table. Empty = open mode. **Optional**.
@@ -254,8 +260,11 @@ goroutines automatically.
 ## Commands Routing
 
 When a TASE.2 client writes to a control point, the driver:
-1. Looks up the corresponding realtimeData tag (`origin: "command"`).
-2. Creates a command document in the `commandsQueue` collection.
+1. Refuses it unless the connection has `commandsEnabled`, the node runs the
+   protocol, the domain is in the connection's `topics` and the tag's
+   `commandBlocked` (followed live from the change stream) is not set.
+2. Looks up the corresponding realtimeData tag (`origin: "command"`).
+3. Creates a command document in the `commandsQueue` collection.
 3. The command is then picked up by the appropriate protocol client driver
    (the one matching `protocolSourceConnectionNumber`).
 
@@ -263,14 +272,15 @@ When a TASE.2 client writes to a control point, the driver:
 
 | realtimeData | TASE.2 |
 |---|---|
-| `group1` | Domain name |
-| `tag` | Point name (sanitized) |
+| `group1` | Domain name (sanitized like point names: non-alphanumerics become `_`, a leading non-letter gets an `X` prefix, at most 32 characters) |
+| `tag` | Point name (sanitized). Tags are processed in name order; a tag whose sanitized name collides with an earlier one in the same domain is logged and not exposed |
 | `type: "digital"` | StateQTimeTagExtended Indication Point (state + quality + ms time stamp) |
 | `type: "analog"` | RealQTimeTagExtended Indication Point (float32 + quality + ms time stamp) |
 | `type: "analog"` with integer ASDU (int16/32/64, uint16/32/64) | DiscreteQTimeTagExtended Indication Point (int + quality + ms time stamp) |
 | `type: "string"`, `"json"`, others | Not exposed via ICCP |
-| `origin: "command"` | Command Control Point (INTEGER32; SBO when `protocolSourceCommandUseSBO`, else direct operate) |
-| `invalid` | Quality validity (good/invalid) |
+| `origin: "command"` | Command Control Point (INTEGER32; SBO when `protocolSourceCommandUseSBO`, else direct operate), when some connection with `commandsEnabled` covers its domain; otherwise not exposed |
+| `invalid`, `transient`, `frozen` | Quality validity: invalid, else suspect (transient), else held (frozen), else valid |
+| `substituted`, `origin` | Quality source: entered (substituted or `origin: "manual"`), calculated (`origin: "calculated"`), else telemetered |
 | `timeTagAtSource` (when `timeTagAtSourceOk`, else current time) | Point TimeStamp: IEC 60870-6-802 Ed.2 TimeStampExtended {GMTBasedS, Milliseconds}, UTC, millisecond resolution |
 
 ## License

@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -39,6 +40,11 @@ import (
 type tagMapping struct {
 	tag rtData
 	ref tase2.ObjectRef
+}
+
+// refKey is the "Domain/Item" key of an ObjectRef.
+func refKey(ref tase2.ObjectRef) string {
+	return ref.Domain + "/" + ref.Item
 }
 
 // activeClient holds the live TASE2 client for a connection (for command forwarding).
@@ -66,9 +72,13 @@ func getActiveClient(connNumber int) *activeClient {
 	return activeClients[connNumber]
 }
 
-func removeActiveClient(connNumber int) {
+// removeActiveClient unregisters ac, unless a newer client of the same
+// connection has replaced it already.
+func removeActiveClient(connNumber int, ac *activeClient) {
 	activeClientsMu.Lock()
-	delete(activeClients, connNumber)
+	if activeClients[connNumber] == ac {
+		delete(activeClients, connNumber)
+	}
 	activeClientsMu.Unlock()
 }
 
@@ -95,90 +105,175 @@ func main() {
 	// Channel for data updates to MongoDB writer
 	dataChan := make(chan dataUpdate, 50000)
 
+	// Connect once. The MongoDB driver reconnects by itself, and every
+	// goroutine started below retries its own operations, so the driver is
+	// started exactly once: restarting it on a lost ping would duplicate the
+	// writers, the command watcher and the ICCP associations.
 	var clientMongo *mongo.Client
-	var collectionInstances, collectionConnections, collectionCommands, collectionRtData *mongo.Collection
+	for {
+		var err error
+		clientMongo, err = mongoConnect(cfg)
+		if err == nil {
+			break
+		}
+		LogMsg(LogLevelMin, "MongoDB - Connection error: %v", err)
+		time.Sleep(5 * time.Second)
+	}
+	LogMsg(LogLevelMin, "MongoDB - Connected correctly to MongoDB server")
+
+	db := clientMongo.Database(cfg.MongoDatabaseName)
+	collectionInstances := db.Collection("protocolDriverInstances")
+	collectionConnections := db.Collection("protocolConnections")
+	collectionCommands := db.Collection("commandsQueue")
+	collectionRtData := db.Collection("realtimeData")
+
+	// Verify instance config exists
+	inst, err := getInstanceConfig(collectionInstances, instanceNumber)
+	if err != nil {
+		LogMsg(LogLevelMin, "Config - %v", err)
+		time.Sleep(5 * time.Second)
+		os.Exit(1)
+	}
+
+	// Read connections
+	connections, err := getConnections(collectionConnections, instanceNumber)
+	if err != nil {
+		LogMsg(LogLevelMin, "Config - %v", err)
+		time.Sleep(5 * time.Second)
+		os.Exit(2)
+	}
+
+	// Start MongoDB writer goroutine
+	go mongoWriter(collectionRtData, dataChan)
+
+	// Start command change stream watcher
+	go commandWatcher(collectionCommands, collectionRtData, connections)
+
+	// Start per-connection ICCP client goroutines
+	for _, conn := range connections {
+		go runICCPConnection(conn, collectionRtData, collectionConnections, cfg, dataChan, maxTPDUSizeParam)
+	}
+
+	// Start redundancy keepalive loop
+	go func() {
+		for {
+			processRedundancy(collectionInstances, inst.ID, cfg)
+			time.Sleep(5 * time.Second)
+		}
+	}()
+
+	LogMsg(LogLevelMin, "ICCP - All connections started.")
 
 	for {
-		if clientMongo == nil {
-			var err error
-			clientMongo, err = mongoConnect(cfg)
-			if err != nil {
-				LogMsg(LogLevelMin, "MongoDB - Connection error: %v", err)
-				time.Sleep(5 * time.Second)
-				continue
-			}
-			LogMsg(LogLevelMin, "MongoDB - Connected correctly to MongoDB server")
-
-			db := clientMongo.Database(cfg.MongoDatabaseName)
-			collectionInstances = db.Collection("protocolDriverInstances")
-			collectionConnections = db.Collection("protocolConnections")
-			collectionCommands = db.Collection("commandsQueue")
-			collectionRtData = db.Collection("realtimeData")
-
-			// Verify instance config exists
-			_, err = getInstanceConfig(collectionInstances, instanceNumber)
-			if err != nil {
-				LogMsg(LogLevelMin, "Config - %v", err)
-				clientMongo.Disconnect(context.TODO())
-				clientMongo = nil
-				time.Sleep(5 * time.Second)
-				os.Exit(1)
-			}
-
-			// Read connections
-			connections, err := getConnections(collectionConnections, instanceNumber)
-			if err != nil {
-				LogMsg(LogLevelMin, "Config - %v", err)
-				clientMongo.Disconnect(context.TODO())
-				clientMongo = nil
-				time.Sleep(5 * time.Second)
-				os.Exit(2)
-			}
-
-			// Start MongoDB writer goroutine
-			go mongoWriter(collectionRtData, dataChan)
-
-			// Start command change stream watcher
-			go commandWatcher(collectionCommands, collectionRtData, connections)
-
-			// Start per-connection ICCP client goroutines
-			for _, conn := range connections {
-				conn := conn
-				go runICCPConnection(conn, collectionRtData, collectionConnections, cfg, dataChan, maxTPDUSizeParam)
-			}
-
-			// Start redundancy keepalive loop
-			go func() {
-				inst, err := getInstanceConfig(collectionInstances, instanceNumber)
-				if err != nil {
-					LogMsg(LogLevelMin, "Redundancy - Cannot load instance config: %v", err)
-					return
-				}
-				for {
-					processRedundancy(collectionInstances, inst.ID, cfg)
-					time.Sleep(5 * time.Second)
-				}
-			}()
-
-			LogMsg(LogLevelMin, "ICCP - All connections started.")
-		}
-
 		time.Sleep(5 * time.Second)
-		err := clientMongo.Ping(context.TODO(), nil)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		err := clientMongo.Ping(ctx, nil)
+		cancel()
 		if err != nil {
-			LogMsg(LogLevelMin, "MongoDB - Connection lost: %v", err)
-			clientMongo.Disconnect(context.TODO())
-			clientMongo = nil
+			LogMsg(LogLevelMin, "MongoDB - Connection lost (driver keeps retrying): %v", err)
 		}
 	}
+}
+
+// connRuntime is the per-connection state that outlives one association: it
+// publishes updates to the MongoDB writer and remembers the last update of
+// each address, so tags can be invalidated (keeping their value) when data
+// stops arriving.
+type connRuntime struct {
+	conn     protocolConnection
+	dataChan chan<- dataUpdate
+
+	mu   sync.Mutex
+	last map[string]dataUpdate // by protocolSourceObjectAddress
+}
+
+func newConnRuntime(conn protocolConnection, dataChan chan<- dataUpdate) *connRuntime {
+	return &connRuntime{conn: conn, dataChan: dataChan, last: make(map[string]dataUpdate)}
+}
+
+// publish queues an update for MongoDB. Nothing is written while this node is
+// not the active one (the active node owns realtimeData). It returns false
+// when the update was not queued.
+func (r *connRuntime) publish(upd dataUpdate) bool {
+	if !isActive.Load() {
+		return false
+	}
+	upd.protocolSourceConnectionNumber = float64(r.conn.ProtocolConnectionNumber)
+	select {
+	case r.dataChan <- upd:
+	default:
+		return false
+	}
+	r.mu.Lock()
+	r.last[upd.protocolSourceObjectAddress] = upd
+	r.mu.Unlock()
+	return true
+}
+
+// seed records the last raw value stored in realtimeData for tags not seen
+// yet, so they can be invalidated before any value is received.
+func (r *connRuntime) seed(tags []rtData) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, t := range tags {
+		addr := objAddrToString(t.ProtocolSourceObjectAddress)
+		if _, seen := r.last[addr]; seen || t.SourceDataUpdate == nil || t.SourceDataUpdate.ValueAtSource == nil {
+			continue
+		}
+		r.last[addr] = dataUpdate{
+			protocolSourceObjectAddress: addr,
+			value:                       *t.SourceDataUpdate.ValueAtSource,
+			valueString:                 t.SourceDataUpdate.ValueStringAtSource,
+			valueJson:                   t.SourceDataUpdate.ValueJsonAtSource,
+			asdu:                        asduToString(t.ProtocolSourceASDU),
+			invalid:                     t.SourceDataUpdate.InvalidAtSource,
+		}
+	}
+}
+
+// invalidate re-publishes the last value of the given addresses (all known
+// addresses when addrs is nil) flagged invalid. Addresses already invalid or
+// never seen are skipped. Returns how many were invalidated.
+func (r *connRuntime) invalidate(addrs []string) int {
+	now := time.Now()
+	var pending []dataUpdate
+	r.mu.Lock()
+	if addrs == nil {
+		for _, u := range r.last {
+			if !u.invalid {
+				pending = append(pending, u)
+			}
+		}
+	} else {
+		for _, a := range addrs {
+			if u, ok := r.last[a]; ok && !u.invalid {
+				pending = append(pending, u)
+			}
+		}
+	}
+	r.mu.Unlock()
+
+	n := 0
+	for _, u := range pending {
+		u.invalid = true
+		u.timeTag = now
+		u.timeTagAtSource = time.Time{}
+		u.timeTagAtSourceOk = false
+		if r.publish(u) {
+			n++
+		}
+	}
+	return n
 }
 
 // runICCPConnection manages an ICCP connection lifecycle: connect, poll, subscribe, reconnect.
 func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collection, collectionConnections *mongo.Collection, cfg configData, dataChan chan<- dataUpdate, maxTPDUSizeParam int) {
 	connNumber := conn.ProtocolConnectionNumber
+	rt := newConnRuntime(conn, dataChan)
+	endpointIdx := 0
 
 	for {
-		if !isActive {
+		if !protocolRunning() {
 			time.Sleep(2 * time.Second)
 			continue
 		}
@@ -196,6 +291,7 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 			time.Sleep(10 * time.Second)
 			continue
 		}
+		rt.seed(tags)
 
 		// Build tag mappings (MongoDB tag -> ICCP ObjectRef)
 		mappings := buildTagMappings(tags)
@@ -207,15 +303,15 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 
 		LogMsg(LogLevelNormal, "ICCP %s - Loaded %d tags (%d mappable)", conn.Name, len(tags), len(mappings))
 
-		// Get server endpoint from config
+		// Get server endpoint from config: try the configured endpoints in
+		// turn, moving on to the next one after a failed connect.
 		if len(conn.EndpointURLs) == 0 {
 			LogMsg(LogLevelMin, "ICCP %s - No endpoint URLs configured!", conn.Name)
 			time.Sleep(30 * time.Second)
 			continue
 		}
-
-		endpointURL := conn.EndpointURLs[0]
-		host, port := parseHostPort(endpointURL)
+		endpointIdx %= len(conn.EndpointURLs)
+		host, port := parseHostPort(conn.EndpointURLs[endpointIdx])
 
 		// Set up AP titles
 		localAP := defaultString(conn.LocalApTitle, fmt.Sprintf("1.1.999.%d", connNumber))
@@ -228,6 +324,9 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 		ep.SetLocalAPTitle(localAP, localAE)
 		ep.SetRemoteAPTitle(remoteAP, remoteAE)
 		ep.SetMaxTPDUSizeParam(maxTPDUSizeParam)
+		if conn.TimeoutMs > 0 {
+			ep.SetConnectTimeout(time.Duration(conn.TimeoutMs) * time.Millisecond)
+		}
 		// Set before Connect so the handshake is attributed to the connection.
 		ep.SetLogHandler(tase2LogHandler(conn.Name))
 		if conn.Password != "" {
@@ -248,11 +347,27 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 		}
 
 		client := tase2.NewClient(ep)
+		if conn.TimeoutMs > 0 {
+			client.MMSClient.SetResponseTimeout(time.Duration(conn.TimeoutMs) * time.Millisecond)
+		}
+		// A link loss ends the association at once instead of at the next
+		// poll tick.
+		lost := make(chan error, 1)
+		client.OnConnectionLost(func(err error) {
+			select {
+			case lost <- err:
+			default:
+			}
+		})
 
 		LogMsg(LogLevelNormal, "ICCP %s - Connecting to %s:%d (AP: %s)", conn.Name, host, port, remoteAP)
 		if err := ep.Connect(host, port); err != nil {
 			LogMsg(LogLevelMin, "ICCP %s - Connect failed: %v", conn.Name, err)
 			updateConnectionStats(collectionConnections, conn, cfg, false)
+			if n := rt.invalidate(nil); n > 0 {
+				LogMsg(LogLevelNormal, "ICCP %s - Invalidated %d tag(s)", conn.Name, n)
+			}
+			endpointIdx++
 			time.Sleep(10 * time.Second)
 			continue
 		}
@@ -276,8 +391,9 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 		domains, err := client.ListDomains()
 		if err != nil {
 			LogMsg(LogLevelMin, "ICCP %s - Cannot list domains: %v", conn.Name, err)
-			removeActiveClient(connNumber)
+			removeActiveClient(connNumber, ac)
 			client.Close()
+			rt.invalidate(nil)
 			time.Sleep(10 * time.Second)
 			continue
 		}
@@ -286,8 +402,7 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 		// Build a domain→item lookup from our mappings for DSTS value handling
 		mappingByRef := make(map[string]*tagMapping)
 		for i := range mappings {
-			key := mappings[i].ref.Domain + "/" + mappings[i].ref.Item
-			mappingByRef[key] = &mappings[i]
+			mappingByRef[refKey(mappings[i].ref)] = &mappings[i]
 		}
 
 		// Periodically poll for data (integrity reads)
@@ -297,19 +412,16 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 		}
 
 		// Try to set up DSTS subscriptions (one per domain) for live updates.
-		// Domains with an active subscription get change + integrity reports
-		// from the server and are excluded from the client-side poll.
-		subs := setupDSTSSubscriptions(client, conn, domains, mappings, mappingByRef, pollInterval, dataChan)
-		coveredDomains := make(map[string]bool)
-		for _, s := range subs {
-			coveredDomains[s.domain] = true
-		}
+		// Points in a subscribed dataset get change + integrity reports from
+		// the server and are excluded from the client-side poll.
+		subs, covered := setupDSTSSubscriptions(client, rt, domains, mappings, mappingByRef, pollInterval)
 
-		// Do initial poll immediately (all tags, so covered domains also get
+		// Do initial poll immediately (all tags, so covered points also get
 		// an initial value before the first DSTS report arrives)
-		performPoll(client, conn, mappings, nil, dataChan)
+		performPoll(client, rt, mappings, nil)
 
 		pollTicker := time.NewTicker(time.Duration(pollInterval) * time.Second)
+		redundancyTicker := time.NewTicker(2 * time.Second)
 
 		// Stats update ticker (published once now, so the link shows up at once)
 		updateConnectionStats(collectionConnections, conn, cfg, true)
@@ -319,8 +431,18 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 		connected := true
 		for connected {
 			select {
+			case err := <-lost:
+				LogMsg(LogLevelMin, "ICCP %s - Connection lost: %v", conn.Name, err)
+				connected = false
+
+			case <-redundancyTicker.C:
+				if !protocolRunning() {
+					LogMsg(LogLevelMin, "ICCP %s - Node inactive, closing association", conn.Name)
+					connected = false
+				}
+
 			case <-pollTicker.C:
-				if !isActive {
+				if !isActive.Load() {
 					continue
 				}
 				if _, _, _, err := client.ReadPeerIdentity(); err != nil {
@@ -328,7 +450,7 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 					connected = false
 					break
 				}
-				performPoll(client, conn, mappings, coveredDomains, dataChan)
+				performPoll(client, rt, mappings, covered)
 
 			case <-statsTicker.C:
 				updateConnectionStats(collectionConnections, conn, cfg, true)
@@ -336,18 +458,24 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 		}
 
 		pollTicker.Stop()
+		redundancyTicker.Stop()
 		statsTicker.Stop()
 
 		// Cleanup: deactivate transfer sets (best effort), then Close (stops
 		// the MMS receive loop and disconnects)
-		removeActiveClient(connNumber)
-		for _, s := range subs {
-			if err := client.StopDSTransferSet(s.domain, s.slot); err != nil {
-				LogMsg(LogLevelDetailed, "ICCP %s - DSTS stop %s/%s: %v", conn.Name, s.domain, s.slot, err)
+		removeActiveClient(connNumber, ac)
+		if client.IsConnected() {
+			for _, s := range subs {
+				if err := client.StopDSTransferSet(s.domain, s.slot); err != nil {
+					LogMsg(LogLevelDetailed, "ICCP %s - DSTS stop %s/%s: %v", conn.Name, s.domain, s.slot, err)
+				}
 			}
 		}
 		client.Close()
 		updateConnectionStats(collectionConnections, conn, cfg, false)
+		if n := rt.invalidate(nil); n > 0 {
+			LogMsg(LogLevelNormal, "ICCP %s - Invalidated %d tag(s)", conn.Name, n)
+		}
 		LogMsg(LogLevelNormal, "ICCP %s - Disconnected, reconnecting in 10s...", conn.Name)
 		time.Sleep(10 * time.Second)
 	}
@@ -380,13 +508,17 @@ func buildTagMappings(tags []rtData) []tagMapping {
 // to stay within the negotiated PDU size on large tag sets.
 const pollChunkSize = 100
 
-// performPoll reads mapped tags and pushes updates to the data channel.
-// Tags in domains listed in skipDomains (covered by an active DSTS
-// subscription) are not polled; pass nil to poll everything.
-func performPoll(client *tase2.Client, conn protocolConnection, mappings []tagMapping, skipDomains map[string]bool, dataChan chan<- dataUpdate) {
+// performPoll reads mapped tags and publishes the updates. Points whose
+// "Domain/Item" key is in skip (covered by an active DSTS subscription) are
+// not polled; pass nil to poll everything. A point the server fails to
+// return is invalidated.
+func performPoll(client *tase2.Client, rt *connRuntime, mappings []tagMapping, skip map[string]bool) {
+	if !isActive.Load() {
+		return
+	}
 	var polled []tagMapping
 	for _, m := range mappings {
-		if skipDomains[m.ref.Domain] {
+		if skip[refKey(m.ref)] {
 			continue
 		}
 		polled = append(polled, m)
@@ -395,7 +527,7 @@ func performPoll(client *tase2.Client, conn protocolConnection, mappings []tagMa
 		return
 	}
 
-	count := 0
+	count, failed, dropped := 0, 0, 0
 	for start := 0; start < len(polled); start += pollChunkSize {
 		end := start + pollChunkSize
 		if end > len(polled) {
@@ -410,30 +542,37 @@ func performPoll(client *tase2.Client, conn protocolConnection, mappings []tagMa
 
 		vals, err := client.ReadMultiple(refs)
 		if err != nil {
-			LogMsg(LogLevelMin, "ICCP %s - Poll ReadMultiple error: %v", conn.Name, err)
+			LogMsg(LogLevelMin, "ICCP %s - Poll ReadMultiple error: %v", rt.conn.Name, err)
 			return
 		}
 
 		now := time.Now()
+		var failedAddrs []string
 		for i, m := range chunk {
 			if i >= len(vals) || vals[i] == nil {
+				failedAddrs = append(failedAddrs, objAddrToString(m.tag.ProtocolSourceObjectAddress))
 				continue
 			}
-
-			upd := dataValueToUpdate(vals[i], m, now, conn.HoursShift)
-			upd.protocolSourceConnectionNumber = float64(conn.ProtocolConnectionNumber)
-
-			select {
-			case dataChan <- upd:
+			if rt.publish(dataValueToUpdate(vals[i], m, now, rt.conn.HoursShift)) {
 				count++
-			default:
-				LogMsg(LogLevelMin, "ICCP %s - Data channel full, discarding!", conn.Name)
+			} else {
+				dropped++
 			}
+		}
+		if len(failedAddrs) > 0 {
+			failed += len(failedAddrs)
+			rt.invalidate(failedAddrs)
 		}
 	}
 
+	if dropped > 0 {
+		LogMsg(LogLevelMin, "ICCP %s - Data channel full, discarded %d polled value(s)!", rt.conn.Name, dropped)
+	}
+	if failed > 0 {
+		LogMsg(LogLevelDetailed, "ICCP %s - Poll: %d point(s) not returned by the server", rt.conn.Name, failed)
+	}
 	if count > 0 {
-		LogMsg(LogLevelDetailed, "ICCP %s - Polled %d/%d values", conn.Name, count, len(polled))
+		LogMsg(LogLevelDetailed, "ICCP %s - Polled %d/%d values", rt.conn.Name, count, len(polled))
 	}
 }
 
@@ -447,46 +586,62 @@ type dstsSub struct {
 // server with exactly the mapped points of that domain.
 const jsScadaDataSetName = "JSSCADA_DS"
 
+// maxFallbackDataSets bounds how many existing datasets are inspected when
+// the driver cannot create its own.
+const maxFallbackDataSets = 50
+
 // setupDSTSSubscriptions sets up one DSTS subscription per domain that has
 // mapped tags, so the server reports changes (RBE) plus periodic integrity
-// snapshots instead of the client polling. Returns the activated subscriptions.
+// snapshots instead of the client polling. Returns the activated
+// subscriptions and the "Domain/Item" keys of the points they report.
 func setupDSTSSubscriptions(
 	client *tase2.Client,
-	conn protocolConnection,
+	rt *connRuntime,
 	domains []string,
 	mappings []tagMapping,
 	mappingByRef map[string]*tagMapping,
 	pollInterval int,
-	dataChan chan<- dataUpdate,
-) []dstsSub {
+) ([]dstsSub, map[string]bool) {
 	var subs []dstsSub
+	covered := make(map[string]bool)
 	if len(domains) == 0 {
-		return subs
+		return subs, covered
 	}
 
-	connName := conn.Name
-	connNumber := conn.ProtocolConnectionNumber
-	hoursShift := conn.HoursShift
+	connName := rt.conn.Name
+	hoursShift := rt.conn.HoursShift
 
 	// Register the report callback BEFORE activating any transfer set so the
 	// initial integrity report is not missed. A single callback serves all
 	// domain subscriptions; values are matched via mappingByRef.
 	client.OnDSTransferSetReport(func(report tase2.Report, finished bool) {
-		if !finished {
+		if !finished || !isActive.Load() {
 			return
 		}
-		count := 0
+		count, dropped := 0, 0
+		var failedAddrs []string
+		now := time.Now()
 		for _, v := range report.Values {
-			key := v.Domain + "/" + v.Item
-			if m, ok := mappingByRef[key]; ok {
-				upd := dataValueToUpdate(v.Value, *m, time.Now(), hoursShift)
-				upd.protocolSourceConnectionNumber = float64(connNumber)
-				select {
-				case dataChan <- upd:
-					count++
-				default:
-				}
+			m, ok := mappingByRef[v.Domain+"/"+v.Item]
+			if !ok {
+				continue
 			}
+			if v.Value == nil {
+				failedAddrs = append(failedAddrs, objAddrToString(m.tag.ProtocolSourceObjectAddress))
+				continue
+			}
+			if rt.publish(dataValueToUpdate(v.Value, *m, now, hoursShift)) {
+				count++
+			} else {
+				dropped++
+			}
+		}
+		if len(failedAddrs) > 0 {
+			rt.invalidate(failedAddrs)
+		}
+		if dropped > 0 {
+			LogMsg(LogLevelMin, "ICCP %s - Data channel full, discarded %d value(s) of DSTS report #%d!",
+				connName, dropped, report.SeqNum)
 		}
 		LogMsg(LogLevelDetailed, "ICCP %s - DSTS report #%d: %d values (%d mapped)",
 			connName, report.SeqNum, len(report.Values), count)
@@ -504,31 +659,26 @@ func setupDSTSSubscriptions(
 			continue
 		}
 
-		vars, err := client.ListDomainVariables(domain)
+		tsRef, err := allocateDSTransferSet(client, domain)
 		if err != nil {
-			LogMsg(LogLevelDetailed, "ICCP %s - ListDomainVariables %s: %v", connName, domain, err)
+			LogMsg(LogLevelDetailed, "ICCP %s - Domain %s: no DSTS available (%v); will poll", connName, domain, err)
 			continue
 		}
 
-		_, _, dstsSlots, hasNextDSTS := tase2.ClassifyDomainVariables(vars)
-		if !hasNextDSTS || len(dstsSlots) == 0 {
-			LogMsg(LogLevelDetailed, "ICCP %s - Domain %s has no DSTS slots; will poll", connName, domain)
-			continue
-		}
-		dstsSlot := dstsSlots[0]
-
-		// Prefer a dataset containing exactly the mapped points of this domain.
-		// Fall back to an existing domain- or VMD-scope dataset.
+		// Prefer a dataset containing exactly the mapped points of this
+		// domain. A leftover from an earlier association (servers may keep
+		// domain-scope datasets) can hold an outdated member list, so it is
+		// deleted first. Fall back to the existing dataset that holds the
+		// most mapped points; only those points are then left to DSTS.
 		dsRef := tase2.ObjectRef{Domain: domain, Item: jsScadaDataSetName}
+		members := refs
+		if err := client.DeleteDataSet(domain + "/" + jsScadaDataSetName); err == nil {
+			LogMsg(LogLevelDetailed, "ICCP %s - Deleted stale dataset %s/%s", connName, domain, jsScadaDataSetName)
+		}
 		if err := client.CreateDataSet(domain, jsScadaDataSetName, refs); err != nil {
 			LogMsg(LogLevelDetailed, "ICCP %s - CreateDataSet %s/%s: %v", connName, domain, jsScadaDataSetName, err)
-			dsRef = tase2.ObjectRef{}
-			if domSets, err := client.ListDomainDatasets(domain); err == nil && len(domSets) > 0 {
-				dsRef = tase2.ObjectRef{Domain: domain, Item: strings.TrimPrefix(domSets[0], domain+"/")}
-			} else if vmdSets, err := client.ListVMDDatasets(); err == nil && len(vmdSets) > 0 {
-				dsRef = tase2.ObjectRef{Item: vmdSets[0]}
-			}
-			if dsRef.Item == "" {
+			dsRef, members = fallbackDataSet(client, domain, refs)
+			if len(members) == 0 {
 				LogMsg(LogLevelDetailed, "ICCP %s - No usable dataset for domain %s; will poll", connName, domain)
 				continue
 			}
@@ -541,25 +691,95 @@ func setupDSTSSubscriptions(
 			RBE:            true,
 			Conditions:     tase2.DSConditionChange | tase2.DSConditionIntegrity,
 		}
-		if err := client.ConfigureDSTransferSet(domain, dstsSlot, dstsCfg); err != nil {
-			LogMsg(LogLevelMin, "ICCP %s - DSTS configure %s/%s: %v", connName, domain, dstsSlot, err)
+		if err := client.ConfigureDSTransferSet(tsRef.Domain, tsRef.Item, dstsCfg); err != nil {
+			LogMsg(LogLevelMin, "ICCP %s - DSTS configure %s: %v", connName, refKey(tsRef), err)
 			continue
 		}
-		if err := client.StartDSTransferSet(domain, dstsSlot); err != nil {
-			LogMsg(LogLevelMin, "ICCP %s - DSTS activate %s/%s: %v", connName, domain, dstsSlot, err)
+		if err := client.StartDSTransferSet(tsRef.Domain, tsRef.Item); err != nil {
+			LogMsg(LogLevelMin, "ICCP %s - DSTS activate %s: %v", connName, refKey(tsRef), err)
 			continue
 		}
 
 		dsLabel := dsRef.Item
 		if dsRef.Domain != "" {
-			dsLabel = dsRef.Domain + "/" + dsRef.Item
+			dsLabel = refKey(dsRef)
 		}
-		LogMsg(LogLevelNormal, "ICCP %s - DSTS subscription activated on %s/%s -> %s",
-			connName, domain, dstsSlot, dsLabel)
-		subs = append(subs, dstsSub{domain: domain, slot: dstsSlot})
+		LogMsg(LogLevelNormal, "ICCP %s - DSTS subscription activated on %s -> %s (%d of %d mapped points)",
+			connName, refKey(tsRef), dsLabel, len(members), len(refs))
+		subs = append(subs, dstsSub{domain: tsRef.Domain, slot: tsRef.Item})
+		for _, r := range members {
+			covered[refKey(r)] = true
+		}
 	}
 
-	return subs
+	return subs, covered
+}
+
+// allocateDSTransferSet obtains a DSTransferSet of a domain for this
+// association: through Next_DSTransfer_Set as the standard requires, or, for
+// servers without that pointer, the first transfer set the domain lists.
+func allocateDSTransferSet(client *tase2.Client, domain string) (tase2.ObjectRef, error) {
+	ref, err := client.ReadNextDSTransferSet(domain)
+	if err == nil {
+		return ref, nil
+	}
+	vars, listErr := client.ListDomainVariables(domain)
+	if listErr != nil {
+		return tase2.ObjectRef{}, err
+	}
+	if _, _, slots, _ := tase2.ClassifyDomainVariables(vars); len(slots) > 0 {
+		return tase2.ObjectRef{Domain: domain, Item: slots[0]}, nil
+	}
+	return tase2.ObjectRef{}, err
+}
+
+// fallbackDataSet picks, among the existing domain- and VMD-scope datasets,
+// the one holding the most of refs, and returns it with the refs it holds.
+func fallbackDataSet(client *tase2.Client, domain string, refs []tase2.ObjectRef) (tase2.ObjectRef, []tase2.ObjectRef) {
+	var candidates []tase2.ObjectRef
+	if domSets, err := client.ListDomainDatasets(domain); err == nil {
+		for _, n := range domSets {
+			candidates = append(candidates, tase2.ObjectRef{Domain: domain, Item: strings.TrimPrefix(n, domain+"/")})
+		}
+	}
+	if vmdSets, err := client.ListVMDDatasets(); err == nil {
+		for _, n := range vmdSets {
+			candidates = append(candidates, tase2.ObjectRef{Item: n})
+		}
+	}
+	if len(candidates) > maxFallbackDataSets {
+		candidates = candidates[:maxFallbackDataSets]
+	}
+
+	wanted := make(map[string]bool, len(refs))
+	for _, r := range refs {
+		wanted[refKey(r)] = true
+	}
+	var best tase2.ObjectRef
+	var bestMembers []tase2.ObjectRef
+	for _, c := range candidates {
+		name := c.Item
+		if c.Domain != "" {
+			name = refKey(c)
+		}
+		members, err := client.GetDataSetMembers(name)
+		if err != nil {
+			continue
+		}
+		var held []tase2.ObjectRef
+		for _, m := range members {
+			if m.Domain == "" {
+				m.Domain = domain
+			}
+			if wanted[refKey(m)] {
+				held = append(held, m)
+			}
+		}
+		if len(held) > len(bestMembers) {
+			best, bestMembers = c, held
+		}
+	}
+	return best, bestMembers
 }
 
 // dataValueToUpdate converts a TASE2 DataValue to a dataUpdate for MongoDB.
@@ -588,9 +808,19 @@ func dataValueToUpdate(dv *tase2.DataValue, m tagMapping, now time.Time, hoursSh
 		upd.value = float64(*dp.Discrete)
 		upd.valueString = fmt.Sprintf("%d", *dp.Discrete)
 	case dp.State != nil:
-		upd.value = float64(*dp.State)
+		// JSON-SCADA digitals are 0/1: ICCP On (closed) is 1, Off (open) 0.
+		// The in-between and invalid states keep 0 flagged invalid, the
+		// in-between one also transient (as IEC double points are).
 		upd.valueString = dp.State.String()
-		if *dp.State == tase2.StateInvalid {
+		switch *dp.State {
+		case tase2.StateOn:
+			upd.value = 1
+		case tase2.StateOff:
+			upd.value = 0
+		case tase2.StateIntermediate:
+			upd.invalid = true
+			upd.transient = true
+		default:
 			upd.invalid = true
 		}
 	default:
@@ -712,6 +942,11 @@ func buildSourceDataUpdate(upd dataUpdate) mongo.WriteModel {
 	if asduAtSource == "" {
 		asduAtSource = "unknown"
 	}
+	// No source time: store null rather than the zero time (year 1).
+	var timeTagAtSource interface{}
+	if upd.timeTagAtSourceOk {
+		timeTagAtSource = upd.timeTagAtSource
+	}
 
 	update := bson.D{
 		{Key: "$set", Value: bson.D{
@@ -724,12 +959,12 @@ func buildSourceDataUpdate(upd dataUpdate) mongo.WriteModel {
 				{Key: "substitutedAtSource", Value: upd.substituted},
 				{Key: "blockedAtSource", Value: false},
 				{Key: "overflowAtSource", Value: false},
-				{Key: "transientAtSource", Value: false},
+				{Key: "transientAtSource", Value: upd.transient},
 				{Key: "carryAtSource", Value: false},
 				{Key: "asduAtSource", Value: asduAtSource},
 				{Key: "causeOfTransmissionAtSource", Value: 20},
 				{Key: "timeTag", Value: upd.timeTag},
-				{Key: "timeTagAtSource", Value: upd.timeTagAtSource},
+				{Key: "timeTagAtSource", Value: timeTagAtSource},
 				{Key: "timeTagAtSourceOk", Value: upd.timeTagAtSourceOk},
 			}},
 		}},
@@ -782,7 +1017,7 @@ func commandWatcher(collectionCommands *mongo.Collection, collectionRtData *mong
 		LogMsg(LogLevelNormal, "Commands CS - Watching for commands...")
 
 		for cs.Next(context.TODO()) {
-			if !isActive {
+			if !isActive.Load() {
 				continue
 			}
 
@@ -978,14 +1213,20 @@ func dataValueToFloat(dv *tase2.DataValue) (float64, bool) {
 	return 0, false
 }
 
-// parseHostPort splits "host:port" into host and port.
+// parseHostPort splits an endpoint ("host", "host:port", "[ipv6]:port", a
+// bare IPv6 address, optionally prefixed by a scheme such as "iccp://") into
+// host and port. The port defaults to 102.
 func parseHostPort(endpointURL string) (string, int) {
-	parts := strings.Split(endpointURL, ":")
-	host := parts[0]
-	port := 102
-	if len(parts) > 1 {
-		if p, err := strconv.Atoi(parts[1]); err == nil {
-			port = p
+	s := strings.TrimSpace(endpointURL)
+	if i := strings.Index(s, "://"); i >= 0 {
+		s = s[i+3:]
+	}
+	s = strings.TrimSuffix(s, "/")
+	host, port := strings.Trim(s, "[]"), 102
+	if h, p, err := net.SplitHostPort(s); err == nil {
+		host = h
+		if n, err := strconv.Atoi(p); err == nil && n > 0 && n < 65536 {
+			port = n
 		}
 	}
 	return host, port

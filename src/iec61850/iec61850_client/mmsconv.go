@@ -164,34 +164,21 @@ func mmsGetQualityFailed(v *mms.Value) bool {
 	return false
 }
 
-// mmsGetQualityTransient looks for a transient (intermediate) double-point
-// position inside an MMS value.
-//
-// parity: mirrors C# AsduReceiveHandler.cs:110-133, including the element
-// count test on the parent structure and the fall-back that calls the
-// *failed* helper rather than this one. The C# then calls GetBit on the
-// structure itself, which throws in the .NET wrapper; here the bits of the
-// bit-string member are tested instead, which is what the code intended
-// (deviation D9).
-func mmsGetQualityTransient(v *mms.Value) bool {
-	if v == nil {
-		return false
-	}
-	switch v.Type() {
-	case mms.TypeStructure:
-		for i := 0; i < v.Len(); i++ {
-			e := v.Index(i)
-			if v.Len() == 2 && e != nil && e.Type() == mms.TypeBitString {
-				return mmsTestDoubleStateTransient(e)
+// structQualityFailed reads the quality of a structured object: its q
+// attribute when the attribute names are known, otherwise the first quality
+// bit string found (mmsGetQualityFailed).
+func structQualityFailed(v *mms.Value, childs []string) bool {
+	if v != nil && v.Type() == mms.TypeStructure && len(childs) == v.Len() {
+		for i, name := range childs {
+			if name != "q" {
+				continue
+			}
+			if q := v.Index(i); q != nil && q.Type() == mms.TypeBitString && q.BitLen() > 2 {
+				return model.QualityFromValue(q).Validity() != model.ValidityGood
 			}
 		}
-		if v.Len() > 0 {
-			return mmsGetQualityFailed(v.Index(0))
-		}
-	case mms.TypeBitString:
-		return mmsTestDoubleStateTransient(v)
 	}
-	return false
+	return mmsGetQualityFailed(v)
 }
 
 // mmsGetTimestamp looks for an IEC 61850 UtcTime inside an MMS value and
@@ -245,7 +232,7 @@ func doubleStateValue(v *mms.Value) float64 {
 // common data class, most specific first. An MMS structure arrives without
 // names, so the names come from the type description of the object; see
 // namedValueAttribute.
-var valueAttributeNames = []string{"stVal", "mag", "mxVal", "instMag", "setVal", "general"}
+var valueAttributeNames = []string{"stVal", "mag", "cVal", "mxVal", "instMag", "instCVal", "setVal", "general"}
 
 // namedValueAttribute picks the value attribute of a structured object by
 // name, given the attribute names of its type in order. It is what makes a

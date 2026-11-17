@@ -84,6 +84,27 @@ func csPipeline(topics []string) mongo.Pipeline {
 	return pipeline
 }
 
+// resyncPoints queues the current value of every point in the model.
+func resyncPoints(ctx context.Context, coll *mongo.Collection, g *Gateway) error {
+	readCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+	points, err := queryPoints(readCtx, coll, g.conn)
+	if err != nil {
+		return err
+	}
+	n := 0
+	for _, p := range points {
+		mp := g.built.ByTag[p.Tag]
+		if mp == nil || mp.IsCommand {
+			continue
+		}
+		enqueueUpdate(updateFromPoint(mp, p))
+		n++
+	}
+	jslog.Log(jslog.LevelBasic, "MongoDB CS - resynchronised %d point(s).", n)
+	return nil
+}
+
 func watchRealtimeData(ctx context.Context, db *mongo.Database, g *Gateway) error {
 	if err := jsmongo.Ping(db, 1*time.Second); err != nil {
 		return err
@@ -98,6 +119,15 @@ func watchRealtimeData(ctx context.Context, db *mongo.Database, g *Gateway) erro
 	defer cs.Close(context.Background())
 
 	jslog.Log(jslog.LevelNoLog, "MongoDB CS - listening for realtime data updates...")
+
+	// Whatever changed while no stream was open — a MongoDB outage, a
+	// failover, or the time between the startup snapshot and this first
+	// watch — is never delivered as an event. Read the current values now
+	// that the stream is open: anything that changes after this read
+	// arrives as an event and is applied after the snapshot.
+	if err := resyncPoints(ctx, coll, g); err != nil {
+		return err
+	}
 
 	for cs.Next(ctx) {
 		var ev struct {

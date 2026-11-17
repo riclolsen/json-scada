@@ -138,6 +138,10 @@ var browsedFCs = map[model.FC]bool{model.ST: true, model.MX: true}
 // report is one entry and one tag, and the same value extraction applies
 // to both.
 //
+// A composite data object (WYE, DEL, SEQ) has no value of its own: its
+// members (phsA, phsB, ...) are the points. It is registered once, with a
+// part per member, so it is still read in one request.
+//
 // Entries registered here are polled until a report covers them.
 func registerBrowsedPoints(ctx context.Context, conn *Iec61850Connection, ld string) {
 	names, err := conn.Client().MMS().GetNameList(ctx, mms.ClassNamedVariable, ld)
@@ -146,10 +150,9 @@ func registerBrowsedPoints(ctx context.Context, conn *Iec61850Connection, ld str
 		return
 	}
 
-	added := 0
 	controls := map[string]*controlObject{} // data object path -> what was seen
-	byLN := map[string][]browsedEntry{}     // logical node -> its entries
-	queued := map[*Iec61850Entry]bool{}     // already in byLN
+	byLN := map[string][]browsedEntry{}     // logical node -> its data objects, in name-list order
+	seen := map[string]bool{}               // entry keys already in byLN
 
 	for _, n := range names {
 		parts := strings.Split(n, "$")
@@ -173,77 +176,125 @@ func registerBrowsedPoints(ctx context.Context, conn *Iec61850Connection, ld str
 
 		ref := ld + "/" + parts[0] + "." + parts[2]
 		key := entryKey(ref, fc)
-		entry := conn.Entry(key)
-		if entry == nil {
-			entry = conn.AddEntry(key, &Iec61850Entry{
-				Path:        ref,
-				FC:          fc,
-				JsTag:       conn.Name + ":" + ref,
-				AutoPublish: true,
-			})
-			if entry.AutoPublish {
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		byLN[parts[0]] = append(byLN[parts[0]], browsedEntry{ref: ref, key: key, fc: fc, do: parts[2]})
+	}
+
+	added := 0
+	for ln, entries := range byLN {
+		// The type description gives the attribute names in the order the
+		// value carries them, and tells a composite object from a plain one.
+		spec, err := conn.Client().MMS().GetVariableAccessAttributes(ctx, ld, ln)
+		if err != nil {
+			jslog.Log(jslog.LevelDetailed, "%s %s/%s: cannot read the type description: %v", conn.Name, ld, ln, err)
+			spec = nil
+		}
+		for _, b := range entries {
+			if registerBrowsedEntry(conn, b, spec) {
 				added++
 			}
-		}
-		if len(parts) > 3 && !queued[entry] {
-			queued[entry] = true
-			byLN[parts[0]] = append(byLN[parts[0]], browsedEntry{entry: entry, fc: fc, do: parts[2]})
 		}
 	}
 	if added > 0 {
 		jslog.Log(jslog.LevelBasic, "%s %s: %d browsed object(s) registered for tag creation", conn.Name, ld, added)
 	}
-	learnBrowsedChilds(ctx, conn, ld, byLN)
 
 	if conn.CommandsEnabled {
 		registerControlObjects(ctx, conn, ld, controls)
 	}
 }
 
-// browsedEntry is a structured data object found in the name list, waiting
-// for its attribute names.
+// browsedEntry is a data object found in the name list.
 type browsedEntry struct {
-	entry *Iec61850Entry
-	fc    model.FC
-	do    string
+	ref string // "LD/LN.DO"
+	key string // entryKey(ref, fc)
+	fc  model.FC
+	do  string
 }
 
-// learnBrowsedChilds gives each browsed data object the names of its
-// attributes in the order its value carries them, which is what lets the
-// value be read by name (stVal, mag, …) rather than guessed from the types.
-//
-// The order comes from the logical node's type description, one request per
-// node. The name list cannot give it: MMS returns names in alphabetical order
-// ("Pos$q", "Pos$stVal", "Pos$t"), so stVal would point at the quality. When
-// the description cannot be read the names stay unknown and the value is
-// found by type.
-func learnBrowsedChilds(ctx context.Context, conn *Iec61850Connection, ld string, byLN map[string][]browsedEntry) {
-	for ln, entries := range byLN {
-		spec, err := conn.Client().MMS().GetVariableAccessAttributes(ctx, ld, ln)
-		if err != nil {
-			jslog.Log(jslog.LevelDetailed, "%s %s/%s: cannot read the type description: %v", conn.Name, ld, ln, err)
-			continue
+// registerBrowsedEntry registers one browsed data object, or completes the
+// entry already configured for it with its attribute names. It reports
+// whether a new entry was added.
+func registerBrowsedEntry(conn *Iec61850Connection, b browsedEntry, lnSpec *mms.TypeSpec) bool {
+	doSpec := specComponent(specComponent(lnSpec, b.fc.String()), b.do)
+
+	if entry := conn.Entry(b.key); entry != nil {
+		// Configured in realtimeData or registered by a report: only the
+		// attribute names are learnt, which is what reading by name needs.
+		if childs := specNames(doSpec); len(childs) > 0 && !isComposite(doSpec) {
+			conn.SetEntryChilds(entry, childs)
 		}
-		for _, b := range entries {
-			if childs := childsFromLNSpec(spec, b.fc, b.do); len(childs) > 0 {
-				conn.SetEntryChilds(b.entry, childs)
+		return false
+	}
+
+	entry := &Iec61850Entry{
+		Path:        b.ref,
+		FC:          b.fc,
+		JsTag:       conn.Name + ":" + b.ref,
+		AutoPublish: true,
+	}
+	if isComposite(doSpec) {
+		for _, c := range doSpec.Components {
+			if c.Spec == nil || c.Spec.Kind != mms.TypeStructure {
+				continue
 			}
+			ref := b.ref + "." + c.Name
+			entry.Parts = append(entry.Parts, &Iec61850Entry{
+				Path:        ref,
+				FC:          b.fc,
+				Childs:      specNames(c.Spec),
+				JsTag:       conn.Name + ":" + ref,
+				AutoPublish: true,
+			})
+		}
+		if len(entry.Parts) != len(doSpec.Components) {
+			// A member that is not a data object: the value cannot be split
+			// by position, so it stays one point.
+			entry.Parts = nil
+		}
+	} else {
+		entry.Childs = specNames(doSpec)
+	}
+	return conn.AddEntry(b.key, entry) == entry
+}
+
+// isComposite reports whether a data object's type is made of data objects
+// (WYE, DEL, SEQ) rather than of data attributes: it has no quality of its
+// own, and its members have one.
+func isComposite(doSpec *mms.TypeSpec) bool {
+	if doSpec == nil || doSpec.Kind != mms.TypeStructure || specComponent(doSpec, "q") != nil {
+		return false
+	}
+	for _, c := range doSpec.Components {
+		if specComponent(c.Spec, "q") != nil {
+			return true
 		}
 	}
+	return false
+}
+
+// specNames returns the component names of a structure type, in order.
+func specNames(spec *mms.TypeSpec) []string {
+	if spec == nil {
+		return nil
+	}
+	names := make([]string, 0, len(spec.Components))
+	for _, c := range spec.Components {
+		names = append(names, c.Name)
+	}
+	return names
 }
 
 // childsFromLNSpec returns, in declaration order, the attribute names of a
 // data object in a logical node's type description: LN -> FC -> DO -> names.
+//
+// The order cannot come from the name list: MMS returns names in alphabetical
+// order ("Pos$q", "Pos$stVal", "Pos$t"), so stVal would point at the quality.
 func childsFromLNSpec(spec *mms.TypeSpec, fc model.FC, do string) []string {
-	doSpec := specComponent(specComponent(spec, fc.String()), do)
-	if doSpec == nil {
-		return nil
-	}
-	names := make([]string, 0, len(doSpec.Components))
-	for _, c := range doSpec.Components {
-		names = append(names, c.Name)
-	}
-	return names
+	return specNames(specComponent(specComponent(spec, fc.String()), do))
 }
 
 func specComponent(spec *mms.TypeSpec, name string) *mms.TypeSpec {

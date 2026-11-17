@@ -29,7 +29,10 @@ const {
   AccessLevelFlag,
   NodeId,
   NodeIdType,
+  MessageSecurityMode,
+  SecurityPolicy,
 } = require('node-opcua')
+const crypto = require('crypto')
 const { MongoClient, Double } = require('mongodb')
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
@@ -191,14 +194,14 @@ process.on('unhandledRejection', (reason) =>
             process.exit(1)
           }
 
-          connections.forEach((connection) => {
+          for (const connection of connections) {
             if (connection.enabled === false) {
-              return
+              continue
             }
 
             if (!('_id' in connection)) {
               Log.log('Fatal error: malformed record for connection found!')
-              return
+              continue
             }
 
             // accumulate the union of group1 topics across all enabled
@@ -218,10 +221,13 @@ process.on('unhandledRejection', (reason) =>
               }
             }
 
-            connection.historyEnabled = connection.historyEnabled ?? true
+            // history is opt-in (documented default is false)
+            connection.historyEnabled = connection.historyEnabled === true
 
-            startOpcuaServer(connection, rtCollection, cmdCollection)
-          })
+            // awaited: a failure (e.g. port in use) throws to the outer catch,
+            // which drops everything and retries on the next loop
+            await startOpcuaServer(connection, rtCollection, cmdCollection)
+          }
 
           // one shared change stream dispatches updates to every server
           // (replaces the previous one-stream-per-connection approach)
@@ -233,7 +239,13 @@ process.on('unhandledRejection', (reason) =>
             cmdCollection
           ) {
             async function sendCommand(tag, variant) {
-              let cmdRes = await rtCollection.findOne({ tag: tag })
+              let cmdRes = null
+              try {
+                cmdRes = await rtCollection.findOne({ tag: tag })
+              } catch (e) {
+                Log.log('Error reading command tag! Tag: ' + tag + ' ' + e)
+                return StatusCodes.BadInternalError
+              }
 
               if (!cmdRes || !('_id' in cmdRes)) {
                 Log.log('Command not found! Tag: ' + tag)
@@ -247,9 +259,15 @@ process.on('unhandledRejection', (reason) =>
 
               // check the supervised point for commandBlocked
               if (cmdRes.supervisedOfCommand != 0) {
-                let supRes = await rtCollection.findOne({
-                  _id: cmdRes.supervisedOfCommand,
-                })
+                let supRes = null
+                try {
+                  supRes = await rtCollection.findOne({
+                    _id: cmdRes.supervisedOfCommand,
+                  })
+                } catch (e) {
+                  Log.log('Error reading supervised tag! Tag: ' + tag + ' ' + e)
+                  return StatusCodes.BadInternalError
+                }
                 if (supRes && '_id' in supRes) {
                   if (supRes?.commandBlocked !== false) {
                     Log.log('Command blocked (sup)! Tag: ' + tag)
@@ -258,52 +276,30 @@ process.on('unhandledRejection', (reason) =>
                 }
               }
 
-              let doubleVal = variant.value
-              let strVal = variant.value.toString()
-
-              switch (variant.dataType) {
-                case DataType.Boolean:
-                  doubleVal = variant.value ? 1 : 0
-                  strVal = variant.value.toString()
-                  break
-                case DataType.SByte:
-                case DataType.Byte:
-                case DataType.Int16:
-                case DataType.UInt16:
-                case DataType.Int32:
-                case DataType.UInt32:
-                case DataType.Int64:
-                case DataType.UInt64:
-                case DataType.Float:
-                case DataType.Double:
-                  doubleVal = variant.value
-                  strVal = variant.value.toString()
-                  break
-                case DataType.Variant:
-                case DataType.StatusCode:
-                case DataType.Guid:
-                case DataType.QualifiedName:
-                case DataType.LocalizedText:
-                case DataType.DiagnosticInfo:
-                case DataType.ByteString:
-                case DataType.ExpandedNodeId:
-                case DataType.NodeId:
-                case DataType.XmlElement:
-                case DataType.String:
-                  doubleVal = parseFloat(variant.value)
-                  strVal = variant.value.toString()
-                  break
+              const cv = variantToCommandValue(variant)
+              if (cv === null) {
+                Log.log('Command with invalid value type! Tag: ' + tag)
+                return StatusCodes.BadTypeMismatch
               }
+              let doubleVal = cv.doubleVal
+              let strVal = cv.strVal
 
               if (cmdRes?.type === 'digital') {
-                doubleVal = doubleVal ? 1 : 0;
-                if (cmdRes?.kconv1 === -1) 
-                  doubleVal = doubleVal ? 0 : 1;
+                doubleVal = doubleVal ? 1 : 0
+                if (cmdRes?.kconv1 === -1) doubleVal = doubleVal ? 0 : 1
                 strVal = doubleVal ? 'true' : 'false'
               }
-              if (cmdRes?.type === 'analog' && 'kconv1' in cmdRes && 'kconv2' in cmdRes) {
+              if (
+                cmdRes?.type === 'analog' &&
+                'kconv1' in cmdRes &&
+                'kconv2' in cmdRes
+              ) {
                 doubleVal = doubleVal * cmdRes?.kconv1 + cmdRes?.kconv2
                 strVal = doubleVal.toString()
+              }
+              if (!Number.isFinite(doubleVal)) {
+                Log.log('Command with non-finite value! Tag: ' + tag)
+                return StatusCodes.BadOutOfRange
               }
 
               // clear to send command
@@ -349,13 +345,14 @@ process.on('unhandledRejection', (reason) =>
             }
 
             let port = 4840
-            if ('ipAddressLocalBind' in connection) {
+            if (typeof connection.ipAddressLocalBind === 'string') {
               let ipPort = connection.ipAddressLocalBind.split(':')
-              if (ipPort.length > 1) port = parseInt(ipPort[1])
+              if (ipPort.length > 1 && parseInt(ipPort[1]) > 0)
+                port = parseInt(ipPort[1])
             }
 
             let timeout = 15000
-            if ('timeoutMs' in connection) {
+            if (parseInt(connection.timeoutMs) > 0) {
               timeout = parseInt(connection.timeoutMs)
             }
 
@@ -382,27 +379,96 @@ process.on('unhandledRejection', (reason) =>
             // history is enabled for this connection)
             const historyMaxReturn =
               parseInt(connection.historyMaxReturnDataValues) || 20000
-            let historyProp = {}
+            let historyCaps = {}
             if (connection?.historyEnabled === true) {
-              historyProp = {
-                serverCapabilities: {
-                  historyServerCapabilities: {
-                    accessHistoryDataCapability: true,
-                    accessHistoryEventsCapability: false,
-                    maxReturnDataValues: historyMaxReturn,
-                    maxReturnEventValues: 0,
-                    insertDataCapability: false,
-                    replaceDataCapability: false,
-                    updateDataCapability: false,
-                    deleteRawCapability: false,
-                    deleteAtTimeCapability: false,
-                    insertEventCapability: false,
-                    replaceEventCapability: false,
-                    updateEventCapability: false,
-                    deleteEventCapability: false,
-                  },
+              historyCaps = {
+                historyServerCapabilities: {
+                  accessHistoryDataCapability: true,
+                  accessHistoryEventsCapability: false,
+                  maxReturnDataValues: historyMaxReturn,
+                  maxReturnEventValues: 0,
+                  insertDataCapability: false,
+                  replaceDataCapability: false,
+                  updateDataCapability: false,
+                  deleteRawCapability: false,
+                  deleteAtTimeCapability: false,
+                  insertEventCapability: false,
+                  replaceEventCapability: false,
+                  updateEventCapability: false,
+                  deleteEventCapability: false,
                 },
               }
+            }
+
+            // Security. useSecurity=true removes the unsecured (None) endpoint:
+            // only signed/encrypted channels are offered. Users (optional list
+            // of {username, password}) enable username/password login and
+            // disable anonymous access unless allowAnonymous is set to true.
+            let securityProp = {}
+            if (connection?.useSecurity === true) {
+              securityProp = {
+                securityModes: [
+                  MessageSecurityMode.Sign,
+                  MessageSecurityMode.SignAndEncrypt,
+                ],
+                securityPolicies: [
+                  SecurityPolicy.Basic256Sha256,
+                  SecurityPolicy.Aes128_Sha256_RsaOaep,
+                  SecurityPolicy.Aes256_Sha256_RsaPss,
+                ],
+              }
+            }
+            const users = Array.isArray(connection.users)
+              ? connection.users.filter(
+                  (u) =>
+                    typeof u?.username === 'string' &&
+                    u.username !== '' &&
+                    typeof u?.password === 'string'
+                )
+              : []
+            const allowAnonymous =
+              typeof connection.allowAnonymous === 'boolean'
+                ? connection.allowAnonymous
+                : users.length === 0
+            const sha = (v) =>
+              crypto.createHash('sha256').update(String(v)).digest()
+            const userProp =
+              users.length > 0
+                ? {
+                    userManager: {
+                      isValidUser: (username, password) => {
+                        // hash both sides so the comparison is constant time
+                        // and independent of the secret lengths
+                        let ok = false
+                        for (const u of users) {
+                          const a = crypto.timingSafeEqual(
+                            sha(u.username),
+                            sha(username)
+                          )
+                          const b = crypto.timingSafeEqual(
+                            sha(u.password),
+                            sha(password)
+                          )
+                          if (a && b) ok = true
+                        }
+                        return ok
+                      },
+                    },
+                  }
+                : {}
+            if (
+              connection.commandsEnabled &&
+              allowAnonymous &&
+              connection.useSecurity !== true &&
+              (!Array.isArray(connection.ipAddresses) ||
+                connection.ipAddresses.length === 0)
+            ) {
+              Log.log(
+                'WARNING: connection ' +
+                  connection.name +
+                  ' accepts commands from anonymous clients over an unsecured channel from any address. Set useSecurity, users or ipAddresses.',
+                Log.levelMin
+              )
             }
 
             // Let's create an instance of OPCUAServer
@@ -417,15 +483,15 @@ process.on('unhandledRejection', (reason) =>
                 productUri: 'https://github.com/riclolsen/json-scada/',
                 // buildDate: new Date()
               },
-              maxSessions: 100,
-              maxConnectionsPerEndpoint: 10,
+              maxConnectionsPerEndpoint: 100,
+              serverCapabilities: { maxSessions: 100, ...historyCaps },
               disableDiscovery: false,
               timeout: timeout,
+              allowAnonymous: allowAnonymous,
               ...certificateProp,
               ...privateKeyProp,
-              ...historyProp,
-              // securityModes: [],
-              // securityPolicies: [],
+              ...securityProp,
+              ...userProp,
               // defaultSecureTokenLifetime: 10000000,
             })
             server._metrics = {}
@@ -475,33 +541,19 @@ process.on('unhandledRejection', (reason) =>
               browseName: 'JsonScadaServer',
             })
 
-            server.start(function () {
-              Log.log('Server is now listening ... (press CTRL+C to stop)')
-              server.endpoints.forEach(function (endpoint) {
-                endpoint.endpointDescriptions().forEach(function (desc) {
-                  Log.log(
-                    'Server EndpointUrl: ' +
-                      desc.endpointUrl +
-                      ' SecurityMode: ' +
-                      desc.securityMode.toString() +
-                      ' SecurityPolicy: ' +
-                      desc.securityPolicyUri
-                  )
-                })
-              })
-            })
-
             // returns true when the given remote address is allowed to
             // connect. An empty/absent ipAddresses list allows any address.
-            // A blank remote address is allowed (can't be matched reliably).
-            const isRemoteAddressAllowed = (remoteAddress) => {
+            // With a list configured, a blank/unknown address is refused
+            // (fail closed) unless allowBlank is set (used by the session-level
+            // fallback, where the channel gate already checked the address).
+            const isRemoteAddressAllowed = (remoteAddress, allowBlank = false) => {
               if (
                 !Array.isArray(connection.ipAddresses) ||
                 connection.ipAddresses.length === 0
               )
                 return true
               const addr = (remoteAddress || '').replace('::ffff:', '')
-              if (addr === '') return true
+              if (addr === '') return allowBlank
               return connection.ipAddresses.includes(addr)
             }
 
@@ -539,7 +591,7 @@ process.on('unhandledRejection', (reason) =>
 
               // fallback IP allow-list enforcement at session level (the
               // 'newChannel' handler is the primary gate)
-              if (!isRemoteAddressAllowed(session?.channel?.remoteAddress)) {
+              if (!isRemoteAddressAllowed(session?.channel?.remoteAddress, true)) {
                 Log.log('IP not authorized: closing session!')
                 try {
                   session.close()
@@ -554,11 +606,12 @@ process.on('unhandledRejection', (reason) =>
 
             let filterGroup1 = {}
 
-            if ('topics' in connection && 'length' in connection.topics) {
-              if (connection.topics.length > 0) {
-                filterGroup1.group1 = { $in: connection.topics }
-                Log.log('Filter tags: ' + JSON.stringify(filterGroup1))
-              }
+            const topics = Array.isArray(connection.topics)
+              ? connection.topics
+              : []
+            if (topics.length > 0) {
+              filterGroup1.group1 = { $in: topics }
+              Log.log('Filter tags: ' + JSON.stringify(filterGroup1))
             }
 
             let res = await rtCollection
@@ -690,6 +743,24 @@ process.on('unhandledRejection', (reason) =>
             // when protocolSourceBrowsePath is defined the origin of data comes from an OPC server, so we try to recreate the folder structure in this OPC-UA server
             // Avoid creating folders that already exist
             const browsePathFolders = {}
+            // index of candidate parent variables (OPC-sourced tags with an
+            // 'ns=' object address) by group1 + full browse path of the child,
+            // built once to avoid a scan of all tags per tag
+            const parentByBrowsePath = new Map()
+            for (const t of res) {
+              if (
+                typeof t.protocolSourceBrowsePath === 'string' &&
+                t.protocolSourceBrowsePath &&
+                typeof t.protocolSourceObjectAddress === 'string' &&
+                t.protocolSourceObjectAddress.startsWith('ns=')
+              ) {
+                const key = JSON.stringify([
+                  t.group1,
+                  t.protocolSourceBrowsePath + '/' + t.ungroupedDescription,
+                ])
+                if (!parentByBrowsePath.has(key)) parentByBrowsePath.set(key, t)
+              }
+            }
             for (let i = 0; i < res.length; i++) {
               if (
                 res[i].protocolSourceBrowsePath &&
@@ -697,26 +768,13 @@ process.on('unhandledRejection', (reason) =>
               ) {
                 // try to find a variable with same browse name and path and use its parent as folder
                 let found = false
-                for (let k = 0; k < res.length; k++) {
-                  if (
-                    i !== k &&
-                    res[k].group1 === res[i].group1 &&
-                    res[k].protocolSourceBrowsePath &&
-                    typeof res[k].protocolSourceBrowsePath === 'string' &&
-                    res[k].protocolSourceObjectAddress.startsWith('ns=')
-                  ) {
-                    if (
-                      res[k].protocolSourceBrowsePath +
-                        '/' +
-                        res[k].ungroupedDescription ===
-                      res[i].protocolSourceBrowsePath
-                    ) {
-                      res[i]._componentOf = res[k].protocolSourceObjectAddress
-                      res[i]._componentOfTag = res[k].tag
-                      found = true
-                      break
-                    }
-                  }
+                const parent = parentByBrowsePath.get(
+                  JSON.stringify([res[i].group1, res[i].protocolSourceBrowsePath])
+                )
+                if (parent && parent !== res[i]) {
+                  res[i]._componentOf = parent.protocolSourceObjectAddress
+                  res[i]._componentOfTag = parent.tag
+                  found = true
                 }
                 if (found) continue
 
@@ -725,7 +783,7 @@ process.on('unhandledRejection', (reason) =>
                 let pathKey = ''
 
                 // when there is more than one topic, create a base folder for each topic
-                if (connection.topics.length != 1) {
+                if (topics.length != 1) {
                   // avoid duplicating existing folder for same topic
                   if (!browsePathFolders[res[i].group1]) {
                     browsePathFolders[res[i].group1] = namespace.addFolder(
@@ -783,9 +841,17 @@ process.on('unhandledRejection', (reason) =>
                   cmdWriteProp = {
                     value: {
                       get: () => new Variant(variant),
-                      set: (variant) => {
+                      // async setter: the client gets the real outcome (blocked,
+                      // unknown tag, bad type, insert failure) instead of Good
+                      set: (variant, callback) => {
                         sendCommand(element.tag, variant)
-                        return StatusCodes.Good
+                          .then((sc) => callback(null, sc))
+                          .catch((e) => {
+                            Log.log(
+                              'Command error! Tag: ' + element.tag + ' ' + e
+                            )
+                            callback(null, StatusCodes.BadInternalError)
+                          })
                       },
                     },
                   }
@@ -842,17 +908,6 @@ process.on('unhandledRejection', (reason) =>
                     2
                   )
 
-                  let writeFlag = 0
-                  if (
-                    element.protocolSourceAccessLevel &&
-                    typeof element.protocolSourceAccessLevel === 'string'
-                  ) {
-                    if (!isNaN(parseInt(element.protocolSourceAccessLevel)))
-                      writeFlag =
-                        parseInt(element.protocolSourceAccessLevel) &
-                        AccessLevelFlag.CurrentWrite
-                  }
-
                   if (typeof element._componentOf === 'string') {
                     let pnId = element._componentOf.substring(
                       element._componentOf.indexOf(';') + 1
@@ -884,9 +939,12 @@ process.on('unhandledRejection', (reason) =>
                     minimumSamplingInterval: -1,
                     accessLevel:
                       AccessLevelFlag.CurrentRead |
+                      // only command variables are writable: a write to any
+                      // other variable would go nowhere (data comes from the
+                      // database), so it is not offered
                       (element.origin === 'command'
                         ? AccessLevelFlag.CurrentWrite
-                        : writeFlag),
+                        : 0),
                     ...cmdWriteProp,
                     // timestamped_get will not be used, values will be updated by change stream
                   })
@@ -898,10 +956,7 @@ process.on('unhandledRejection', (reason) =>
                         value: v.value,
                       },
                       element.invalid ? StatusCodes.Bad : StatusCodes.Good,
-                      !('timeTagAtSource' in element) ||
-                        element.timeTagAtSource === null
-                        ? new Date(0)
-                        : element.timeTagAtSource
+                      sourceTimestampOf(element)
                     )
                   }
 
@@ -942,6 +997,22 @@ process.on('unhandledRejection', (reason) =>
             }
 
             Log.log(`Finished creating OPC UA Variables.`)
+
+            // start listening only now that the address space is complete
+            await server.start()
+            Log.log('Server is now listening ... (press CTRL+C to stop)')
+            server.endpoints.forEach(function (endpoint) {
+              endpoint.endpointDescriptions().forEach(function (desc) {
+                Log.log(
+                  'Server EndpointUrl: ' +
+                    desc.endpointUrl +
+                    ' SecurityMode: ' +
+                    desc.securityMode.toString() +
+                    ' SecurityPolicy: ' +
+                    desc.securityPolicyUri
+                )
+              })
+            })
           }
 
           // Single shared change stream feeding all servers. Using one
@@ -997,66 +1068,71 @@ process.on('unhandledRejection', (reason) =>
             const changeStream = rtColl.watch(csPipeline, {
               fullDocument: 'updateLookup',
             })
+            const csClient = clientMongo
+
+            // A failed/closed stream drops the Mongo client so the main loop
+            // reconnects. Events from a stream that is no longer current (a
+            // late close after reconnection) must not touch the new client.
+            const onStreamDown = (what) => {
+              changeStream.removeAllListeners('change')
+              if (clientMongo !== csClient) return
+              Log.log('MongoDB - ' + what + ' ChangeStream!')
+              try {
+                csClient.close()
+              } catch (e) {}
+              clientMongo = null
+            }
 
             try {
-              changeStream.on('error', (change) => {
-                changeStream.on('change', () => {})
-                if (clientMongo) clientMongo.close()
-                clientMongo = null
-                Log.log('MongoDB - Error on ChangeStream!')
-              })
-              changeStream.on('close', (change) => {
-                clientMongo = null
-                Log.log('MongoDB - Closed ChangeStream!')
-              })
-              changeStream.on('end', (change) => {
-                changeStream.on('change', () => {})
-                clientMongo = null
-                Log.log('MongoDB - Ended ChangeStream!')
-              })
+              changeStream.on('error', () => onStreamDown('Error on'))
+              changeStream.on('close', () => onStreamDown('Closed'))
+              changeStream.on('end', () => onStreamDown('Ended'))
 
               // start to listen for changes
               changeStream.on('change', (change) => {
-                if (!change.fullDocument) return // deleted before the lookup
-                const v = convertValueVariant(change.fullDocument)
-                for (let i = 0; i < servers.length; i++) {
-                  try {
-                    const srv = servers[i]
+                try {
+                  if (!change.fullDocument) return // deleted before the lookup
+                  const v = convertValueVariant(change.fullDocument)
+                  if (!v.dataType) return
+                  for (let i = 0; i < servers.length; i++) {
+                    try {
+                      const srv = servers[i]
 
-                    const m = srv._metrics[change.fullDocument?.tag]
-                    if (m !== undefined) {
-                      m.setValueFromSource(
-                        {
-                          dataType: v.dataType,
-                          ...(v.arrayType ? { arrayType: v.arrayType } : {}),
-                          value: v.value,
-                        },
-                        change.fullDocument.invalid
-                          ? StatusCodes.Bad
-                          : StatusCodes.Good,
-                        !('timeTagAtSource' in change.fullDocument) ||
-                          change.fullDocument.timeTagAtSource === null
-                          ? new Date(0)
-                          : change.fullDocument.timeTagAtSource
-                      )
-
-                      if (Log.levelCurrent >= Log.levelDebug) {
-                        Log.log(
-                          srv._name + ' - Update: ' +
-                          change.fullDocument?.tag +
-                            ' ' +
-                            change.fullDocument?.value +
-                            (change.fullDocument?.invalid ? ' bad' : ' good'),
-                          Log.levelDebug
+                      const m = srv._metrics[change.fullDocument?.tag]
+                      if (m !== undefined) {
+                        m.setValueFromSource(
+                          {
+                            dataType: v.dataType,
+                            ...(v.arrayType ? { arrayType: v.arrayType } : {}),
+                            value: v.value,
+                          },
+                          change.fullDocument.invalid
+                            ? StatusCodes.Bad
+                            : StatusCodes.Good,
+                          sourceTimestampOf(change.fullDocument)
                         )
+
+                        if (Log.levelCurrent >= Log.levelDebug) {
+                          Log.log(
+                            srv._name +
+                              ' - Update: ' +
+                              change.fullDocument?.tag +
+                              ' ' +
+                              change.fullDocument?.value +
+                              (change.fullDocument?.invalid ? ' bad' : ' good'),
+                            Log.levelDebug
+                          )
+                        }
                       }
+                    } catch (e) {
+                      Log.log(
+                        'MongoDB - CS Variable Convert Error: ' + e,
+                        Log.levelMin
+                      )
                     }
-                  } catch (e) {
-                    Log.log(
-                      'MongoDB - CS Variable Convert Error: ' + e,
-                      Log.levelMin
-                    )
                   }
+                } catch (e) {
+                  Log.log('MongoDB - CS Change Error: ' + e, Log.levelMin)
                 }
               })
             } catch (e) {
@@ -1092,7 +1168,6 @@ process.on('unhandledRejection', (reason) =>
   }
 })()
 
-// find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
 // $set stats.<field> on a connection document. Connection documents are
 // created with stats: null, where a dotted $set fails with error 28
 // (PathNotViable): replace the null with an empty document and retry once.
@@ -1341,4 +1416,63 @@ function convertValueVariant(rtData) {
     dataType: dataType,
     arrayType: arrayType,
   }
+}
+
+// Source timestamp for a tag: the field time when valid, else the time the
+// value was received (never the 1970 epoch, which clients show as an error).
+function sourceTimestampOf(el) {
+  if (el?.timeTagAtSource && el.timeTagAtSourceOk !== false)
+    return el.timeTagAtSource
+  return el?.timeTag || new Date()
+}
+
+// Convert the Variant of a client write into the command value. Returns
+// { doubleVal, strVal } or null when the value cannot be used (null value,
+// array, or a non-numeric string).
+function variantToCommandValue(variant) {
+  if (!variant || variant.value === null || variant.value === undefined)
+    return null
+  if (variant.arrayType !== undefined && variant.arrayType !== VariantArrayType.Scalar)
+    return null
+  let doubleVal
+  let strVal
+  switch (variant.dataType) {
+    case DataType.Boolean:
+      doubleVal = variant.value ? 1 : 0
+      strVal = variant.value ? 'true' : 'false'
+      break
+    case DataType.Int64:
+    case DataType.UInt64:
+      // node-opcua represents 64-bit integers as [high, low] 32-bit words
+      if (Array.isArray(variant.value) && variant.value.length === 2) {
+        let hi = variant.value[0]
+        if (variant.dataType === DataType.Int64 && hi >= 0x80000000)
+          hi -= 0x100000000
+        doubleVal = hi * 4294967296 + variant.value[1]
+      } else doubleVal = Number(variant.value)
+      strVal = String(doubleVal)
+      break
+    case DataType.SByte:
+    case DataType.Byte:
+    case DataType.Int16:
+    case DataType.UInt16:
+    case DataType.Int32:
+    case DataType.UInt32:
+    case DataType.Float:
+    case DataType.Double:
+      doubleVal = Number(variant.value)
+      strVal = String(variant.value)
+      break
+    case DataType.String: {
+      const sv = String(variant.value).trim()
+      if (/^(true|false)$/i.test(sv)) doubleVal = /^true$/i.test(sv) ? 1 : 0
+      else doubleVal = parseFloat(sv)
+      strVal = String(variant.value)
+      break
+    }
+    default:
+      return null
+  }
+  if (!Number.isFinite(doubleVal)) return null
+  return { doubleVal, strVal }
 }

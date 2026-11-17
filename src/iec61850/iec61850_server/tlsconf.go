@@ -29,7 +29,11 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"os"
+
+	"github.com/youmark/pkcs8"
 
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jstls"
@@ -42,7 +46,7 @@ func buildTLS(conn *ServerConnection) (*tls.Config, error) {
 	if conn.LocalCertFilePath == "" || conn.PrivateKeyFilePath == "" {
 		return nil, fmt.Errorf("useSecurity requires localCertFilePath and privateKeyFilePath")
 	}
-	cert, err := tls.LoadX509KeyPair(conn.LocalCertFilePath, conn.PrivateKeyFilePath)
+	cert, err := loadKeyPair(conn.LocalCertFilePath, conn.PrivateKeyFilePath, conn.Password)
 	if err != nil {
 		return nil, fmt.Errorf("own certificate: %w", err)
 	}
@@ -60,6 +64,11 @@ func buildTLS(conn *ServerConnection) (*tls.Config, error) {
 	if conn.AllowOnlySpecificCertificates {
 		if pinned, err = jstls.LoadPinned(conn.PeerCertFilesPaths); err != nil {
 			return nil, err
+		}
+		// Pinning with nothing to pin to would otherwise switch every
+		// check off and accept any peer: refuse the configuration instead.
+		if len(pinned) == 0 {
+			return nil, fmt.Errorf("allowOnlySpecificCertificates is set but peerCertFilesPaths lists no certificate")
 		}
 	}
 
@@ -88,4 +97,49 @@ func buildTLS(conn *ServerConnection) (*tls.Config, error) {
 		cfg.CipherSuites = suites
 	}
 	return cfg, nil
+}
+
+// loadKeyPair loads the server's certificate and private key. The key may be
+// encrypted, with password as its passphrase — what the C# driver passed to
+// libiec61850's TLSConfiguration.SetOwnKey. Both encrypted PKCS#8 ("ENCRYPTED
+// PRIVATE KEY", OpenSSL's default) and legacy PEM encryption (Proc-Type:
+// 4,ENCRYPTED) are read. An unencrypted key is read as is, whatever the
+// password.
+func loadKeyPair(certPath, keyPath, password string) (tls.Certificate, error) {
+	if password == "" {
+		return tls.LoadX509KeyPair(certPath, keyPath)
+	}
+	certPEM, err := os.ReadFile(certPath)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	keyPEM, err := os.ReadFile(keyPath)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	block, _ := pem.Decode(keyPEM)
+	if block == nil {
+		return tls.Certificate{}, fmt.Errorf("%s: no PEM private key", keyPath)
+	}
+
+	var der []byte
+	switch {
+	case block.Type == "ENCRYPTED PRIVATE KEY":
+		key, err := pkcs8.ParsePKCS8PrivateKey(block.Bytes, []byte(password))
+		if err != nil {
+			return tls.Certificate{}, fmt.Errorf("%s: decrypting the private key: %w", keyPath, err)
+		}
+		if der, err = x509.MarshalPKCS8PrivateKey(key); err != nil {
+			return tls.Certificate{}, err
+		}
+		block = &pem.Block{Type: "PRIVATE KEY", Bytes: der}
+	//nolint:staticcheck // legacy PEM encryption is what older tools write
+	case x509.IsEncryptedPEMBlock(block):
+		//nolint:staticcheck
+		if der, err = x509.DecryptPEMBlock(block, []byte(password)); err != nil {
+			return tls.Certificate{}, fmt.Errorf("%s: decrypting the private key: %w", keyPath, err)
+		}
+		block = &pem.Block{Type: block.Type, Bytes: der}
+	}
+	return tls.X509KeyPair(certPEM, pem.EncodeToMemory(block))
 }

@@ -35,7 +35,7 @@ function LoadConfig() {
 
   if (!fs.existsSync(configFile)) {
     Log.log('Config - Error: config file not found!')
-    process.exit()
+    process.exit(1)
   }
 
   let rawFileContents = fs.readFileSync(configFile)
@@ -45,7 +45,7 @@ function LoadConfig() {
     configObj.mongoConnectionString === ''
   ) {
     Log.log('Error reading config file.')
-    process.exit()
+    process.exit(1)
   }
 
   Log.levelCurrent = Log.levelNormal

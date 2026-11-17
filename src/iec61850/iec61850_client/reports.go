@@ -45,6 +45,11 @@ type rcbState struct {
 	dataSetDot string // dotted form, "LD/LN.Name"
 	buffered   bool
 	collision  bool // another RCB advertises the same RptID
+
+	// The report being received in segments: its EntryID and the last
+	// segment seen. Only the association's reader goroutine touches these.
+	segEntryID []byte
+	segLast    uint32
 }
 
 // rcbToMMS splits an RCB reference into the MMS domain and item id:
@@ -109,8 +114,12 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 		jslog.Log(jslog.LevelBasic, "%s %s: %s has no data set - not activated", conn.Name, kind, rpname)
 		return
 	}
-	if _, list, ok := strings.Cut(dsList, "/"); ok {
-		if members, err := cli.MMS().GetNamedVariableListAttributes(ctx, domain, list); err != nil || len(members) == 0 {
+	// The data set may live in another logical device than the block, so it
+	// is read from the domain its own reference names.
+	var members []mms.VarRef
+	if dsDomain, list, ok := strings.Cut(dsList, "/"); ok {
+		var err error
+		if members, err = cli.MMS().GetNamedVariableListAttributes(ctx, dsDomain, list); err != nil || len(members) == 0 {
 			jslog.Log(jslog.LevelBasic, "%s %s: %s dataset members unavailable - report entries cannot be mapped, not activated",
 				conn.Name, kind, rpname)
 			return
@@ -156,23 +165,28 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 
 	configureRCB(conn, rcb, rpname, buffered)
 
-	enable := func() (*client.ReportSubscription, error) {
+	subscribe := func() (*client.ReportSubscription, error) {
 		return cli.EnableReporting(ctx, rcb, func(rep *client.Report) {
 			reportHandler(conn, st, rep)
 		})
 	}
-	sub, err := enable()
 	// The saved EntryID is gone from the IED's buffer (it restarted or
 	// purged it), so the IED refuses it. Retrying with the same ID would
 	// fail forever: resume from the IED's own position instead and forget
-	// the ID. Reports buffered in between are lost.
-	if err != nil && rcb.ResyncEntryID != nil && entryIDRefused(err) {
-		jslog.Log(jslog.LevelBasic, "%s BRCB: %s - entryId %s refused by the IED, enabling without resync",
-			conn.Name, rpname, entryIDString(rcb.ResyncEntryID))
-		conn.ForgetLastReportID(rpname)
-		rcb.ResyncEntryID = nil
-		sub, err = enable()
+	// the ID. Reports buffered in between are lost. This applies to every
+	// attempt, the one after a disable included.
+	enable := func() (*client.ReportSubscription, error) {
+		sub, err := subscribe()
+		if err != nil && rcb.ResyncEntryID != nil && entryIDRefused(err) {
+			jslog.Log(jslog.LevelBasic, "%s BRCB: %s - entryId %s refused by the IED, enabling without resync",
+				conn.Name, rpname, entryIDString(rcb.ResyncEntryID))
+			conn.ForgetLastReportID(rpname)
+			rcb.ResyncEntryID = nil
+			sub, err = subscribe()
+		}
+		return sub, err
 	}
+	sub, err := enable()
 	if err != nil {
 		// An RCB left enabled by a previous association refuses
 		// configuration writes; disable it and try once more. A block
@@ -202,6 +216,15 @@ func enableRCB(ctx context.Context, conn *Iec61850Connection, ref model.ObjectRe
 	}
 	conn.AddSubscription(sub)
 
+	// The members are delivered by this block from now on, so they leave
+	// the polling sweep (as the C# driver did when it enabled a block).
+	for _, m := range members {
+		ref, fc := model.FromMMS(m.Domain, m.Item)
+		if entry := conn.Entry(entryKey(string(ref), fc)); entry != nil {
+			conn.SetEntryReport(entry, rpname, st.dataSetRef)
+		}
+	}
+
 	if err := cli.TriggerGI(ctx, rcb); err != nil {
 		jslog.Log(jslog.LevelBasic, "%s %s: IED SetRCB exception - %v", conn.Name, kind, err)
 	}
@@ -215,8 +238,10 @@ func configureRCB(conn *Iec61850Connection, rcb *client.RCB, rpname string, buff
 	// only answers a GI request whose trigger is enabled in TrgOps
 	// (IEC 61850-7-2). Without it a conformant IED ignores the request and
 	// nothing arrives until the first change or integrity period. The C#
-	// driver left GI out.
-	rcb.TrgOps = model.TrgDataChange | model.TrgIntegrity | model.TrgGI
+	// driver left GI out. It also left out quality change, so a point that
+	// turned invalid with an unchanged value was only reported at the next
+	// integrity period (deviation D15).
+	rcb.TrgOps = model.TrgDataChange | model.TrgQualityChange | model.TrgIntegrity | model.TrgGI
 	rcb.IntgPd = time.Duration(conn.Class0ScanInterval) * time.Second
 	// parity: the IED keeps its own buffer time. GetRCB reads BufTm and
 	// EnableReporting writes back any non-zero value, a write the C# driver

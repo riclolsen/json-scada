@@ -32,6 +32,22 @@ func TestQueueFIFO(t *testing.T) {
 	}
 }
 
+func TestQueueRequeuePutsValuesFirst(t *testing.T) {
+	var q Queue[int]
+	q.Enqueue(1)
+	q.Enqueue(2)
+	a, _ := q.Dequeue()
+	b, _ := q.Dequeue()
+	q.Enqueue(3) // arrived while the batch was being written
+	q.Requeue([]int{a, b})
+	q.Requeue(nil)
+	for _, want := range []int{1, 2, 3} {
+		if v, _ := q.Dequeue(); v != want {
+			t.Fatalf("got %d, want %d", v, want)
+		}
+	}
+}
+
 func TestQueueTrimDropsOldest(t *testing.T) {
 	var q Queue[int]
 	for i := 1; i <= 5; i++ {
