@@ -16,7 +16,7 @@ document, same model layout and object references, no native library dependency.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_server`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.7.1 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.7.2 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1, and keep it in step with the client driver
 - **Binary:** `iec61850_server(.exe)` in `bin/`, as `platform-windows/build.bat` and
   `platform-linux/build.sh` build it
