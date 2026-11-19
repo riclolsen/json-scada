@@ -44,7 +44,8 @@ sudo dnf -y update
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" || js_build_prerequisites_failed
 sudo dnf -y remove golang nodejs java-17-openjdk-headless java-1.8.0-openjdk-headless inkscape
 sudo dnf -y install maven java-21-openjdk-devel || js_build_prerequisites_failed
-sudo dnf -qy module disable postgresql nodejs
+# AppStream modules exist on RHEL 9 only
+[ "$JS_EL" != 9 ] || sudo dnf -qy module disable postgresql nodejs
 sudo subscription-manager repos --enable codeready-builder-for-rhel-$JS_EL-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-$JS_EL.noarch.rpm
 sudo dnf -y install epel-release 

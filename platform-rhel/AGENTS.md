@@ -13,7 +13,7 @@ Automated installation and configuration scripts for deploying JSON-SCADA on RHE
 
 - **Installer:** one `json-scada-install.sh`. `JS_EL` = `rpm -E %rhel` (9 or 10, anything else exits) and `JS_ARCH` (`amd64`/`arm64`, from `uname -m`) gate the differences:
   - RHEL 9: Python `python3.12` + `python3-tkinter`, Docker CE (x86-64), RPM Fusion ffmpeg, TimescaleDB Toolkit package and `timescaledb_toolkit` extension (extension on x86-64 only)
-  - RHEL 10: Python `python3`, Podman only, no ffmpeg, no TimescaleDB Toolkit
+  - RHEL 10: Python `python3`, Podman only, no ffmpeg, no TimescaleDB Toolkit, no `dnf module disable` (RHEL 10 has no AppStream modules)
   - TimescaleDB: `timescaledb-2-postgresql-18` on RHEL 9 x86-64, `timescaledb_18` otherwise; ARM64 adds the pgdg `.rpmnew` fix and the TimescaleDB packagecloud repo and skips `timescaledb-tune`
   - CIM-EMS demo seed (`demo_cim_*.json`) on x86-64 only
 - `inkscape-plus-sage.sh` branches on `JS_EL` for its build dependencies
