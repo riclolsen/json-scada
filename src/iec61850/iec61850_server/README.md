@@ -3,7 +3,7 @@
 This driver exposes the JSON-SCADA real-time database as an **IEC 61850 MMS server**, acting as a telecontrol gateway / proxy in the sense of **IEC 61850-90-2**. It is written in Go on top of
 [go-iec61850](https://github.com/dscsystems/go-iec61850), a pure-Go implementation of the protocol stack.
 
-    Binary:  iec61850-server (iec61850-server.exe on Windows)
+    Binary:  iec61850_server (iec61850_server.exe on Windows)
     Service: JSON_SCADA_iec61850server (Windows), [program:iec61850server] (Linux)
     Log:     log/iec61850server.log
 
@@ -57,11 +57,11 @@ is written at startup.
 ## Command line
 
 ```
-iec61850-server [instance [logLevel [configFile]]]
+iec61850_server [instance [logLevel [configFile]]]
 ```
 
 ```
-iec61850-server selftest [port [bulkPoints]]
+iec61850_server selftest [port [bulkPoints]]
 ```
 
 - **instance** — `protocolDriverInstanceNumber`. *Optional, default 1*.
@@ -144,7 +144,7 @@ bounds protect clients rather than the server.
   whichever node wrote last.
 - **Listener**: if the listening socket fails, the server stops reporting itself as running and
   binds a new one within a second; the model and its values are kept.
-- **Port 102 on Linux** needs privileges: `setcap 'cap_net_bind_service=+ep' bin/iec61850-server`,
+- **Port 102 on Linux** needs privileges: `setcap 'cap_net_bind_service=+ep' bin/iec61850_server`,
   or use a port above 1024 in `ipAddressLocalBind`.
 - GOOSE/SV publishing, setting groups, log services and SCL export are out of scope.
 

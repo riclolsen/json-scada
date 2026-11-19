@@ -4,7 +4,7 @@ This driver implements a client for the IEC 61850 (MMS) protocol in Go, on top o
 [go-iec61850](https://github.com/dscsystems/go-iec61850) — a pure-Go implementation of the
 protocol stack.
 
-    Binary:  iec61850-client (iec61850-client.exe on Windows)
+    Binary:  iec61850_client (iec61850_client.exe on Windows)
     Service: JSON_SCADA_iec61850client (Windows), [program:iec61850client] (Linux)
     Log:     log/iec61850client.log
 
@@ -133,7 +133,7 @@ Create a regular command tag. Configure the connection number, IEC61850 object i
 
 ## Command line arguments
 
-    iec61850-client [instance [logLevel [configFile]]]
+    iec61850_client [instance [logLevel [configFile]]]
 
 - **1st — Instance number** [Integer] — driver instance to run. *Optional, default 1*.
 - **2nd — Log level** [Integer] — 0=minimum, 1=basic, 2=detailed, 3=debug. *Optional, default 1*.
