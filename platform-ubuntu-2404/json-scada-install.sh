@@ -100,7 +100,7 @@ js_begin
 
 # Update and install base packages
 sudo apt update
-sudo apt -y upgrade
+sudo env DEBIAN_FRONTEND=noninteractive UCF_FORCE_CONFFOLD=1 apt -y upgrade
 sudo apt -y install ffmpeg bzip2 tar build-essential openjdk-21-jdk maven php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev libsqlite3-dev libzstd-dev python3-venv
 sudo apt -y install dotnet-sdk-8.0 
 
@@ -189,7 +189,8 @@ sudo systemctl enable mongod
 # Install monitoring tools
 sudo sh -c "wget -q -O - https://repos.influxdata.com/influxdata-archive.key | gpg --dearmor --yes -o /etc/apt/keyrings/influxdata-archive.gpg"
 sudo sh -c "echo \"deb [signed-by=/etc/apt/keyrings/influxdata-archive.gpg] https://repos.influxdata.com/debian stable main\" > /etc/apt/sources.list.d/influxdata.list" 
-sudo apt-get update && sudo apt-get -y install telegraf
+# Keep the existing InfluxData source if its keyring package offers a replacement.
+sudo apt-get update && sudo env DEBIAN_FRONTEND=noninteractive UCF_FORCE_CONFFOLD=1 apt-get -y install telegraf
 for JS_F in telegraf-*.conf; do js_install_config $JS_F /etc/telegraf/telegraf.d/$JS_F; done
 sudo systemctl enable telegraf
 
@@ -215,7 +216,7 @@ sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.
 
 # Install Mongodb Compass
 sudo -u $JS_USERNAME sh -c "wget -N https://downloads.mongodb.com/compass/mongodb-compass_1.49.14_$ARCHITECTURE.deb"
-sudo apt install ./mongodb-compass_1.49.14_$ARCHITECTURE.deb
+sudo apt -y install ./mongodb-compass_1.49.14_$ARCHITECTURE.deb
 
 # Install Node.js
 curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -

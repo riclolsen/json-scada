@@ -13,6 +13,7 @@ Automated installation and configuration scripts for deploying JSON-SCADA on Ubu
 
 Identical structure to [platform-ubuntu-2404/AGENTS.md](../platform-ubuntu-2404/AGENTS.md):
 - Installer: `json-scada-install.sh`
+- Package upgrades and the Telegraf install use noninteractive debconf and keep existing ucf-managed configuration; the Compass install uses `apt -y`
 - **Upgrades:** re-running the installer over an existing installation upgrades it through `../platform-linux/install-lib.sh` (see [platform-linux/AGENTS.md](../platform-linux/AGENTS.md)): config files via `js_install_config`/`js_install_inis`, database init and demo import only without existing data, programs restored at the end
 - Process manager: `supervisord.conf`
 - One `.ini` file per service
