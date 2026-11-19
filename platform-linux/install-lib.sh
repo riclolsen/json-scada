@@ -1,4 +1,4 @@
-# install-lib.sh - shared helpers of the Linux installers (platform-ubuntu-*/platform-rhel*
+# install-lib.sh - shared helpers of the Linux installers (platform-ubuntu-*/platform-rhel
 # json-scada-install*.sh). They make re-running an installer over an existing installation a clean
 # upgrade: databases and local configuration are kept, the processes that were running are restarted.
 #
@@ -125,13 +125,20 @@ js_unmodified() {
     case "$1" in /*) JS_ABS=$1 ;; *) JS_ABS=$(pwd)/$1 ;; esac
     JS_ABS=$(echo "$JS_ABS" | sed 's#/\./#/#g')
     JS_REL=${JS_ABS#"$JS_ROOT"/}
-    for JS_C in $(js_git log --format=%H -n 300 -- "$JS_REL" 2>/dev/null); do
-        if [ "${3:-}" = na ]; then
-            JS_V=$(js_git show "$JS_C:$JS_REL" 2>/dev/null | js_sha_na)
-        else
-            JS_V=$(js_git show "$JS_C:$JS_REL" 2>/dev/null | sha256sum | cut -d' ' -f1)
-        fi
-        [ "$JS_V" = "$JS_CUR" ] && return 0
+    # earlier locations of the source file: platform-rhel/ merges the former platform-rhel9/ and platform-rhel10/
+    case "$JS_REL" in
+        platform-rhel/*) JS_RELS="$JS_REL platform-rhel9/${JS_REL#platform-rhel/} platform-rhel10/${JS_REL#platform-rhel/}" ;;
+        *) JS_RELS=$JS_REL ;;
+    esac
+    for JS_R in $JS_RELS; do
+        for JS_C in $(js_git log --format=%H -n 300 -- "$JS_R" 2>/dev/null); do
+            if [ "${3:-}" = na ]; then
+                JS_V=$(js_git show "$JS_C:$JS_R" 2>/dev/null | js_sha_na)
+            else
+                JS_V=$(js_git show "$JS_C:$JS_R" 2>/dev/null | sha256sum | cut -d' ' -f1)
+            fi
+            [ "$JS_V" = "$JS_CUR" ] && return 0
+        done
     done
     return 1
 }

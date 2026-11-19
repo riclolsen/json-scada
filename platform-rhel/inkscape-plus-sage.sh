@@ -1,14 +1,21 @@
 # to compile inkscape
 
-# INSTALL SCRIPT FOR JSON-SCADA ON RHEL9 AND COMPATIBLE PLATFORMS
+# INKSCAPE+SAGE BUILD SCRIPT FOR JSON-SCADA ON RHEL 9/10 AND COMPATIBLE PLATFORMS
 # username is supposed to be jsonscada
 JS_USERNAME=jsonscada
+JS_EL=$(rpm -E %rhel)
 
 # to compile inkscape
-sudo dnf -y install ninja-build ccache libjpeg-devel libxslt-devel gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel 
+sudo dnf -y install ninja-build ccache libjpeg-devel libxslt-devel gtkmm30-devel gspell-devel boost-devel poppler-devel poppler-glib-devel gtest-devel harfbuzz-devel
+[ "$JS_EL" = 9 ] || sudo dnf -y install gsl-devel lcms2-devel libgc-devel double-conversion-devel
 sudo dnf -y install libwpg-devel librevenge-devel libvisio-devel libcdr-devel readline-devel ImageMagick-c++-devel GraphicsMagick-c++-devel
 sudo dnf -y install pango-devel gsl-devel libsoup-devel lcms2-devel gc-devel double-conversion-devel potrace python3-scour
-sudo dnf -y install https://dl.rockylinux.org/pub/rocky/9/devel/$(arch)/os/Packages/p/potrace-devel-1.16-7.el9.0.1.$(arch).rpm
+if [ "$JS_EL" = 9 ]; then
+    sudo dnf -y install https://dl.rockylinux.org/pub/rocky/9/devel/$(arch)/os/Packages/p/potrace-devel-1.16-7.el9.0.1.$(arch).rpm
+else
+    sudo dnf -y install https://dl.rockylinux.org/pub/rocky/10/devel/$(arch)/os/Packages/p/potrace-1.16-16.el10.$(arch).rpm
+    sudo dnf -y install https://dl.rockylinux.org/pub/rocky/10/devel/$(arch)/os/Packages/p/potrace-devel-1.16-16.el10.$(arch).rpm
+fi
 sudo dnf -y install https://dl.rockylinux.org/pub/rocky/9/devel/$(arch)/os/Packages/l/ladspa-1.13-28.el9.$(arch).rpm
 
 cd /home/jsonscada

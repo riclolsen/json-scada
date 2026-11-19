@@ -124,8 +124,7 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 - [platform-windows/](platform-windows/AGENTS.md) — Windows installer, services, batch scripts, runtimes
 - [platform-ubuntu-2404/](platform-ubuntu-2404/AGENTS.md) — Ubuntu 24.04 automated installer & config
 - [platform-ubuntu-2604/](platform-ubuntu-2604/AGENTS.md) — Ubuntu 26.04 automated installer & config
-- [platform-rhel9/](platform-rhel9/AGENTS.md) — RHEL 9 / Rocky 9 / Alma 9 installer & config
-- [platform-rhel10/](platform-rhel10/AGENTS.md) — RHEL 10 / Rocky 10 / Alma 10 installer & config
+- [platform-rhel/](platform-rhel/AGENTS.md) — RHEL / Rocky / Alma 9 and 10 installer & config (one installer, x86-64 and ARM64)
 - [platform-linux/](platform-linux/AGENTS.md) — Generic Linux build/export/restart scripts
 
 ### Configuration

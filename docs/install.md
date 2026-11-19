@@ -98,11 +98,9 @@ Execute commands below for scripted installation:
     sudo dnf -y install git
     cd /home/jsonscada
     git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
-    cd json-scada/platform-rhel9
-    # or 
-    # cd json-scada/platform-rhel10
+    cd json-scada/platform-rhel
 
-    # one installer for x86-64 and ARM64 (the CPU architecture is detected)
+    # one installer for RHEL 9 and 10, x86-64 and ARM64 (version and CPU architecture are detected)
     sudo sh ./json-scada-install.sh
 
     # to compile and install Inkscape+SAGE, run the following command: 
@@ -282,19 +280,19 @@ The platform installers already install supervisor and copy the program definiti
 
 * Ubuntu: `platform-ubuntu-*/supervisord.conf` -> `/etc/supervisor/supervisord.conf`,
   and `platform-ubuntu-*/*.ini` -> `/etc/supervisor/conf.d/`.
-* RHEL: `platform-rhel*/supervisord.conf` -> `/etc/supervisord.conf`, and
-  `platform-rhel*/*.ini` -> `/etc/supervisord.d/`.
+* RHEL: `platform-rhel/supervisord.conf` -> `/etc/supervisord.conf`, and
+  `platform-rhel/*.ini` -> `/etc/supervisord.d/`.
 
 For a manual installation, do the same with the directory for your distribution
-(`platform-rhel9`, `platform-rhel10`, `platform-ubuntu-2404` or `platform-ubuntu-2604`):
+(`platform-rhel`, `platform-ubuntu-2404` or `platform-ubuntu-2604`):
 
     sudo apt install -y supervisor          # or: sudo dnf install -y supervisor
     sudo cp platform-ubuntu-2404/supervisord.conf /etc/supervisor/supervisord.conf
     sudo cp platform-ubuntu-2404/*.ini /etc/supervisor/conf.d/
 
     # or, on RHEL-compatible systems:
-    sudo cp platform-rhel9/supervisord.conf /etc/supervisord.conf
-    sudo cp platform-rhel9/*.ini /etc/supervisord.d/
+    sudo cp platform-rhel/supervisord.conf /etc/supervisord.conf
+    sudo cp platform-rhel/*.ini /etc/supervisord.d/
 
 Adjust the `/home/jsonscada/json-scada` paths and the `user=` line in the `.ini` files
 if you installed elsewhere. Programs that ship with `autostart=false` stay stopped until

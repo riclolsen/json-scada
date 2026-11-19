@@ -1,8 +1,13 @@
 #!/bin/bash
 
-# INSTALL SCRIPT FOR JSON-SCADA ON RHEL9 AND COMPATIBLE PLATFORMS (x86-64 AND ARM64)
+# INSTALL SCRIPT FOR JSON-SCADA ON RHEL 9/10 AND COMPATIBLE PLATFORMS (ROCKY, ALMA; x86-64 AND ARM64)
 # username is supposed to be jsonscada
 JS_USERNAME=jsonscada
+JS_EL=$(rpm -E %rhel)
+case $JS_EL in
+    9|10) ;;
+    *) echo "Unsupported RHEL major version: $JS_EL (supported: 9, 10)"; exit 1 ;;
+esac
 case $(uname -m) in
     x86_64) JS_ARCH=amd64 ;;
     aarch64|arm64) JS_ARCH=arm64 ;;
@@ -13,7 +18,7 @@ esac
 # sudo dnf -y install git
 # cd /home/jsonscada
 # git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
-# cd json-scada/platform-rhel9
+# cd json-scada/platform-rhel
 # sudo sh ./json-scada-install.sh
 
 # AFTER INSTALLATION
@@ -40,11 +45,17 @@ sudo dnf -y group install --with-optional "Development Tools" ".NET Development"
 sudo dnf -y remove golang nodejs java-17-openjdk-headless java-1.8.0-openjdk-headless inkscape
 sudo dnf -y install maven java-21-openjdk-devel || js_build_prerequisites_failed
 sudo dnf -qy module disable postgresql nodejs
-sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
-sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
+sudo subscription-manager repos --enable codeready-builder-for-rhel-$JS_EL-$(arch)-rpms
+sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-$JS_EL.noarch.rpm
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel python3-tkinter sqlite-devel glibc-langpack-en python3.12 python3.12-pip
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel glibc-langpack-en
+# Python for the CIM-EMS venv (src/cim-ems/install.sh needs Python 3.10+)
+if [ "$JS_EL" = 9 ]; then
+    sudo dnf -y install python3-tkinter python3.12 python3.12-pip
+else
+    sudo dnf -y install python3 python3-pip
+fi
 sudo dnf -y install curl --allowerasing
 sudo dnf -y install policycoreutils-python-utils setools-console audit
 
@@ -52,17 +63,22 @@ sudo dnf -y install policycoreutils-python-utils setools-console audit
 sudo dnf install -y yum-utils
 sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
 if [ "$JS_ARCH" = amd64 ]; then
-    sudo dnf -y install podman docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    sudo systemctl enable docker
-    sudo systemctl start docker
+    sudo dnf -y install podman
+    if [ "$JS_EL" = 9 ]; then
+        sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        sudo systemctl enable docker
+        sudo systemctl start docker
+    fi
 fi
 #sudo usermod -aG docker $JS_USERNAME
 #sudo chmod 777 /var/run/docker.sock
 
-sudo dnf install --nogpgcheck https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm
-sudo dnf install -y --nogpgcheck https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
-sudo dnf install -y ffmpeg ffmpeg-devel
-sudo dnf remove -y python3-circuitbreaker
+# ffmpeg from RPM Fusion (RHEL 9 only)
+if [ "$JS_EL" = 9 ]; then
+    sudo dnf install -y --nogpgcheck https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$JS_EL.noarch.rpm https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$JS_EL.noarch.rpm
+    sudo dnf install -y ffmpeg ffmpeg-devel
+    sudo dnf remove -y python3-circuitbreaker
+fi
 
 #sudo dnf install -y flatpak
 #flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
@@ -139,15 +155,18 @@ EOL
 sudo dnf -y update 
 js_pg_prepare 18
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-$(arch)/pgdg-redhat-repo-latest.noarch.rpm
-if [ "$JS_ARCH" = amd64 ]; then
-    sudo dnf -y install timescaledb-2-postgresql-18 postgresql18 postgresql18-contrib
-else
+if [ "$JS_ARCH" = arm64 ]; then
     sudo cp /etc/yum.repos.d/pgdg-redhat-all.repo.rpmnew /etc/yum.repos.d/pgdg-redhat-all.repo
     sudo dnf -y --enablerepo=pgdg18 update
     curl -s https://packagecloud.io/install/repositories/timescale/timescaledb/script.rpm.sh | sudo bash
+fi
+if [ "$JS_EL" = 9 ] && [ "$JS_ARCH" = amd64 ]; then
+    sudo dnf -y install timescaledb-2-postgresql-18 postgresql18 postgresql18-contrib
+else
     sudo dnf -y install timescaledb_18 postgresql18 postgresql18-contrib
 fi
-sudo dnf -y install timescaledb-toolkit-postgresql-18
+# TimescaleDB Toolkit packages exist for RHEL 9 only
+[ "$JS_EL" != 9 ] || sudo dnf -y install timescaledb-toolkit-postgresql-18
 [ -n "$JS_PG_KEEP_MAJOR" ] || sudo test -f /var/lib/pgsql/18/data/PG_VERSION || sudo /usr/pgsql-18/bin/postgresql-18-setup initdb
 # config postgresql local connections with trust method
 [ -n "$JS_PG_KEEP_MAJOR" ] || js_install_config pg_hba.conf /var/lib/pgsql/18/data/pg_hba.conf
@@ -198,7 +217,7 @@ sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.
 
 sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_24.x -o nodesource_setup.sh'
 sudo bash nodesource_setup.sh
-sudo dnf -y install nodejs  
+sudo dnf -y install nodejs
 
 sudo systemctl daemon-reload
 sudo systemctl restart postgresql-${JS_PG_KEEP_MAJOR:-18}
@@ -210,7 +229,7 @@ else
     psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1
     psql -U postgres -w -h localhost -f ../sql/metabaseappdb.sql metabaseappdb
     psql -U postgres -w -h localhost -f ../sql/grafanaappdb.sql grafanaappdb
-    [ "$JS_ARCH" != amd64 ] || psql -U postgres -w -h localhost -d json_scada -c "CREATE EXTENSION timescaledb_toolkit;"
+    [ "$JS_EL" != 9 ] || [ "$JS_ARCH" != amd64 ] || psql -U postgres -w -h localhost -d json_scada -c "CREATE EXTENSION timescaledb_toolkit;"
 fi
 
 if js_mongo_has_data; then

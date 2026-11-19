@@ -46,7 +46,7 @@ MongoDB semantics, no .NET runtime dependency. The C# driver has been removed fr
   `go test -run TestGoldenTagDoc -update`, then review the diff.
 - **Build:** `go build -ldflags="-s -w" -o ../../bin/opcua-client`
 - **Config:** `conf/json-scada.json` plus MongoDB documents; CLI `<instance> <logLevel> <configFile>`
-- **Platform integration:** `opcua_goclient.ini` supervisor units (`platform-rhel*`,
+- **Platform integration:** `opcua_goclient.ini` supervisor units (`platform-rhel`,
   `platform-ubuntu-*`), the `JSON_SCADA_opcuagoclient` NSSM service (`platform-windows`), and the
   `opcuago` variant of the `OPC-UA` entry in
   `src/server_realtime_auth/app/services/process-manager/driver-catalog.js`

@@ -78,7 +78,7 @@ go build -ldflags="-s -w" -o ../../bin/opcua-client
 
 | Platform | How |
 |---|---|
-| Linux (supervisor) | Enable `opcua_goclient.ini` from the platform folder (`platform-ubuntu-*`, `platform-rhel*`). It is installed with `autostart=false`. |
+| Linux (supervisor) | Enable `opcua_goclient.ini` from the platform folder (`platform-ubuntu-*`, `platform-rhel`). It is installed with `autostart=false`. |
 | Windows | `platform-windows/create_services.bat` installs the `JSON_SCADA_opcuagoclient` service with manual start. |
 | AdminUI process manager | Put `processExecutableVariant: "opcuago"` in the driver instance document and the process manager starts this binary for the `OPC-UA` driver. |
 

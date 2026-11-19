@@ -462,8 +462,7 @@ first-class citizen, wire it into (grep for an existing name like `"N8N"` or
    `remove_services.bat`, `start_protocols.bat` / `stop_protocols.bat` /
    `restart_protocols.bat`, and build steps in `platform-windows/build.bat` / `buildupd.bat`.
 6. **Linux** — build steps in `platform-linux/build.sh` and `[program:...]` sections in
-   `platform-rhel9/supervisord.conf`, `platform-rhel10/supervisord.conf`,
-   `platform-ubuntu-2404/supervisord.conf`, `platform-ubuntu-2604/supervisord.conf`
+   `platform-rhel/supervisord.conf`, `platform-ubuntu-2404/supervisord.conf`, `platform-ubuntu-2604/supervisord.conf`
    (create with `autostart=false` unless it should run by default).
 7. **Docker demo** — `demo-docker/docker-compose.yaml` if the driver should appear in the demo.
 8. **Log viewer** — add the driver's log file to `conf-templates/log.io-file.json`.

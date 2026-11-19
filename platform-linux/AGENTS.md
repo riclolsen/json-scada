@@ -7,7 +7,7 @@ Cross-distribution Linux scripts for building, exporting, and managing JSON-SCAD
 ## Ownership
 
 - platform-linux owns generic Linux management scripts
-- Distribution-specific installers (platform-ubuntu-*, platform-rhel*) own their automation
+- Distribution-specific installers (platform-ubuntu-*, platform-rhel) own their automation
 
 ## Local Contracts
 
@@ -18,7 +18,7 @@ Cross-distribution Linux scripts for building, exporting, and managing JSON-SCAD
 - `import_project.sh` — import project configuration
 - `install-lib.sh` — POSIX sh helpers sourced by every distribution installer (`. ../platform-linux/install-lib.sh; js_begin`) so that re-running an installer over an existing installation is a clean upgrade. Upgrade = `git pull` + the same installer again:
   - `js_begin` detects an existing installation (`/var/lib/json-scada/installed-commit`, the `server_realtime_auth.ini` program, `bin/calculations` or MongoDB `WiredTiger` data), refuses a checkout that does not contain the installed commit unless confirmed, backs up `conf/` and the Supervisor program dir to `backup/upgrade_<date>_<time>/`, records running programs in `/var/lib/json-scada/running-programs`, stops all Supervisor programs and raises the MongoDB FCV (`mongo-fcv.js`) before packages are upgraded
-  - `js_install_config SRC DEST` installs every system config file: on upgrades a locally changed DEST is kept and the new file goes to `DEST.jsnew` (return 2). "Unchanged" = checksum in `/var/lib/json-scada/config-manifest` or equal to any git version of SRC. `js_record` updates the manifest after a scripted edit of an installed file
+  - `js_install_config SRC DEST` installs every system config file: on upgrades a locally changed DEST is kept and the new file goes to `DEST.jsnew` (return 2). "Unchanged" = checksum in `/var/lib/json-scada/config-manifest` or equal to any git version of SRC (for `platform-rhel/` also of the former `platform-rhel9/`/`platform-rhel10/` paths). `js_record` updates the manifest after a scripted edit of an installed file
   - `js_install_inis SRCDIR DESTDIR` installs Supervisor programs: a changed program file gets the new version with its `autostart` kept per section (warning if other lines were changed too); unchanged program files no longer shipped are removed
   - `js_pg_prepare MAJOR` sets `JS_PG_HAS_DATA` and `JS_PG_KEEP_MAJOR` (data in an older major cluster: do not initdb, configure or start MAJOR; the old cluster keeps serving). `js_pg_upgrade` runs `ALTER EXTENSION ... UPDATE` for timescaledb/timescaledb_toolkit
   - `js_mongo_has_data` (json_scada database exists) chooses between the demo seed and `js_mongo_upgrade` (FCV + `mongo_seed/b_create-db.js` via mongosh stdin)
@@ -30,7 +30,7 @@ Cross-distribution Linux scripts for building, exporting, and managing JSON-SCAD
 - Scripts should be POSIX-compatible (bash + standard tools)
 - Assume `supervisorctl` for process management
 - Detect distribution at runtime for package-appropriate behavior
-- Installer rules for clean upgrades (all `platform-ubuntu-*`/`platform-rhel*` installers): copy system config files only with `js_install_config`/`js_install_inis`, never plain `cp`; database initialization and demo imports only in the "no data" branch; appends through `js_append_once`; services started with `systemctl restart` (package upgrades leave the old daemon running); `mkdir -p`; `gpg --dearmor --yes`; keep the user's files in `conf/` (copy templates only when missing)
+- Installer rules for clean upgrades (all `platform-ubuntu-*`/`platform-rhel` installers): copy system config files only with `js_install_config`/`js_install_inis`, never plain `cp`; database initialization and demo imports only in the "no data" branch; appends through `js_append_once`; services started with `systemctl restart` (package upgrades leave the old daemon running); `mkdir -p`; `gpg --dearmor --yes`; keep the user's files in `conf/` (copy templates only when missing)
 
 ## Verification
 
