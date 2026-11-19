@@ -12,6 +12,7 @@ Automated installation and configuration scripts for deploying JSON-SCADA on RHE
 ## Local Contracts
 
 - **Installer:** `json-scada-install.sh` (x86-64), `json-scada-install-aarch64.sh` (ARM64)
+- **Upgrades:** re-running the installer over an existing installation upgrades it through `../platform-linux/install-lib.sh` (see [platform-linux/AGENTS.md](../platform-linux/AGENTS.md)): config files via `js_install_config`/`js_install_inis`, database init and demo import only without existing data, programs restored at the end
 - **Process manager:** Supervisor (`supervisord.conf`)
 - **CIM-EMS driver:** `cim_ems.ini` and the Svedala demo field simulator `cim_ems_demo_field.ini` (both `autostart=false`); the x86-64 installer imports the Svedala demo seed (`demo_cim_*.json`) and adds `python3.12` (RHEL 9) or `python3` (RHEL 10) for the venv that `platform-linux/build.sh` creates. Not installed by the aarch64 installers
 - One `.ini` file per service (same structure as Ubuntu platform)

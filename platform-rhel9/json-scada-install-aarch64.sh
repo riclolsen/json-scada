@@ -17,8 +17,14 @@ JS_ARCH=arm64
 # Default credentials: admin / jsonscada
 # Metabase credentials: json@scada.com / jsonscada123
 
-sudo -u $JS_USERNAME sh -c 'mkdir ../log'
+sudo -u $JS_USERNAME sh -c 'mkdir -p ../log'
 sudo chmod +x *.sh
+
+# Re-running this script over an existing installation upgrades it: databases, conf/ and locally
+# changed configuration files are kept (see ../platform-linux/install-lib.sh).
+. ../platform-linux/install-lib.sh
+js_begin
+
 
 sudo dnf -y update 
 sudo dnf -y group install --with-optional "Development Tools" ".NET Development" maven
@@ -45,16 +51,16 @@ sudo dnf remove -y python3-circuitbreaker
 
 sudo update-crypto-policies --set LEGACY
 
-wget --inet4-only https://go.dev/dl/go1.27.1.linux-$JS_ARCH.tar.gz
+wget --inet4-only -N https://go.dev/dl/go1.27.1.linux-$JS_ARCH.tar.gz
 sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.27.1.linux-$JS_ARCH.tar.gz
 sudo -u $JS_USERNAME sh -c 'export PATH=$PATH:/usr/local/go/bin'
-sudo -u $JS_USERNAME sh -c 'echo "export PATH=\$PATH:/usr/local/go/bin" >> ~/.bashrc'
+js_append_once "$JS_HOME/.bashrc" 'export PATH=$PATH:/usr/local/go/bin' $JS_USERNAME
 source ~/.bashrc
 
 # for mongodb 
 # https://www.mongodb.com/docs/manual/tutorial/transparent-huge-pages/
 # https://www.mongodb.com/docs/manual/administration/production-checklist-operations/
-sudo sh -c 'echo "vm.max_map_count=102400" >> /etc/sysctl.conf'
+js_append_once /etc/sysctl.conf 'vm.max_map_count=102400'
 sudo tee /etc/systemd/system/disable-transparent-huge-pages.service  <<EOF
 Description=Disable Transparent Huge Pages (THP)
 DefaultDependencies=no
@@ -110,6 +116,7 @@ sslcacert=/etc/pki/tls/certs/ca-bundle.crt
 metadata_expire=300
 EOL
 sudo dnf -y update 
+js_pg_prepare 18
 sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-$(arch)/pgdg-redhat-repo-latest.noarch.rpm
 sudo cp /etc/yum.repos.d/pgdg-redhat-all.repo.rpmnew  /etc/yum.repos.d/pgdg-redhat-all.repo
 sudo dnf -y --enablerepo=pgdg18 update
@@ -118,15 +125,15 @@ sudo dnf -y install timescaledb_18 postgresql18 postgresql18-contrib
 sudo dnf -y install timescaledb-toolkit-postgresql-18
 # sudo timescaledb-tune -yes --pg-config=/usr/pgsql-18/bin/pg_config
 # config postgresql local connections with trust method
-sudo cp pg_hba.conf /var/lib/pgsql/18/data/
-sudo chown postgres:postgres /var/lib/pgsql/18/data/pg_hba.conf
-sudo cp postgresql.conf /var/lib/pgsql/18/data/
-sudo chown postgres:postgres /var/lib/pgsql/18/data/postgresql.conf
-sudo systemctl enable postgresql-18
-sudo /usr/pgsql-18/bin/postgresql-18-setup initdb
+[ -n "$JS_PG_KEEP_MAJOR" ] || js_install_config pg_hba.conf /var/lib/pgsql/18/data/pg_hba.conf
+[ -n "$JS_PG_KEEP_MAJOR" ] || sudo chown postgres:postgres /var/lib/pgsql/18/data/pg_hba.conf
+[ -n "$JS_PG_KEEP_MAJOR" ] || js_install_config postgresql.conf /var/lib/pgsql/18/data/postgresql.conf
+[ -n "$JS_PG_KEEP_MAJOR" ] || sudo chown postgres:postgres /var/lib/pgsql/18/data/postgresql.conf
+sudo systemctl enable postgresql-${JS_PG_KEEP_MAJOR:-18}
+[ -n "$JS_PG_KEEP_MAJOR" ] || sudo test -f /var/lib/pgsql/18/data/PG_VERSION || sudo /usr/pgsql-18/bin/postgresql-18-setup initdb
 
-sudo cp json_scada_*.conf /etc/nginx/conf.d/
-sudo cp nginx.conf /etc/nginx/
+for JS_F in json_scada_*.conf; do js_install_config $JS_F /etc/nginx/conf.d/$JS_F; done
+js_install_config nginx.conf /etc/nginx/nginx.conf
 sudo setsebool -P httpd_can_network_connect 1
 sudo systemctl enable nginx
 sudo systemctl enable php-fpm
@@ -134,30 +141,34 @@ sudo systemctl enable php-fpm
 sudo dnf -y install mongodb-org 
 sudo rpm -e mongodb-org mongodb-mongosh
 sudo dnf -y install mongodb-org mongodb-mongosh-shared-openssl3
-sudo cp mongod.conf /etc/
+js_install_config mongod.conf /etc/mongod.conf
 sudo systemctl enable mongod
 
 sudo dnf -y install telegraf
-sudo cp telegraf-*.conf /etc/telegraf/telegraf.d/
+for JS_F in telegraf-*.conf; do js_install_config $JS_F /etc/telegraf/telegraf.d/$JS_F; done
 sudo systemctl enable telegraf
 
 sudo dnf -y install supervisor
-sudo cp *.ini /etc/supervisord.d/
-sudo cp supervisord.conf /etc/supervisord.conf
+js_install_inis . /etc/supervisord.d
+js_install_config supervisord.conf /etc/supervisord.conf
+JS_SUPCONF_RC=$?
 # JSON-SCADA process manager: dir for driver services created from the AdminUI.
 # Owned by jsonscada so services can be managed without root; scanned by supervisord.
-mkdir -p ~/json-scada/conf/supervisor.d
+sudo -u $JS_USERNAME mkdir -p "$JS_ROOT/conf/supervisor.d"
 if ! grep -q 'json-scada/conf/supervisor.d' /etc/supervisord.conf; then
-  sudo sed -i "s#^files *= *supervisord.d/\*.ini#files = supervisord.d/*.ini $HOME/json-scada/conf/supervisor.d/*.ini#" /etc/supervisord.conf
+  sudo sed -i "s#^files *= *supervisord.d/\*.ini#files = supervisord.d/*.ini $JS_ROOT/conf/supervisor.d/*.ini#" /etc/supervisord.conf
 fi
+# installers before 0.72 could point the include at /root
+[ "$JS_ROOT" = /root/json-scada ] || sudo sed -i "s#/root/json-scada/conf/supervisor.d#$JS_ROOT/conf/supervisor.d#" /etc/supervisord.conf
+[ "$JS_SUPCONF_RC" != 0 ] || js_record /etc/supervisord.conf
 sudo systemctl enable supervisord
 
 sudo dnf install -y https://dl.grafana.com/grafana/release/13.2.2/grafana_13.2.2_34846740809_linux_$JS_ARCH.rpm
 #sudo dnf -y install grafana
-sudo cp grafana.ini /etc/grafana
+js_install_config grafana.ini /etc/grafana/grafana.ini
 sudo systemctl enable grafana-server
 
-sudo -u $JS_USERNAME sh -c 'mkdir ../metabase'
+sudo -u $JS_USERNAME sh -c 'mkdir -p ../metabase'
 sudo -u $JS_USERNAME sh -c 'wget --inet4-only https://downloads.metabase.com/v0.63.17.x/metabase.jar -O ../metabase/metabase.jar'
 
 sudo -u $JS_USERNAME sh -c 'curl -fsSL https://rpm.nodesource.com/setup_24.x -o nodesource_setup.sh'
@@ -165,25 +176,33 @@ sudo bash nodesource_setup.sh
 sudo dnf -y install nodejs
 
 sudo systemctl daemon-reload
-sudo systemctl start postgresql-18
-sudo systemctl start mongod
+sudo systemctl restart postgresql-${JS_PG_KEEP_MAJOR:-18}
+sudo systemctl restart mongod
 
-psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1
-psql -U postgres -w -h localhost -f ../sql/metabaseappdb.sql metabaseappdb
-psql -U postgres -w -h localhost -f ../sql/grafanaappdb.sql grafanaappdb
-# psql -U postgres -w -h localhost -d json_scada -c "CREATE EXTENSION timescaledb_toolkit;"
+if [ "$JS_PG_HAS_DATA" = 1 ]; then
+    js_pg_upgrade
+else
+    psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1
+    psql -U postgres -w -h localhost -f ../sql/metabaseappdb.sql metabaseappdb
+    psql -U postgres -w -h localhost -f ../sql/grafanaappdb.sql grafanaappdb
+    # psql -U postgres -w -h localhost -d json_scada -c "CREATE EXTENSION timescaledb_toolkit;"
+fi
 
-mongosh json_scada < ../mongo_seed/a_rs-init.js
-mongosh json_scada < ../mongo_seed/b_create-db.js
-mongoimport --db json_scada --collection protocolDriverInstances --type json --file ../demo-docker/mongo_seed/files/demo_instances.json 
-mongoimport --db json_scada --collection protocolConnections --type json --file ../demo-docker/mongo_seed/files/demo_connections_linux.json 
-mongoimport --db json_scada --collection realtimeData --type json --file ../demo-docker/mongo_seed/files/demo_data.json 
-mongoimport --db json_scada --collection processInstances --type json --file ../demo-docker/mongo_seed/files/demo_process_instances.json 
-mongoimport --db json_scada --collection users --type json --file ../demo-docker/mongo_seed/files/demo_users.json 
-mongoimport --db json_scada --collection roles --type json --file ../demo-docker/mongo_seed/files/demo_roles.json 
-mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbId:'demo'}})"
+if js_mongo_has_data; then
+    js_mongo_upgrade
+else
+    mongosh json_scada < ../mongo_seed/a_rs-init.js
+    mongosh json_scada < ../mongo_seed/b_create-db.js
+    mongoimport --db json_scada --collection protocolDriverInstances --type json --file ../demo-docker/mongo_seed/files/demo_instances.json 
+    mongoimport --db json_scada --collection protocolConnections --type json --file ../demo-docker/mongo_seed/files/demo_connections_linux.json 
+    mongoimport --db json_scada --collection realtimeData --type json --file ../demo-docker/mongo_seed/files/demo_data.json 
+    mongoimport --db json_scada --collection processInstances --type json --file ../demo-docker/mongo_seed/files/demo_process_instances.json 
+    mongoimport --db json_scada --collection users --type json --file ../demo-docker/mongo_seed/files/demo_users.json 
+    mongoimport --db json_scada --collection roles --type json --file ../demo-docker/mongo_seed/files/demo_roles.json 
+    mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbId:'demo'}})"
+fi
 
-sudo systemctl start grafana-server
+sudo systemctl restart grafana-server
 
 sudo ausearch -c 'mongod' --raw | audit2allow -M my-mongod
 sudo semodule -X 300 -i my-mongod.pp
@@ -191,21 +210,22 @@ sudo semodule -X 300 -i my-mongod.pp
 # Install a local Node-RED runtime for the NODE-RED driver.
 # The driver also works with a remote or containerized Node-RED.
 sudo -u $JS_USERNAME bash -c 'cd ~/json-scada && mkdir -p nodered-runtime && npm install --prefix nodered-runtime node-red node-red-contrib-jsonscada'
-sudo -u $JS_USERNAME bash -c 'cp ~/json-scada/conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js'
+sudo -u $JS_USERNAME bash -c '[ -f ~/json-scada/conf/node-red-settings.js ] || cp ~/json-scada/conf-templates/node-red-settings.js ~/json-scada/conf/node-red-settings.js'
 sudo -u $JS_USERNAME bash -c 'mkdir -p ~/json-scada/conf/node-red'
 # Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.
 
 cd ../platform-linux
 sudo -u $JS_USERNAME sh -c 'source ~/.bashrc;./build.sh linux-$JS_ARCH'
 
-sudo systemctl start php-fpm
-sudo systemctl start nginx
+sudo systemctl restart php-fpm
+sudo systemctl restart nginx
 sudo systemctl start supervisord
-sudo systemctl start telegraf
+sudo systemctl restart telegraf
 
 cd /home/jsonscada
 sleep 10
-sudo supervisorctl status
+[ "$JS_IS_UPGRADE" = 1 ] || sudo supervisorctl status
+js_finish
 # sudo -u $JS_USERNAME sh -c 'firefox http://localhost &'
 
 echo "To compile and install Inkscape+SAGE, run the following command: sudo sh ./inkscape-plus-sage.sh"

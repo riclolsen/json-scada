@@ -13,6 +13,7 @@ Automated installation and configuration scripts for deploying JSON-SCADA on RHE
 
 Identical structure to [platform-rhel9/AGENTS.md](../platform-rhel9/AGENTS.md):
 - Installers: `json-scada-install.sh`, `json-scada-install-aarch64.sh`
+- **Upgrades:** re-running the installer over an existing installation upgrades it through `../platform-linux/install-lib.sh` (see [platform-linux/AGENTS.md](../platform-linux/AGENTS.md)): config files via `js_install_config`/`js_install_inis`, database init and demo import only without existing data, programs restored at the end
 - Supervisor config: `supervisord.conf`
 - One `.ini` file per service
 - Nginx, MongoDB, PostgreSQL configs

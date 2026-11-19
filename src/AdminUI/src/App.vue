@@ -60,7 +60,7 @@ import AppSidebar from './components/AppSidebar.vue'
 
 const THEME_STORAGE_KEY = 'user-theme'
 
-const version = ref('v0.71-alpha')
+const version = ref('v0.72-alpha')
 const router = useRouter()
 const route = useRoute()
 const vuetifyTheme = useTheme()
