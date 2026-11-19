@@ -102,11 +102,8 @@ Execute commands below for scripted installation:
     # or 
     # cd json-scada/platform-rhel10
 
-    # on x86-64 platform run
+    # one installer for x86-64 and ARM64 (the CPU architecture is detected)
     sudo sh ./json-scada-install.sh
-
-    # on ARM64 platform instead run
-    # sudo sh ./json-scada-install-aarch64.sh 
 
     # to compile and install Inkscape+SAGE, run the following command: 
     sudo sh ./inkscape-plus-sage.sh

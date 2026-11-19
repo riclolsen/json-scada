@@ -1,15 +1,19 @@
 #!/bin/bash
 
-# INSTALL SCRIPT FOR JSON-SCADA ON RHEL9 AND COMPATIBLE PLATFORMS
+# INSTALL SCRIPT FOR JSON-SCADA ON RHEL10 AND COMPATIBLE PLATFORMS (x86-64 AND ARM64)
 # username is supposed to be jsonscada
 JS_USERNAME=jsonscada
-JS_ARCH=amd64
+case $(uname -m) in
+    x86_64) JS_ARCH=amd64 ;;
+    aarch64|arm64) JS_ARCH=arm64 ;;
+    *) echo "Unsupported CPU architecture: $(uname -m)"; exit 1 ;;
+esac
 
 # Execute commands below to prepare for this script:
 # sudo dnf -y install git
 # cd /home/jsonscada
 # git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
-# cd json-scada/platform-rhel9
+# cd json-scada/platform-rhel10
 # sudo sh ./json-scada-install.sh
 
 # AFTER INSTALLATION
@@ -34,14 +38,14 @@ sudo subscription-manager repos --enable codeready-builder-for-rhel-10-$(arch)-r
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel python3 python3-pip
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel python3 python3-pip maven
 sudo dnf -y install curl --allowerasing
 sudo dnf -y install policycoreutils-python-utils setools-console audit
 
 # docker/podman can be used to run DNP3 and OPC-DA on linux
 sudo dnf install -y yum-utils
 sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-sudo dnf -y install podman 
+[ "$JS_ARCH" != amd64 ] || sudo dnf -y install podman
 #sudo dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 #sudo systemctl enable docker
 #sudo systemctl start docker
@@ -128,7 +132,12 @@ metadata_expire=300
 EOL
 sudo dnf -y update 
 js_pg_prepare 18
-sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+sudo dnf -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-$(rpm -E %{rhel})-$(arch)/pgdg-redhat-repo-latest.noarch.rpm
+if [ "$JS_ARCH" = arm64 ]; then
+    sudo cp /etc/yum.repos.d/pgdg-redhat-all.repo.rpmnew /etc/yum.repos.d/pgdg-redhat-all.repo
+    sudo dnf -y --enablerepo=pgdg18 update
+    curl -s https://packagecloud.io/install/repositories/timescale/timescaledb/script.rpm.sh | sudo bash
+fi
 sudo dnf -y install timescaledb_18 postgresql18 postgresql18-contrib
 #sudo dnf -y install timescaledb-toolkit-postgresql-18
 [ -n "$JS_PG_KEEP_MAJOR" ] || sudo test -f /var/lib/pgsql/18/data/PG_VERSION || sudo /usr/pgsql-18/bin/postgresql-18-setup initdb
@@ -138,7 +147,7 @@ sudo dnf -y install timescaledb_18 postgresql18 postgresql18-contrib
 [ -n "$JS_PG_KEEP_MAJOR" ] || js_install_config postgresql.conf /var/lib/pgsql/18/data/postgresql.conf
 [ -n "$JS_PG_KEEP_MAJOR" ] || sudo chown postgres:postgres /var/lib/pgsql/18/data/postgresql.conf
 sudo systemctl enable postgresql-${JS_PG_KEEP_MAJOR:-18}
-[ "$JS_PG_HAS_DATA" = 1 ] || sudo timescaledb-tune -yes --pg-config=/usr/pgsql-18/bin/pg_config
+[ "$JS_PG_HAS_DATA" = 1 ] || [ "$JS_ARCH" != amd64 ] || sudo timescaledb-tune -yes --pg-config=/usr/pgsql-18/bin/pg_config
 
 for JS_F in json_scada_*.conf; do js_install_config $JS_F /etc/nginx/conf.d/$JS_F; done
 js_install_config nginx.conf /etc/nginx/nginx.conf
@@ -193,7 +202,7 @@ else
     psql -U postgres -w -h localhost -f ../sql/create_tables.sql template1
     psql -U postgres -w -h localhost -f ../sql/metabaseappdb.sql metabaseappdb
     psql -U postgres -w -h localhost -f ../sql/grafanaappdb.sql grafanaappdb
-    psql -U postgres -w -h localhost -d json_scada -c "CREATE EXTENSION timescaledb_toolkit;"
+    [ "$JS_ARCH" != amd64 ] || psql -U postgres -w -h localhost -d json_scada -c "CREATE EXTENSION timescaledb_toolkit;"
 fi
 
 if js_mongo_has_data; then
@@ -207,12 +216,14 @@ else
     mongoimport --db json_scada --collection processInstances --type json --file ../demo-docker/mongo_seed/files/demo_process_instances.json 
     mongoimport --db json_scada --collection users --type json --file ../demo-docker/mongo_seed/files/demo_users.json 
     mongoimport --db json_scada --collection roles --type json --file ../demo-docker/mongo_seed/files/demo_roles.json 
-    # Svedala CIM-EMS demo (ReliCapGrid model, CC BY-SA 4.0): model, bindings, field and result points
-    mongoimport --db json_scada --collection realtimeData --type json --file ../demo-docker/mongo_seed/files/demo_cim_data.json 
-    mongoimport --db json_scada --collection cimModels --type json --file ../demo-docker/mongo_seed/files/demo_cim_models.json 
-    mongoimport --db json_scada --collection cimMeasurementBindings --type json --file ../demo-docker/mongo_seed/files/demo_cim_bindings.json 
-    mongoimport --db json_scada --collection cimArtifacts.files --type json --file ../demo-docker/mongo_seed/files/demo_cim_artifacts_files.json 
-    mongoimport --db json_scada --collection cimArtifacts.chunks --type json --file ../demo-docker/mongo_seed/files/demo_cim_artifacts_chunks.json 
+    # Svedala CIM-EMS demo (ReliCapGrid model, CC BY-SA 4.0): model, bindings, field and result points (x86-64 only)
+    if [ "$JS_ARCH" = amd64 ]; then
+        mongoimport --db json_scada --collection realtimeData --type json --file ../demo-docker/mongo_seed/files/demo_cim_data.json
+        mongoimport --db json_scada --collection cimModels --type json --file ../demo-docker/mongo_seed/files/demo_cim_models.json
+        mongoimport --db json_scada --collection cimMeasurementBindings --type json --file ../demo-docker/mongo_seed/files/demo_cim_bindings.json
+        mongoimport --db json_scada --collection cimArtifacts.files --type json --file ../demo-docker/mongo_seed/files/demo_cim_artifacts_files.json
+        mongoimport --db json_scada --collection cimArtifacts.chunks --type json --file ../demo-docker/mongo_seed/files/demo_cim_artifacts_chunks.json
+    fi
     mongosh json_scada --eval "db.realtimeData.updateMany({_id:{\$gt:0}},{\$set:{dbId:'demo'}})"
 fi
 
