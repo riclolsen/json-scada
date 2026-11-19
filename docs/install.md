@@ -42,7 +42,18 @@ The Windows Installer has everything needed to run the system (MongoDB, PostgreS
 * Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
-* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* To upgrade, run the new installer over the existing installation (do not uninstall first: the uninstaller removes the databases). See [Upgrading on Windows](#upgrading-on-windows).
+
+### Upgrading on Windows
+
+Running a newer installer over an existing installation upgrades it in place:
+
+* MongoDB and PostgreSQL data, the `c:\json-scada\conf\` files, SVG displays and the settings of existing services are kept. The demo data is not imported again.
+* All JSON-SCADA services are stopped during the upgrade; the ones that were running are restarted at the end.
+* `conf\`, the `platform-windows` batch scripts and `mongod.cfg` are first backed up to `c:\json-scada\backup\upgrade_<date>_<time>\`.
+* Services added by the new version are registered with their default settings. New collections, indexes and validators are added to MongoDB, its feature compatibility version is raised (single-node replica set) and the TimescaleDB extension is updated.
+* If the bundled PostgreSQL major version differs from the data, the previous PostgreSQL binaries are kept in `platform-windows\postgresql-runtime-<version>` and keep serving the data; migrate it later with `pg_upgrade` or `pg_dumpall`.
+* Details and warnings are logged to `c:\json-scada\log\upgrade.log`. Installing an older version over a newer one is not supported.
 
 ### QUICKSTART
 
@@ -129,6 +140,25 @@ Execute commands below for scripted installation:
 
     # to compile and install Inkscape+SAGE, run the following command: 
     sudo sh ./inkscape-plus-sage.sh
+
+## Upgrading a scripted Linux installation
+
+Update the checkout and run the same installer again; it detects the existing installation and upgrades it:
+
+    cd /home/jsonscada/json-scada
+    git pull --recurse-submodules
+    cd platform-ubuntu-2404    # the platform directory used to install
+    sudo sh ./json-scada-install.sh
+
+If `git pull` refuses because `conf/json-scada.json` was changed locally, copy the file aside, run `git checkout conf/json-scada.json`, pull and copy it back.
+
+* MongoDB and PostgreSQL data, `conf/`, SVG displays and the AdminUI driver services in `conf/supervisor.d` are kept. The demo database is not imported again.
+* Supervisor programs are stopped during the upgrade; the ones that were running are started again at the end.
+* System configuration files installed by the script (Nginx, MongoDB, PostgreSQL, Grafana, Telegraf, Supervisor) are updated only if they were not changed locally. A changed file is kept and the new version is written next to it as `<file>.jsnew`. Supervisor program files take the new version but keep their `autostart` setting.
+* `conf/`, the Supervisor program files and every replaced system file are first backed up to `backup/upgrade_<date>_<time>/` in the checkout.
+* New MongoDB collections, indexes and validators are added, its feature compatibility version is raised (single-node replica set) and the TimescaleDB extensions are updated.
+* If the PostgreSQL data is in an older major version cluster than the one the script installs, that cluster keeps serving JSON-SCADA unchanged; the script prints the commands to migrate it.
+* Details and warnings are logged to `log/upgrade.log`. Set `JS_ASSUME_YES=1` to run without the confirmation prompt (`sudo JS_ASSUME_YES=1 sh ./json-scada-install.sh`). Checking out an older version and running the installer (downgrade) is not supported.
 
 ## Manual Installation
 

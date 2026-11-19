@@ -759,3 +759,18 @@ db.createCollection("cimContingencyLists");
 db.cimContingencyLists.createIndex({ listId: 1 }, { name: "cimContingencyListsIndex", unique: true });
 db.createCollection("cimStudyRequests");
 db.cimStudyRequests.createIndex({ status: 1, createdAt: 1 }, { name: "cimStudyRequestsIndex" });
+
+// Upgrades: createCollection above is a no-op for existing collections, so refresh their validators
+// (for example new protocol driver names). collMod does not revalidate existing documents.
+[
+  ["protocolDriverInstances", protocolDriverInstancesValidator],
+  ["processInstances", processInstancesValidator],
+  ["protocolConnections", protocolConnectionsValidator],
+].forEach(function (cv) {
+  db.runCommand({
+    collMod: cv[0],
+    validator: cv[1],
+    validationLevel: validationLevel,
+    validationAction: validationAction,
+  });
+});
