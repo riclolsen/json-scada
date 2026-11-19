@@ -17,6 +17,7 @@ Automated installation and configuration scripts for deploying JSON-SCADA on RHE
 - **Process manager:** Supervisor (`supervisord.conf`)
 - **CIM-EMS driver:** `cim_ems.ini` and the Svedala demo field simulator `cim_ems_demo_field.ini` (both `autostart=false`); the installer imports the Svedala demo seed (`demo_cim_*.json`) on x86-64 only and adds `python3.12` (RHEL 9) or `python3` (RHEL 10) for the venv that `platform-linux/build.sh` creates (x86-64 only)
 - One `.ini` file per service (same structure as Ubuntu platform)
+- IEC 61850: only `iec61850client.ini`/`iec61850server.ini`, which run the Go drivers `bin/iec61850_client`/`bin/iec61850_server` built by `platform-linux/build.sh`; no separate Go-variant programs
 - **No `telegraf.ini`** — RHEL uses separate `telegraf-input-*.conf` files
 - **No `grafana_server.ini`, `json_scada_http_open.conf`** — fewer config variants than Ubuntu
 - Nginx configs: `nginx.conf`, `json_scada_http.conf`, `json_scada_https.conf`, `fastcgi.conf`
