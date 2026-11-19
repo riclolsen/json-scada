@@ -126,11 +126,9 @@ Execute commands below for scripted installation:
     sudo apt install -y git
     cd /home/jsonscada
     git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
-    cd json-scada/platform-ubuntu-2404
-    # or 
-    # cd json-scada/platform-ubuntu-2604
+    cd json-scada/platform-ubuntu
 
-    # on x86-64 or ARM64 platform run
+    # one installer for Ubuntu 24.04 and 26.04, x86-64 and ARM64 (version and CPU architecture are detected)
     sudo sh ./json-scada-install.sh
 
     # to compile and install Inkscape+SAGE, run the following command: 
@@ -142,7 +140,7 @@ Update the checkout and run the same installer again; it detects the existing in
 
     cd /home/jsonscada/json-scada
     git pull --recurse-submodules
-    cd platform-ubuntu-2404    # the platform directory used to install
+    cd platform-ubuntu    # or platform-rhel (also for installations made from the former per-version folders)
     sudo sh ./json-scada-install.sh
 
 If `git pull` refuses because `conf/json-scada.json` was changed locally, copy the file aside, run `git checkout conf/json-scada.json`, pull and copy it back.
@@ -278,17 +276,17 @@ Install supervisor for your OS
 
 The platform installers already install supervisor and copy the program definitions:
 
-* Ubuntu: `platform-ubuntu-*/supervisord.conf` -> `/etc/supervisor/supervisord.conf`,
-  and `platform-ubuntu-*/*.ini` -> `/etc/supervisor/conf.d/`.
+* Ubuntu: `platform-ubuntu/supervisord.conf` -> `/etc/supervisor/supervisord.conf`,
+  and `platform-ubuntu/*.ini` -> `/etc/supervisor/conf.d/`.
 * RHEL: `platform-rhel/supervisord.conf` -> `/etc/supervisord.conf`, and
   `platform-rhel/*.ini` -> `/etc/supervisord.d/`.
 
 For a manual installation, do the same with the directory for your distribution
-(`platform-rhel`, `platform-ubuntu-2404` or `platform-ubuntu-2604`):
+(`platform-rhel` or `platform-ubuntu`):
 
     sudo apt install -y supervisor          # or: sudo dnf install -y supervisor
-    sudo cp platform-ubuntu-2404/supervisord.conf /etc/supervisor/supervisord.conf
-    sudo cp platform-ubuntu-2404/*.ini /etc/supervisor/conf.d/
+    sudo cp platform-ubuntu/supervisord.conf /etc/supervisor/supervisord.conf
+    sudo cp platform-ubuntu/*.ini /etc/supervisor/conf.d/
 
     # or, on RHEL-compatible systems:
     sudo cp platform-rhel/supervisord.conf /etc/supervisord.conf

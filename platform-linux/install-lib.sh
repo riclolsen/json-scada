@@ -1,4 +1,4 @@
-# install-lib.sh - shared helpers of the Linux installers (platform-ubuntu-*/platform-rhel
+# install-lib.sh - shared helpers of the Linux installers (platform-ubuntu/platform-rhel
 # json-scada-install*.sh). They make re-running an installer over an existing installation a clean
 # upgrade: databases and local configuration are kept, the processes that were running are restarted.
 #
@@ -125,9 +125,11 @@ js_unmodified() {
     case "$1" in /*) JS_ABS=$1 ;; *) JS_ABS=$(pwd)/$1 ;; esac
     JS_ABS=$(echo "$JS_ABS" | sed 's#/\./#/#g')
     JS_REL=${JS_ABS#"$JS_ROOT"/}
-    # earlier locations of the source file: platform-rhel/ merges the former platform-rhel9/ and platform-rhel10/
+    # earlier locations of the source file: platform-rhel/ and platform-ubuntu/ merge the former
+    # per-version platform-rhel9/, platform-rhel10/, platform-ubuntu-2404/ and platform-ubuntu-2604/
     case "$JS_REL" in
         platform-rhel/*) JS_RELS="$JS_REL platform-rhel9/${JS_REL#platform-rhel/} platform-rhel10/${JS_REL#platform-rhel/}" ;;
+        platform-ubuntu/*) JS_RELS="$JS_REL platform-ubuntu-2404/${JS_REL#platform-ubuntu/} platform-ubuntu-2604/${JS_REL#platform-ubuntu/}" ;;
         *) JS_RELS=$JS_REL ;;
     esac
     for JS_R in $JS_RELS; do

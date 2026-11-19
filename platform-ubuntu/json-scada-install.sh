@@ -1,15 +1,21 @@
 #!/bin/bash
 
-# INSTALL SCRIPT FOR JSON-SCADA ON UBUNTU 24.04
+# INSTALL SCRIPT FOR JSON-SCADA ON UBUNTU 24.04 AND 26.04 (x86-64 AND ARM64)
 # username is supposed to be jsonscada
 JS_USERNAME=jsonscada
+JS_UBUNTU=$(. /etc/os-release && echo "$VERSION_ID")
+case $JS_UBUNTU in
+    24.04) JS_DOTNET=dotnet-sdk-8.0; JS_PHP_FPM=php8.3-fpm ;;
+    26.04) JS_DOTNET=dotnet-sdk-10.0; JS_PHP_FPM=php8.5-fpm ;;
+    *) echo "Unsupported Ubuntu version: $JS_UBUNTU (supported: 24.04, 26.04)"; exit 1 ;;
+esac
 
 # Execute commands below to prepare for this script:
 # sudo apt update
 # sudo apt -y install git
 # cd /home/jsonscada
 # git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
-# cd json-scada/platform-ubuntu-2404
+# cd json-scada/platform-ubuntu
 # sudo sh ./json-scada-install.sh
 
 # AFTER INSTALLATION
@@ -26,6 +32,76 @@ esac
 sudo -u $JS_USERNAME sh -c 'mkdir -p ../log'
 sudo chmod +x *.sh
 
+# Kernel lock for MongoDB: Ubuntu 24.04 only
+if [ "$JS_UBUNTU" = 24.04 ]; then
+    # MONGODB WON'T START ON KERNEL 6.19 OR LATER!
+    # Use the Ubuntu 24.04 GA kernel (6.8), drop the HWE kernel track and lock the kernel.
+    # If the running kernel is 6.19 or newer, remove the newer kernels and ask for a reboot.
+
+    # Prints 1 if the kernel version given (e.g. 6.19.0-1-generic) is 6.19 or newer.
+    kernel_too_new() {
+        KMAJ=$(echo "$1" | cut -d. -f1)
+        KMIN=$(echo "$1" | cut -d. -f2 | sed 's/[^0-9].*//')
+        if [ "$KMAJ" -gt 6 ] || { [ "$KMAJ" -eq 6 ] && [ "$KMIN" -ge 19 ]; }; then
+            echo 1
+        else
+            echo 0
+        fi
+    }
+
+    sudo apt update
+    sudo apt -y install linux-generic linux-image-generic linux-headers-generic
+    sudo apt -y purge linux-generic-hwe-24.04 linux-image-generic-hwe-24.04 linux-headers-generic-hwe-24.04 linux-tools-generic-hwe-24.04
+    sudo apt-mark hold linux-generic linux-image-generic linux-headers-generic
+    # Block the HWE kernel metapackages so they cannot be pulled in again.
+    sudo tee /etc/apt/preferences.d/json-scada-kernel <<EOF
+# JSON-SCADA: MongoDB does not start on kernel 6.19 or later, keep the GA kernel.
+Package: linux-*-hwe-24.04 linux-hwe-*
+Pin: version *
+Pin-Priority: -1
+EOF
+
+    RUNNING_KERNEL=$(uname -r)
+    if [ "$(kernel_too_new "$RUNNING_KERNEL")" = "1" ]; then
+        echo "Running kernel $RUNNING_KERNEL is 6.19 or newer, MongoDB is not compatible with it."
+
+        # Versioned kernel packages (image, modules, headers, tools) of kernels 6.19 or newer.
+        NEW_KERNEL_PKGS=""
+        OLD_KERNEL_FOUND=0
+        for PKG in $(dpkg-query -W -f='${db:Status-Abbrev} ${Package}\n' 'linux-*' 2>/dev/null | awk '$1 ~ /^.i/ {print $2}'); do
+            PKG_KVER=$(echo "$PKG" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+-' | head -n 1)
+            [ -z "$PKG_KVER" ] && continue
+            if [ "$(kernel_too_new "$PKG_KVER")" = "1" ]; then
+                NEW_KERNEL_PKGS="$NEW_KERNEL_PKGS $PKG"
+            elif echo "$PKG" | grep -qE '^linux-image-(unsigned-)?[0-9]'; then
+                OLD_KERNEL_FOUND=1
+            fi
+        done
+
+        if [ "$OLD_KERNEL_FOUND" != "1" ]; then
+            echo "ERROR: no kernel older than 6.19 is installed, cannot remove the newer kernels."
+            echo "Install linux-generic (GA kernel) manually and run this script again."
+            exit 1
+        fi
+
+        echo "Removing kernel packages:$NEW_KERNEL_PKGS"
+        # Allow removing the running kernel (the machine is rebooted right after).
+        echo "linux-base linux-base/removing-running-kernel boolean false" | sudo debconf-set-selections
+        sudo env DEBIAN_FRONTEND=noninteractive apt-get -y purge $NEW_KERNEL_PKGS
+        sudo update-grub
+
+        echo ""
+        echo "An older kernel was installed and locked, kernels 6.19 or newer were removed."
+        echo "A REBOOT IS REQUIRED. After rebooting, run this installation script again."
+        printf "Reboot now? [y/N] "
+        read REBOOT_ANSWER < /dev/tty
+        case "$REBOOT_ANSWER" in
+            y|Y|yes|YES) sudo reboot ;;
+        esac
+        exit 0
+    fi
+fi
+
 # Re-running this script over an existing installation upgrades it: databases, conf/ and locally
 # changed configuration files are kept (see ../platform-linux/install-lib.sh).
 . ../platform-linux/install-lib.sh
@@ -35,7 +111,7 @@ js_begin
 sudo apt update
 sudo env DEBIAN_FRONTEND=noninteractive UCF_FORCE_CONFFOLD=1 apt -y upgrade
 sudo apt -y install ffmpeg bzip2 tar build-essential openjdk-21-jdk maven php-fpm nginx wget curl vim nano cmake libpcap-dev sasl2-bin libsasl2-dev libsqlite3-dev libzstd-dev python3-venv
-sudo apt -y install dotnet-sdk-10.0 
+sudo apt -y install $JS_DOTNET
 
 # Docker and container tools
 sudo apt -y remove containerd.io
@@ -112,7 +188,7 @@ sudo systemctl restart postgresql
 for JS_F in json_scada_http.conf json_scada_https.conf; do js_install_config $JS_F /etc/nginx/conf.d/$JS_F; done
 js_install_config nginx.conf /etc/nginx/nginx.conf
 sudo systemctl enable nginx
-sudo systemctl enable php8.5-fpm
+sudo systemctl enable $JS_PHP_FPM
 
 # Install MongoDB
 sudo apt -y install mongodb-org
@@ -211,7 +287,7 @@ cd ../platform-linux
 sudo -u $JS_USERNAME bash -c 'source ~/.bashrc;export PATH=$PATH:/usr/local/go/bin;./build.sh'
 
 # Start remaining services
-sudo systemctl restart php8.5-fpm
+sudo systemctl restart $JS_PHP_FPM
 sudo systemctl restart nginx
 sudo systemctl start supervisor
 sudo systemctl restart telegraf

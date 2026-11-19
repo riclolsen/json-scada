@@ -484,7 +484,7 @@ A rejected snapshot produces a `cimRuns` entry with `rejected-snapshot` and the 
 
 - Sustained run (at least one week on replayed or live data) with memory and latency tracking.
 - Model rollback drill, failover drill, backup/restore of new collections and GridFS.
-- Linux installers (`platform-ubuntu-2404`, `platform-ubuntu-2604`, `platform-rhel`): venv or bundled Python, supervisor ini `cim-ems.ini` (`autostart=false`, same layout as `platform-ubuntu-2404/plc4jclient.ini`).
+- Linux installers (`platform-ubuntu`, `platform-rhel`): venv or bundled Python, supervisor ini `cim-ems.ini` (`autostart=false`, same layout as `platform-ubuntu/plc4jclient.ini`).
 - Windows: embedded Python distribution, service creation in `platform-windows` scripts and `json-scada.nsi`.
 - Exit: install, upgrade and uninstall tested on each platform; documentation complete.
 
