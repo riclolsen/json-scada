@@ -12,6 +12,7 @@ Automated installation and configuration scripts for deploying JSON-SCADA on RHE
 ## Local Contracts
 
 - **Installer:** one `json-scada-install.sh` for x86-64 and ARM64; `JS_ARCH` (`amd64`/`arm64`) is detected from `uname -m` and gates the architecture-specific steps (Docker CE, TimescaleDB packages and `timescaledb-tune`, `timescaledb_toolkit` extension, CIM-EMS demo seed). Never add per-architecture installer copies
+- **Build prerequisites:** install development groups separately from Maven and the Java 21 JDK; if either installation fails, restore previously running programs on upgrades and stop. The build and PLC4J service use Java 21 explicitly
 - **Upgrades:** re-running the installer over an existing installation upgrades it through `../platform-linux/install-lib.sh` (see [platform-linux/AGENTS.md](../platform-linux/AGENTS.md)): config files via `js_install_config`/`js_install_inis`, database init and demo import only without existing data, programs restored at the end
 - **Process manager:** Supervisor (`supervisord.conf`)
 - **CIM-EMS driver:** `cim_ems.ini` and the Svedala demo field simulator `cim_ems_demo_field.ini` (both `autostart=false`); the installer imports the Svedala demo seed (`demo_cim_*.json`) on x86-64 only and adds `python3.12` (RHEL 9) or `python3` (RHEL 10) for the venv that `platform-linux/build.sh` creates (x86-64 only)

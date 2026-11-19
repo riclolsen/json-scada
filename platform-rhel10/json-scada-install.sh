@@ -29,16 +29,22 @@ sudo chmod +x *.sh
 . ../platform-linux/install-lib.sh
 js_begin
 
+js_build_prerequisites_failed() {
+    js_log 'ERROR: Could not install build prerequisites; installation aborted.'
+    [ "$JS_IS_UPGRADE" != 1 ] || js_restore_programs
+    exit 1
+}
 
 sudo dnf -y update 
-sudo dnf -y group install --with-optional "Development Tools" ".NET Development" maven
+sudo dnf -y group install --with-optional "Development Tools" ".NET Development" || js_build_prerequisites_failed
 sudo dnf -y remove golang nodejs java-17-openjdk-headless java-1.8.0-openjdk-headless inkscape
+sudo dnf -y install maven java-21-openjdk-devel || js_build_prerequisites_failed
 sudo dnf -qy module disable postgresql nodejs
 sudo subscription-manager repos --enable codeready-builder-for-rhel-10-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm 
 sudo dnf -y install epel-release 
 sudo dnf config-manager --set-enabled crb
-sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel python3 python3-pip maven
+sudo dnf -y install tar vim nano nginx wget chkconfig dotnet-sdk-8.0 java-21-openjdk php cmake libpcap-devel cyrus-sasl-lib cyrus-sasl-devel sqlite-devel python3 python3-pip
 sudo dnf -y install curl --allowerasing
 sudo dnf -y install policycoreutils-python-utils setools-console audit
 
@@ -240,7 +246,7 @@ sudo -u $JS_USERNAME bash -c 'mkdir -p ~/json-scada/conf/node-red'
 # Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.
 
 cd ../platform-linux 
-sudo -u $JS_USERNAME sh -c 'source ~/.bashrc;./build.sh'
+sudo -u $JS_USERNAME env JAVA_HOME=/usr/lib/jvm/java-21-openjdk sh -c 'source ~/.bashrc; export PATH="$JAVA_HOME/bin:$PATH"; ./build.sh'
 
 sudo systemctl restart php-fpm
 sudo systemctl restart nginx

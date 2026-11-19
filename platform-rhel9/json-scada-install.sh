@@ -29,10 +29,16 @@ sudo chmod +x *.sh
 . ../platform-linux/install-lib.sh
 js_begin
 
+js_build_prerequisites_failed() {
+    js_log 'ERROR: Could not install build prerequisites; installation aborted.'
+    [ "$JS_IS_UPGRADE" != 1 ] || js_restore_programs
+    exit 1
+}
 
 sudo dnf -y update 
-sudo dnf -y group install --with-optional "Development Tools" ".NET Development" maven
+sudo dnf -y group install --with-optional "Development Tools" ".NET Development" || js_build_prerequisites_failed
 sudo dnf -y remove golang nodejs java-17-openjdk-headless java-1.8.0-openjdk-headless inkscape
+sudo dnf -y install maven java-21-openjdk-devel || js_build_prerequisites_failed
 sudo dnf -qy module disable postgresql nodejs
 sudo subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
 sudo dnf -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm 
@@ -242,7 +248,7 @@ sudo -u $JS_USERNAME bash -c 'mkdir -p ~/json-scada/conf/node-red'
 # Then enable the nodered_driver (and optionally nodered_runtime) supervisor programs.
 
 cd ../platform-linux 
-sudo -u $JS_USERNAME sh -c 'source ~/.bashrc;./build.sh'
+sudo -u $JS_USERNAME env JAVA_HOME=/usr/lib/jvm/java-21-openjdk sh -c 'source ~/.bashrc; export PATH="$JAVA_HOME/bin:$PATH"; ./build.sh'
 
 sudo systemctl restart php-fpm
 sudo systemctl restart nginx
