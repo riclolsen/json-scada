@@ -6,7 +6,8 @@ The JSON-SCADA MongoDB database is comprised of the following collections.
 * _protocolDriverInstances_ - Configuration of protocol drivers instances. See specific protocol for documentation.
 * _protocolConnections_ - Configuration of protocol connections. See specific protocol for documentation.
 * _commandsQueue_ - Queue for commands.
-* _soeData_ - Sequence of Events data. This is a Capped Collection, it has a limited size.
+* _soeData_ - Sequence of Events data. Normal collection; events older than the SOE retention are removed once a day. See [_soeData_ collection](#soedata-collection).
+* _alarmsData_ - Alarm list: one document per alarm occurrence, acknowledged by the operators. See [_alarmsData_ collection](#alarmsdata-collection).
 * _processInstances_ - Configuration and information about JSON-SCADA instances of processes.
 
 Please notice that all numeric fields from the schema is recorded as BSON Doubles (64 bit floating point). However, some numeric fields are expected to contain only integer values. When numbers are updated by the Mongo Shell manually, all numeric data is converted to BSON Doubles by default. Some languages like Node.js can cause values to be stored as integers or doubles depending on the current value. It is important that values are always stored as BSON Doubles as otherwise problems may be encountered by protocol drivers, specially those programmed in C#/DotNet Core.
@@ -197,7 +198,7 @@ Example document.
 
 ### Fields updated by the system.
 
-* _**_alarmed_**_ [Boolean] - When true means the point is alarmed. **Mandatory parameter**.
+* _**_alarmed_**_ [Boolean] - Summary of the alarm list: true while the point has unacknowledged alarms (set by the data processor on a new alarm, cleared by the acknowledgement of the point). The alarm occurrences are the _alarmsData_ documents. **Mandatory parameter**.
 * _**_alarmRange_**_ [Double] - Current alarm range for analog tags. 0=normal, 1/2/3=hiLimit/hihiLimit/hihihiLimit violated, -1/-2/-3=loLimit/loloLimit/lololoLimit violated (the most severe level violated). **Mandatory parameter**.
 * _**_alerted_**_ [Boolean] - When true means the point is alerted (Grafana alert). **Optional parameter**.
 * _**_alertState_**_ [String] - Grafana alert state name. **Optional parameter**.
@@ -301,7 +302,7 @@ Example document
 
 Here are stored Sequence of Events (SOE) information for digital values with source timestamps.
 
-This is a Capped Collection, it has a limited size. Old documents are overwritten when the maximum sized is reached. Data here is only written for digital states when the protocol provides a source timestamp (like for IEC 60870-5-104 type 30).
+Normal collection: events older than `soeRetentionDays` (see [Data retention](#data-retention)) are removed once a day. Older installs had a capped collection; the data processor converts it once (renamed to `soeData_capped_<ms>`, the events within the retention copied back to a new `soeData`, then dropped). Data here is written for digital states when the protocol provides a source timestamp (like for IEC 60870-5-104 type 30) and for the limit violations of analog points.
 
     {
         "_id":{
@@ -336,6 +337,55 @@ This is a Capped Collection, it has a limited size. Old documents are overwritte
 * _**_timeTagAtSource_**_ [Date] - Timestamp for the change stamped by the source device (RTU/IED).
 * _**_timeTagAtSourceOk_**_ [Boolean] - When true means the source timestamp is considered ok.
 * _**_ack_**_ [Int32] - Operator acknowledgement (0=not acknowledged, 1=acknowledged, 2=eliminated from lists).
+
+## _alarmsData_ collection
+
+The alarm list. _cs_data_processor_ (and _cs_data_processor-go_) insert one document per alarm occurrence: an analog point entering a more severe or different limit range (`alarmRange`), or a digital point changing to an alarm state. A new condition of a point first ends (`active: false`, `timeTagNormal`) the point's earlier active alarms, then inserts the new alarm. Points with `alarmDisabled: true` raise no alarm. _server_realtime_auth_ acknowledges alarms (`ack: 1`, `timeTagAck`, `ackUser`): one alarm, all the alarms of a point, or all alarms (restricted to the user's _group1_ list). The Alarms Viewer (Admin UI `/alarms-viewer`) lists the alarms not acknowledged or still active (realtime) and every alarm raised in a period (historical).
+
+    {
+        "_id": { "$oid": "6740c1f05afe8a451246eb4e" },
+        "tag": "KAW2TR1-21MW",
+        "pointKey": 3001,
+        "group1": "KAW2",
+        "group2": "TR1",
+        "description": "KAW2~TR1~Active Power",
+        "type": "analog",
+        "priority": 1,
+        "value": 61.2,
+        "valueString": "61.2 MW",
+        "alarmText": "61.2 MW ⤉ 🚩 HIHI",
+        "timeTag": { "$date": "2026-11-21T17:31:03.702Z" },
+        "timeTagAtSource": null,
+        "timeTagAtSourceOk": false,
+        "active": true,
+        "ack": 0,
+        "timeTagAck": null,
+        "ackUser": null,
+        "timeTagNormal": null,
+        "alarmRange": 2
+    }
+
+* _**__id_**_ [ObjectId] - MongoDB document id (the `alarm_id` of a single alarm acknowledgement).
+* _**_tag_**_, _**_pointKey_**_, _**_group1_**_, _**_group2_**_, _**_description_**_, _**_type_**_, _**_priority_**_ - Copied from the _realtimeData_ point.
+* _**_value_**_ [Double], _**_valueString_**_ [String] - Value that raised the alarm.
+* _**_alarmText_**_ [String] - Alarm text: analog, the value and the violated limit level; digital, `eventTextTrue`/`eventTextFalse`, else the value text.
+* _**_timeTag_**_ [Date] - Time the alarm was raised.
+* _**_timeTagAtSource_**_ [Date], _**_timeTagAtSourceOk_**_ [Boolean] - Source timestamp of the value.
+* _**_active_**_ [Boolean] - True while the condition lasts. Digital alarms with `alarmState` other than 0 or 1 (alarm on any change) are inserted inactive.
+* _**_ack_**_ [Int32] - 0 = not acknowledged, 1 = acknowledged.
+* _**_timeTagAck_**_ [Date], _**_ackUser_**_ [String] - Acknowledgement time and user (null until acknowledged).
+* _**_timeTagNormal_**_ [Date] - Time the alarm became inactive (null while active).
+* _**_alarmRange_**_ [Double] - Analog only: the violated range, as in _realtimeData_ `alarmRange`.
+
+## Data retention
+
+Instance 1 of _cs_data_processor_ (or _cs_data_processor-go_), on the active node, runs the retention once a day (first run 1 minute after start, then it checks every hour whether 24 h have passed since the last successful run). The retentions are whole days read from the _systemSettings_ document `{ "key": "global" }` (`soeRetentionDays`, `alarmsRetentionDays`, `histRetentionDays`; 60 when absent or invalid, at most 36500):
+
+* _soeData_ - events with `timeTag` older than the retention are deleted.
+* _alarmsData_ - acknowledged, inactive alarms with `timeTag` older than the retention are deleted; unacknowledged or active alarms are kept.
+* _hist_ - the time series `expireAfterSeconds` is set to the retention (MongoDB expires the buckets).
+
+The same run creates the _alarmsData_ indexes and converts a capped _soeData_ into a normal collection.
 
 ## _processInstances_ collection
 

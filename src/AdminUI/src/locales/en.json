@@ -178,6 +178,35 @@
       "filter": "Filter"
     }
   },
+  "alarmsViewer": {
+    "alarms": "alarms",
+    "unackedOnly": "Unacked only",
+    "modes": {
+      "realtime": "Realtime",
+      "historical": "Historical"
+    },
+    "columns": {
+      "time": "Time",
+      "alarm": "Alarm",
+      "state": "State",
+      "priority": "Priority",
+      "normalTime": "Normal Time",
+      "ackTime": "Ack Time",
+      "ackUser": "Ack User"
+    },
+    "state": {
+      "active": "Active",
+      "normal": "Normal"
+    },
+    "hist": {
+      "from": "From",
+      "to": "To",
+      "filter": "Filter",
+      "filterHint": "tag, description, text",
+      "find": "Find",
+      "limited": "Showing the first {n} alarms only: narrow the period or the filter."
+    }
+  },
   "login": {
     "title": "Login",
     "username": "Username",
@@ -1029,7 +1058,14 @@
       "pruneExecute": "Delete",
       "pruneConfirmText": "The selected configuration is deleted for good. Export a backup first if you may need it again.",
       "pruneTypeToConfirm": "Type {word} to confirm",
-      "pruneDone": "Configuration cleaned up"
+      "pruneDone": "Configuration cleaned up",
+      "retentionTitle": "Data retention",
+      "retentionHint": "Days kept for the events (SOE), the alarms and the historical data; the excess is removed once a day. Unacknowledged or active alarms are kept.",
+      "retentionSoe": "Events (SOE)",
+      "retentionAlarms": "Alarms",
+      "retentionHist": "Historical data",
+      "retentionDays": "days",
+      "retentionRule": "A whole number of days from {min} to {max}"
     },
     "cimEms": {
       "readOnly": "Read-only view: model upload, activation, binding approval and downloads need a role with the CIM-EMS engineering right.",

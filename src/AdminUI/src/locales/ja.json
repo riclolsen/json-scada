@@ -178,6 +178,35 @@
       "filter": "フィルター"
     }
   },
+  "alarmsViewer": {
+    "alarms": "件のアラーム",
+    "unackedOnly": "未確認のみ",
+    "modes": {
+      "realtime": "リアルタイム",
+      "historical": "履歴"
+    },
+    "columns": {
+      "time": "時刻",
+      "alarm": "アラーム",
+      "state": "状態",
+      "priority": "優先度",
+      "normalTime": "復帰時刻",
+      "ackTime": "確認時刻",
+      "ackUser": "確認ユーザー"
+    },
+    "state": {
+      "active": "発生中",
+      "normal": "正常"
+    },
+    "hist": {
+      "from": "開始",
+      "to": "終了",
+      "filter": "フィルター",
+      "filterHint": "タグ、説明、テキスト",
+      "find": "検索",
+      "limited": "最初の {n} 件のみ表示：期間またはフィルターを絞ってください。"
+    }
+  },
   "login": {
     "title": "ログイン",
     "username": "ユーザー名",
@@ -1029,7 +1058,14 @@
       "pruneExecute": "削除",
       "pruneConfirmText": "選択した構成は完全に削除されます。必要になる可能性がある場合は先にバックアップをエクスポートしてください。",
       "pruneTypeToConfirm": "確認のため {word} と入力",
-      "pruneDone": "構成をクリーンアップしました"
+      "pruneDone": "構成をクリーンアップしました",
+      "retentionTitle": "データ保持",
+      "retentionHint": "イベント (SOE)、アラーム、履歴データの保持日数。超過分は1日1回削除されます。未確認または発生中のアラームは保持されます。",
+      "retentionSoe": "イベント (SOE)",
+      "retentionAlarms": "アラーム",
+      "retentionHist": "履歴データ",
+      "retentionDays": "日",
+      "retentionRule": "{min} から {max} までの整数の日数"
     },
     "cimEms": {
       "readOnly": "閲覧のみ：モデルのアップロードと有効化、バインディングの承認、ダウンロードには CIM-EMS エンジニアリング権限を持つロールが必要です。",

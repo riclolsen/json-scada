@@ -41,11 +41,12 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-// StartWriters launches the three writer goroutines.
+// StartWriters launches the writer goroutines.
 func (p *Processor) StartWriters(ctx context.Context) {
 	go p.rtDataWriter(ctx)
 	go p.histAndSQLWriter(ctx)
 	go p.soeWriter(ctx)
+	go p.alarmWriter(ctx)
 }
 
 // ---------------------------------------------------------------------------

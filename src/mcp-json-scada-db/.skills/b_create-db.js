@@ -647,7 +647,7 @@ db.createCollection('hist', {
     bucketMaxSpanSeconds: 3600,
     bucketRoundingSeconds: 3600,
   },
-  expireAfterSeconds: 60 * 60 * 24 * 30 * 2, // 2 months
+  expireAfterSeconds: 60 * 60 * 24 * 60, // 60 days, kept equal to systemSettings histRetentionDays by the data processor
 })
 
 db.createCollection('protocolDriverInstances', {
@@ -697,13 +697,21 @@ db.realtimeData.createIndex({
   alarmed: 1,
 })
 
-// soeData is defined as a capped collection (limited size 2GB, circular buffer)
-// remove the parameters to create as a normal collection to overcome the size restriction
-db.createCollection('soeData', { capped: true, size: 2000000000 })
+// soeData (sequence of events) and alarmsData (alarm list) are normal collections;
+// the data processor (instance 1) removes the documents older than the retention
+// (systemSettings soeRetentionDays / alarmsRetentionDays, 60 days by default) once a day
+db.createCollection('soeData')
 db.soeData.createIndex({ timeTag: 1 })
 db.soeData.createIndex({ timeTagAtSource: 1 })
 db.soeData.createIndex({ group1: 1 })
 db.soeData.createIndex({ ack: 1 })
+
+db.createCollection('alarmsData')
+db.alarmsData.createIndex({ timeTag: 1 }, { name: 'alarmsTimeTagIndex' })
+db.alarmsData.createIndex({ pointKey: 1, active: 1 }, { name: 'alarmsPointActiveIndex' })
+db.alarmsData.createIndex({ ack: 1, timeTag: -1 }, { name: 'alarmsAckIndex' })
+db.alarmsData.createIndex({ active: 1, timeTag: -1 }, { name: 'alarmsActiveIndex' })
+db.alarmsData.createIndex({ group1: 1 }, { name: 'alarmsGroup1Index' })
 
 db.createCollection('roles')
 db.roles.createIndex({ name: 1 }, { name: 'roleNameIndex', unique: true })

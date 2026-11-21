@@ -178,6 +178,35 @@
       "filter": "Filtro"
     }
   },
+  "alarmsViewer": {
+    "alarms": "alarmes",
+    "unackedOnly": "Só não reconhecidos",
+    "modes": {
+      "realtime": "Tempo real",
+      "historical": "Histórico"
+    },
+    "columns": {
+      "time": "Hora",
+      "alarm": "Alarme",
+      "state": "Estado",
+      "priority": "Prioridade",
+      "normalTime": "Hora Normal",
+      "ackTime": "Hora Reconhec.",
+      "ackUser": "Usuário Reconhec."
+    },
+    "state": {
+      "active": "Ativo",
+      "normal": "Normal"
+    },
+    "hist": {
+      "from": "De",
+      "to": "Até",
+      "filter": "Filtro",
+      "filterHint": "tag, descrição, texto",
+      "find": "Buscar",
+      "limited": "Mostrando só os primeiros {n} alarmes: reduza o período ou o filtro."
+    }
+  },
   "login": {
     "title": "Entrar",
     "username": "Nome de usuário",
@@ -1029,7 +1058,14 @@
       "pruneExecute": "Excluir",
       "pruneConfirmText": "A configuração selecionada é excluída definitivamente. Exporte um backup antes se puder precisar dela.",
       "pruneTypeToConfirm": "Digite {word} para confirmar",
-      "pruneDone": "Configuração limpa"
+      "pruneDone": "Configuração limpa",
+      "retentionTitle": "Retenção de dados",
+      "retentionHint": "Dias mantidos para os eventos (SOE), os alarmes e os dados históricos; o excesso é removido uma vez por dia. Alarmes não reconhecidos ou ativos são mantidos.",
+      "retentionSoe": "Eventos (SOE)",
+      "retentionAlarms": "Alarmes",
+      "retentionHist": "Dados históricos",
+      "retentionDays": "dias",
+      "retentionRule": "Um número inteiro de dias de {min} a {max}"
     },
     "cimEms": {
       "readOnly": "Somente leitura: envio e ativação de modelos, aprovação de vínculos e downloads exigem um papel com o direito de engenharia CIM-EMS.",

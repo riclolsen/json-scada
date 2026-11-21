@@ -74,6 +74,7 @@ type Processor struct {
 	histCh   chan histEntry
 	sqlRtCh  chan string
 	soeCh    chan bson.D
+	alarmCh  chan alarmOp
 
 	digitalUpdatesCount int64
 	digitalMu           sync.Mutex
@@ -91,6 +92,7 @@ func NewProcessor(cfg Config) *Processor {
 		histCh:   make(chan histEntry, cfg.WriteQueueSize),
 		sqlRtCh:  make(chan string, cfg.WriteQueueSize),
 		soeCh:    make(chan bson.D, cfg.WriteQueueSize),
+		alarmCh:  make(chan alarmOp, cfg.WriteQueueSize),
 		seed:     maphash.MakeSeed(),
 	}
 }
@@ -256,7 +258,9 @@ func (p *Processor) handleChange(ev changeEvent) {
 
 	isSOE := false
 	alarmRange := 0.0
-	rangeEscalated := false // to a more severe limit level
+	rangeEscalated := false     // to a more severe limit level
+	analogRangeChanged := false // ends the active alarms of the point
+	limitAlarmText := ""        // text of a new limit alarm
 
 	// consider SOE when a digital change carries a source timestamp, or an
 	// analog marked as isEvent does
@@ -466,6 +470,8 @@ func (p *Processor) handleChange(ev changeEvent) {
 					label = " " + rangeLabel(int(alarmRange))
 				}
 				eventText := jsFixedString(value, 3) + " " + unit + arrow + flag + label
+				analogRangeChanged = true
+				limitAlarmText = eventText
 				p.emitSoe(bson.D{
 					{Key: "tag", Value: tag},
 					{Key: "pointKey", Value: rawOrNil(fd.idValue())},
@@ -480,6 +486,11 @@ func (p *Processor) handleChange(ev changeEvent) {
 					{Key: "ack", Value: ack},
 				})
 			}
+		}
+
+		// alarms disabled: the limit alarms of the point end
+		if alarmDisabled && fd.truthy("alarmRange") {
+			analogRangeChanged = true
 		}
 
 		// analogs produce SOE events when marked isEvent and the valid value
@@ -603,6 +614,38 @@ func (p *Processor) handleChange(ev changeEvent) {
 					sourceTime: sourceTimeTag, hasSource: hasSourceTimeTag,
 				})
 			}
+		}
+
+		// alarm list (alarmsData): end the earlier alarms of the point when
+		// its condition changed, register the new alarm
+		{
+			op := alarmOp{pointKey: rawOrNil(fd.idValue()), now: dt}
+			fields := alarmFields{
+				value:             value,
+				valueString:       valueString,
+				timeTag:           dt,
+				timeTagAtSource:   rawOrNil(sdu.lookup("timeTagAtSource")),
+				timeTagAtSourceOk: rawOrNil(sdu.lookup("timeTagAtSourceOk")),
+			}
+			switch {
+			case docType == "analog":
+				op.deactivate = analogRangeChanged
+				if analogRangeChanged && alarmRange != 0 && !alarmDisabled {
+					fields.alarmText = limitAlarmText
+					fields.alarmRange = alarmRange
+					fields.active = true
+					op.doc = alarmDocument(fd, fields)
+				}
+			case docType == "digital" && !(isEventTruthy && value == 0):
+				op.deactivate = !fdValueOk || value != fdValue || hasAlarmTime
+				if hasAlarmTime && !alarmDisabled {
+					fields.alarmText = digitalAlarmText(fd, value, valueString)
+					st, stOk := fd.num("alarmState")
+					fields.active = digitalAlarmActive(st, stOk, value)
+					op.doc = alarmDocument(fd, fields)
+				}
+			}
+			p.emitAlarm(op)
 		}
 
 		// historianPeriod < 0, or an update flagged as not for the historian,

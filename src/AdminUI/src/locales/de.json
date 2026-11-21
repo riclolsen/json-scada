@@ -178,6 +178,35 @@
       "filter": "Filter"
     }
   },
+  "alarmsViewer": {
+    "alarms": "Alarme",
+    "unackedOnly": "Nur unquittierte",
+    "modes": {
+      "realtime": "Echtzeit",
+      "historical": "Historie"
+    },
+    "columns": {
+      "time": "Zeit",
+      "alarm": "Alarm",
+      "state": "Zustand",
+      "priority": "Priorität",
+      "normalTime": "Normalzeit",
+      "ackTime": "Quittierzeit",
+      "ackUser": "Quittiert von"
+    },
+    "state": {
+      "active": "Aktiv",
+      "normal": "Normal"
+    },
+    "hist": {
+      "from": "Von",
+      "to": "Bis",
+      "filter": "Filter",
+      "filterHint": "Tag, Beschreibung, Text",
+      "find": "Suchen",
+      "limited": "Nur die ersten {n} Alarme werden angezeigt: Zeitraum oder Filter eingrenzen."
+    }
+  },
   "login": {
     "title": "Login",
     "username": "Benutzername",
@@ -1029,7 +1058,14 @@
       "pruneExecute": "Löschen",
       "pruneConfirmText": "Die ausgewählte Konfiguration wird endgültig gelöscht. Zuerst eine Sicherung exportieren, falls sie noch gebraucht wird.",
       "pruneTypeToConfirm": "{word} eingeben, um zu bestätigen",
-      "pruneDone": "Konfiguration bereinigt"
+      "pruneDone": "Konfiguration bereinigt",
+      "retentionTitle": "Datenaufbewahrung",
+      "retentionHint": "Aufbewahrungstage für Ereignisse (SOE), Alarme und historische Daten; der Überschuss wird einmal täglich gelöscht. Unquittierte oder aktive Alarme bleiben erhalten.",
+      "retentionSoe": "Ereignisse (SOE)",
+      "retentionAlarms": "Alarme",
+      "retentionHist": "Historische Daten",
+      "retentionDays": "Tage",
+      "retentionRule": "Eine ganze Zahl von Tagen von {min} bis {max}"
     },
     "cimEms": {
       "readOnly": "Nur Lesen: Hochladen und Aktivieren von Modellen, Freigabe von Zuordnungen und Downloads erfordern eine Rolle mit dem CIM-EMS-Engineering-Recht.",

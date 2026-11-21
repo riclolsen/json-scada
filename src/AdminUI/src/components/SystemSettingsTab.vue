@@ -132,6 +132,47 @@
         </v-card-text>
       </v-card>
 
+      <!-- data retention: soeData, alarmsData and hist, cleaned once a day by cs_data_processor -->
+      <v-card variant="outlined" class="sys-card">
+        <v-card-item prepend-icon="mdi-database-clock-outline">
+          <v-card-title>{{ $t('admin.systemSettings.retentionTitle') }}</v-card-title>
+          <v-card-subtitle class="sys-wrap">{{ $t('admin.systemSettings.retentionHint') }}</v-card-subtitle>
+        </v-card-item>
+        <v-card-text>
+          <v-form ref="retentionForm" @submit.prevent="saveRetention">
+            <v-text-field
+              v-for="f in retentionFieldList"
+              :key="f.key"
+              v-model.number="retention[f.key]"
+              type="number"
+              :min="retentionLimits.min"
+              :max="retentionLimits.max"
+              step="1"
+              :label="f.label"
+              :suffix="$t('admin.systemSettings.retentionDays')"
+              :prepend-inner-icon="f.icon"
+              :rules="[rules.retention]"
+              variant="outlined"
+              density="comfortable"
+              class="mb-1"
+            ></v-text-field>
+            <div class="d-flex">
+              <v-spacer></v-spacer>
+              <v-btn
+                type="submit"
+                color="primary"
+                variant="flat"
+                prepend-icon="mdi-content-save-outline"
+                :loading="savingRetention"
+                :disabled="!retentionValid"
+              >
+                {{ $t('common.save') }}
+              </v-btn>
+            </div>
+          </v-form>
+        </v-card-text>
+      </v-card>
+
       <!-- restarts -->
       <v-card variant="outlined" class="sys-card">
         <v-card-item prepend-icon="mdi-restart">
@@ -338,6 +379,9 @@
       const json = await (await fetch('/Invoke/auth/getSystemSettings')).json()
       if (json.error) throw json
       if (json.settings) settings.value = json.settings
+      if (json.retentionLimits) retentionLimits.value = json.retentionLimits
+      for (const f of RETENTION_FIELDS)
+        if (typeof json.settings?.[f] === 'number') retention.value[f] = json.settings[f]
       processManagementEnabled.value = !!json.processManagementEnabled
       localNode.value = json.localNode || ''
     } catch (err) {
@@ -363,6 +407,38 @@
     }
   }
 
+  // ---- data retention (days) ----
+  const RETENTION_FIELDS = ['soeRetentionDays', 'alarmsRetentionDays', 'histRetentionDays']
+  const retention = ref({ soeRetentionDays: 60, alarmsRetentionDays: 60, histRetentionDays: 60 })
+  const retentionLimits = ref({ min: 1, max: 36500 })
+  const savingRetention = ref(false)
+  const retentionFieldList = computed(() => [
+    { key: 'soeRetentionDays', icon: 'mdi-format-list-bulleted', label: t('admin.systemSettings.retentionSoe') },
+    { key: 'alarmsRetentionDays', icon: 'mdi-bell-outline', label: t('admin.systemSettings.retentionAlarms') },
+    { key: 'histRetentionDays', icon: 'mdi-chart-line', label: t('admin.systemSettings.retentionHist') },
+  ])
+  const retentionOk = (v) =>
+    Number.isInteger(v) && v >= retentionLimits.value.min && v <= retentionLimits.value.max
+  const retentionValid = computed(() => RETENTION_FIELDS.every((f) => retentionOk(retention.value[f])))
+
+  async function saveRetention() {
+    if (!retentionValid.value) return
+    savingRetention.value = true
+    try {
+      const json = await postJson(
+        '/Invoke/auth/updateSystemSettings',
+        Object.fromEntries(RETENTION_FIELDS.map((f) => [f, retention.value[f]]))
+      )
+      if (json.error) throw json
+      notify(t('admin.common.saved'), 'success')
+    } catch (err) {
+      notify(t('common.error') + ' ' + errText(err), 'error')
+      fetchSystemSettings()
+    } finally {
+      savingRetention.value = false
+    }
+  }
+
   function refresh() {
     fetchSystemSettings()
     fetchCounts()
@@ -379,6 +455,9 @@
   const projectNameValid = computed(() => PROJECT_NAME_RE.test(projectName.value || ''))
   const rules = {
     projectName: (v) => PROJECT_NAME_RE.test(v || '') || t('admin.systemSettings.projectNameRule'),
+    retention: (v) =>
+      retentionOk(v) ||
+      t('admin.systemSettings.retentionRule', { min: retentionLimits.value.min, max: retentionLimits.value.max }),
   }
   const exporting = ref(false)
   async function exportProject() {

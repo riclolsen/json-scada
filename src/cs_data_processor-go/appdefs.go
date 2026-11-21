@@ -41,6 +41,8 @@ const (
 	RealtimeDataCollectionName            = "realtimeData"
 	HistCollectionName                    = "hist"
 	SoeDataCollectionName                 = "soeData"
+	AlarmsDataCollectionName              = "alarmsData"
+	SystemSettingsCollectionName          = "systemSettings"
 	ProtocolDriverInstancesCollectionName = "protocolDriverInstances"
 	ProtocolConnectionsCollectionName     = "protocolConnections"
 	ProcessInstancesCollectionName        = "processInstances"

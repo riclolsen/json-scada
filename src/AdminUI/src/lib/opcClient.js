@@ -384,7 +384,9 @@ export async function readPoints(keysOrTags, askInfo, cfg, jsonKeys) {
 
 // --- alarm acknowledge / silence beep ----------------------------------------
 
-export async function writeAck({ pointId, action }) {
+// alarmId: one alarm of the alarm list (alarmsData) of the point, for
+// AckOneAlarm; without it every alarm of the point is acknowledged
+export async function writeAck({ pointId, action, alarmId }) {
   const handle = newHandle()
   const numeric = !isNaN(parseInt(pointId))
   const req = {
@@ -406,11 +408,64 @@ export async function writeAck({ pointId, action }) {
           },
           AttributeId: OpcAttributeId.ExtendedAlarmEventsAck,
           Value: { Type: OpcValueTypes.Integer, Body: action },
+          ...(alarmId ? { _Properties: { alarm_id: String(alarmId) } } : {}),
         },
       ],
     },
   }
   return invoke(req, 1500)
+}
+
+// --- alarm list (alarmsData) ---------------------------------------------------
+
+// Reads the alarm list (server_realtime_auth auth/listAlarms).
+// params: { mode: 'realtime' | 'historical', timeBegin, timeEnd (Date),
+// group1: [station], text, unackedOnly, limit }.
+// Returns { alarms: [row], limited } with rows ready for the grid.
+export async function readAlarms(params, cfg, timeoutMs = 10000) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  let json
+  try {
+    const resp = await fetch('/Invoke/auth/listAlarms', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        ...params,
+        ...(params.timeBegin instanceof Date ? { timeBegin: params.timeBegin.toISOString() } : {}),
+        ...(params.timeEnd instanceof Date ? { timeEnd: params.timeEnd.toISOString() } : {}),
+      }),
+    })
+    json = await resp.json()
+  } finally {
+    clearTimeout(timer)
+  }
+  if (json?.ok === false) {
+    accessDeniedHandler()
+    throw new Error(json.message || 'access denied')
+  }
+  if (!json || json.error) throw new Error(json?.error || 'invalid answer')
+  const fmt = (v) =>
+    formatDateTime(v, cfg.TabularViewer_LocaleDateTime, cfg.TabularViewer_LocaleDateTimeOptions)
+  return {
+    limited: !!json.limited,
+    alarms: (json.alarms || []).map((a) => ({
+      ...a,
+      rowId: a._id,
+      station: a.group1 || '',
+      descr: a.description || '',
+      text: a.alarmText || a.valueString || '',
+      priority: typeof a.priority === 'number' ? a.priority : 9,
+      acked: a.ack !== 0,
+      rangeLabel: a.type === 'analog' ? alarmRangeLabel(a.alarmRange) : '',
+      date: new Date(a.timeTag),
+      timeStr: fmt(a.timeTag),
+      sourceTimeStr: a.timeTagAtSource ? fmt(a.timeTagAtSource) : '',
+      ackTimeStr: a.timeTagAck ? fmt(a.timeTagAck) : '',
+      normalTimeStr: a.timeTagNormal ? fmt(a.timeTagNormal) : '',
+    })),
+  }
 }
 
 // --- command execution -------------------------------------------------------

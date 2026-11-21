@@ -178,6 +178,35 @@
       "filter": "筛选"
     }
   },
+  "alarmsViewer": {
+    "alarms": "条报警",
+    "unackedOnly": "仅未确认",
+    "modes": {
+      "realtime": "实时",
+      "historical": "历史"
+    },
+    "columns": {
+      "time": "时间",
+      "alarm": "报警",
+      "state": "状态",
+      "priority": "优先级",
+      "normalTime": "恢复时间",
+      "ackTime": "确认时间",
+      "ackUser": "确认用户"
+    },
+    "state": {
+      "active": "活动",
+      "normal": "正常"
+    },
+    "hist": {
+      "from": "从",
+      "to": "到",
+      "filter": "过滤",
+      "filterHint": "标签、描述、文本",
+      "find": "查找",
+      "limited": "仅显示前 {n} 条报警：请缩小时间段或过滤条件。"
+    }
+  },
   "login": {
     "title": "登录",
     "username": "用户名",
@@ -1029,7 +1058,14 @@
       "pruneExecute": "删除",
       "pruneConfirmText": "所选配置将被永久删除。如可能还需要，请先导出备份。",
       "pruneTypeToConfirm": "输入 {word} 以确认",
-      "pruneDone": "配置已清理"
+      "pruneDone": "配置已清理",
+      "retentionTitle": "数据保留",
+      "retentionHint": "事件 (SOE)、报警和历史数据的保留天数；超出部分每天清除一次。未确认或活动的报警会保留。",
+      "retentionSoe": "事件 (SOE)",
+      "retentionAlarms": "报警",
+      "retentionHist": "历史数据",
+      "retentionDays": "天",
+      "retentionRule": "{min} 到 {max} 之间的整数天数"
     },
     "cimEms": {
       "readOnly": "只读视图：上传和激活模型、批准绑定以及下载需要具有 CIM-EMS 工程权限的角色。",

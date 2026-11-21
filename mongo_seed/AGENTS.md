@@ -27,6 +27,7 @@ Initialization scripts and seed data for MongoDB: replica set initialization, da
 - RBAC roles should demonstrate the permission model
 - Keep initialization scripts idempotent where possible
 - When adding or changing collections, validators, indexes or retention, update both `b_create-db.js` and the collection table/sections in `docs/schema.md`
+- `soeData` is a normal collection and `alarmsData` holds the alarm list; their retention, the `hist` expiry and the `alarmsData` indexes are also maintained by the data processor (`src/cs_data_processor/retention.js` and `src/cs_data_processor-go/retention.go`, which also convert a capped `soeData` of an upgraded database), so keep the index lists there in step with `b_create-db.js`; `src/mcp-json-scada-db/.skills/b_create-db.js` is an older variant of it, update its collections too
 
 ## Verification
 

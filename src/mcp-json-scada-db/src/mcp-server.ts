@@ -173,9 +173,10 @@ function buildServer(): McpServer {
           {
             uri: uri.href,
             text: `JSON-SCADA Database Schema Summary:
-- realtimeData: Contains the current state of all points (tags). Fields: _id (pointKey), tag, description, type, value, timeTag, unit, invalid, alarmed, group1/2/3, etc.
+- realtimeData: Contains the current state of all points (tags). Fields: _id (pointKey), tag, description, type, value, timeTag, unit, invalid, alarmed (true while the point has unacknowledged alarms), group1/2/3, etc.
 - hist: Historical data for points. Fields: timeTag, tag, value, timeTagAtSource, invalid.
 - soeData: Sequence of Events. Fields: timeTag, timeTagAtSource, tag, description, eventText, ack.
+- alarmsData: Alarm list, one document per alarm occurrence. Fields: tag, pointKey, group1, description, priority, alarmText, timeTag, active, ack, timeTagAck, ackUser, timeTagNormal, alarmRange (analog).
 - commandsQueue: Queue for commands to be dispatched. Fields: tag, value, timeTag, delivered, ack, originatorUserName.
 - processInstances: Status and config of system processes.
 - protocolDriverInstances: Status and config of protocol drivers.

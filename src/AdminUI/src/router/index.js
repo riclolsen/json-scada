@@ -6,6 +6,7 @@ import AdminPage from '../components/AdminPage.vue'
 import DisplayViewerPage from '../components/DisplayViewerPage.vue'
 import TabularViewerPage from '../components/TabularViewerPage.vue'
 import EventsViewerPage from '../components/EventsViewerPage.vue'
+import AlarmsViewerPage from '../components/AlarmsViewerPage.vue'
 import TrendViewerPage from '../components/TrendViewerPage.vue'
 import GrafanaPage from '../components/GrafanaPage.vue'
 import ApolloPage from '../components/ApolloPage.vue'
@@ -23,11 +24,7 @@ const routes = [
   { path: '/dashboard', component: DashboardPage },
   { path: '/display-viewer', component: DisplayViewerPage },
   { path: '/tabular-viewer', component: TabularViewerPage },
-  {
-    path: '/alarms-viewer',
-    component: TabularViewerPage,
-    props: { mode: 'ALARMS_VIEWER' },
-  },
+  { path: '/alarms-viewer', component: AlarmsViewerPage },
   { path: '/events-viewer', component: EventsViewerPage },
   { path: '/trend-viewer', component: TrendViewerPage },
   // former paths of the native viewers (kept for bookmarks and saved links)

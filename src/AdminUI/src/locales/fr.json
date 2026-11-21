@@ -178,6 +178,35 @@
       "filter": "Filtre"
     }
   },
+  "alarmsViewer": {
+    "alarms": "alarmes",
+    "unackedOnly": "Non acquittées seules",
+    "modes": {
+      "realtime": "Temps réel",
+      "historical": "Historique"
+    },
+    "columns": {
+      "time": "Heure",
+      "alarm": "Alarme",
+      "state": "État",
+      "priority": "Priorité",
+      "normalTime": "Heure Retour",
+      "ackTime": "Heure Acquit.",
+      "ackUser": "Utilisateur Acquit."
+    },
+    "state": {
+      "active": "Active",
+      "normal": "Normale"
+    },
+    "hist": {
+      "from": "Du",
+      "to": "Au",
+      "filter": "Filtre",
+      "filterHint": "tag, description, texte",
+      "find": "Rechercher",
+      "limited": "Seules les {n} premières alarmes sont affichées : réduisez la période ou le filtre."
+    }
+  },
   "login": {
     "title": "Se connecter",
     "username": "Nom d'utilisateur",
@@ -1029,7 +1058,14 @@
       "pruneExecute": "Supprimer",
       "pruneConfirmText": "La configuration sélectionnée est supprimée définitivement. Exportez d’abord une sauvegarde si vous pouvez en avoir besoin.",
       "pruneTypeToConfirm": "Saisir {word} pour confirmer",
-      "pruneDone": "Configuration nettoyée"
+      "pruneDone": "Configuration nettoyée",
+      "retentionTitle": "Rétention des données",
+      "retentionHint": "Jours conservés pour les événements (SOE), les alarmes et les données historiques ; l'excédent est supprimé une fois par jour. Les alarmes non acquittées ou actives sont conservées.",
+      "retentionSoe": "Événements (SOE)",
+      "retentionAlarms": "Alarmes",
+      "retentionHist": "Données historiques",
+      "retentionDays": "jours",
+      "retentionRule": "Un nombre entier de jours de {min} à {max}"
     },
     "cimEms": {
       "readOnly": "Lecture seule : l'envoi et l'activation des modèles, l'approbation des liaisons et les téléchargements exigent un rôle avec le droit d'ingénierie CIM-EMS.",

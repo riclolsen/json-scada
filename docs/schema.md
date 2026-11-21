@@ -6,14 +6,15 @@ The JSON-SCADA MongoDB database is comprised of the following collections.
 * _protocolDriverInstances_ - Configuration of protocol drivers instances. See specific protocol for documentation.
 * _protocolConnections_ - Configuration of protocol connections. See specific protocol for documentation.
 * _commandsQueue_ - Queue for commands.
-* _soeData_ - Sequence of Events data. This is a Capped Collection, it has a limited size.
+* _soeData_ - Sequence of Events data. Normal collection; events older than the SOE retention are removed once a day. See [_soeData_ collection](#soedata-collection).
+* _alarmsData_ - Alarm list: one document per alarm occurrence, acknowledged by the operators. See [_alarmsData_ collection](#alarmsdata-collection).
 * _processInstances_ - Configuration and information about JSON-SCADA instances of processes.
 * _hist_ - MongoDB time series historian (secondary to the PostgreSQL historian). See [_hist_ collection](#hist-collection).
 * _users_ - User accounts. See [_users_ collection](#users-collection).
 * _roles_ - RBAC roles (rights and group filters). See [_roles_ collection](#roles-collection).
 * _userActions_ - Audit log of user actions. See [_userActions_ collection](#useractions-collection).
 * _cimModels_, _cimMeasurementBindings_, _cimRuns_, _cimContingencyLists_, _cimStudyRequests_ and the GridFS bucket _cimArtifacts_ - CIM-EMS network model revisions, binding revisions, study runs, contingency lists, Admin UI study requests and stored packages/results. Written by the _CIM-EMS_ driver; see the [CIM-EMS README](../src/cim-ems/README.md). Model packages and study results are confidential: _cimArtifacts_ is not served by `/GetFile`. Contingency result files (`kind: "contingency-result"`) are deleted by the driver after the _cimRuns_ retention (7 days); element catalogs (`kind: "element-catalog"`, binding review) are kept for the 5 newest per model; the state estimation residual report (`kind: "se-residuals"`) keeps only the latest one per connection.
-* _systemSettings_ - Single document (`key: "global"`) with runtime toggles (`autoManageServices`, `autoRestartOnConnectionChange`), created on demand by _server_realtime_auth_; not created by the seed script.
+* _systemSettings_ - Single document (`key: "global"`) with runtime toggles (`autoManageServices`, `autoRestartOnConnectionChange`) and the data retentions in days (`soeRetentionDays`, `alarmsRetentionDays`, `histRetentionDays`; whole numbers 1 to 36500, 60 when absent; edited in the Admin UI, Admin / System), created on demand by _server_realtime_auth_; not created by the seed script. See [Data retention](#data-retention).
 
 Collections, validation and indexes are created by [mongo_seed/b_create-db.js](../mongo_seed/b_create-db.js), which is the authoritative definition when this document and the script differ:
 
@@ -24,8 +25,9 @@ Collections, validation and indexes are created by [mongo_seed/b_create-db.js](.
 | protocolConnections | normal | `$jsonSchema`, strict / error | `protocolConnectionNumber` (unique) |
 | processInstances | normal | `$jsonSchema`, strict / error | `processName + processInstanceNumber` (unique) |
 | commandsQueue | normal, no automatic expiry | none | none (watched by change streams) |
-| soeData | capped, 2 GB circular buffer | none | `timeTag`; `timeTagAtSource`; `group1`; `ack` |
-| hist | time series (`timeField: timeTag`, `metaField: tag`, 1 h buckets), `expireAfterSeconds` = 60 days | none | none created by the seed |
+| soeData | normal, `soeRetentionDays` (60) | none | `timeTag`; `timeTagAtSource`; `group1`; `ack` |
+| alarmsData | normal, `alarmsRetentionDays` (60), acknowledged and inactive alarms only | none | `timeTag` (`alarmsTimeTagIndex`); `pointKey + active` (`alarmsPointActiveIndex`); `ack + timeTag` (`alarmsAckIndex`); `active + timeTag` (`alarmsActiveIndex`); `group1` (`alarmsGroup1Index`) |
+| hist | time series (`timeField: timeTag`, `metaField: tag`, 1 h buckets), `expireAfterSeconds` = `histRetentionDays` (60) | none | none created by the seed |
 | users | normal | none (mongoose model in _server_realtime_auth_) | `username` (unique, `userNameIndex`) |
 | roles | normal | none (mongoose model) | `name` (unique, `roleNameIndex`) |
 | userActions | normal, no automatic expiry | none (mongoose model) | `timeTag` (`actionsTimeTagIndex`); for expiry replace it with a TTL index, e.g. `{ timeTag: 1 }, { expireAfterSeconds: 2592000 }` |
@@ -280,7 +282,7 @@ Do not rename existing tags to fit the conventions. Tag names are referenced by 
 
 ### Fields updated by the system.
 
-* _**_alarmed_**_ [Boolean] - When true means the point is alarmed. **Mandatory parameter**.
+* _**_alarmed_**_ [Boolean] - Summary of the alarm list: true while the point has unacknowledged alarms (set by the data processor on a new alarm, cleared by the acknowledgement of the point). The alarm occurrences are the _alarmsData_ documents. **Mandatory parameter**.
 * _**_alarmRange_**_ [Double] - Current alarm range for analog tags. 0=normal, 1/2/3=hiLimit/hihiLimit/hihihiLimit violated, -1/-2/-3=loLimit/loloLimit/lololoLimit violated (the most severe level violated). **Mandatory parameter**.
 * _**_alerted_**_ [Boolean] - When true means the point is alerted (Grafana alert). **Optional parameter**.
 * _**_alertState_**_ [String] - Grafana alert state name. **Optional parameter**.
@@ -396,7 +398,7 @@ Example document
 
 Here are stored Sequence of Events (SOE) information for digital values with source timestamps.
 
-This is a Capped Collection, it has a limited size. Old documents are overwritten when the maximum sized is reached. Data here is only written for digital states when the protocol provides a source timestamp (like for IEC 60870-5-104 type 30).
+Normal collection: events older than `soeRetentionDays` (see [Data retention](#data-retention)) are removed once a day. Older installs had a capped collection; the data processor converts it once (renamed to `soeData_capped_<ms>`, the events within the retention copied back to a new `soeData`, then dropped). Data here is written for digital states when the protocol provides a source timestamp (like for IEC 60870-5-104 type 30) and for the limit violations of analog points.
 
     {
         "_id":{
@@ -431,6 +433,55 @@ This is a Capped Collection, it has a limited size. Old documents are overwritte
 * _**_timeTagAtSource_**_ [Date] - Timestamp for the change stamped by the source device (RTU/IED).
 * _**_timeTagAtSourceOk_**_ [Boolean] - When true means the source timestamp is considered ok.
 * _**_ack_**_ [Int32] - Operator acknowledgement (0=not acknowledged, 1=acknowledged, 2=eliminated from lists).
+
+## _alarmsData_ collection
+
+The alarm list. _cs_data_processor_ (and _cs_data_processor-go_) insert one document per alarm occurrence: an analog point entering a more severe or different limit range (`alarmRange`), or a digital point changing to an alarm state. A new condition of a point first ends (`active: false`, `timeTagNormal`) the point's earlier active alarms, then inserts the new alarm. Points with `alarmDisabled: true` raise no alarm. _server_realtime_auth_ acknowledges alarms (`ack: 1`, `timeTagAck`, `ackUser`): one alarm, all the alarms of a point, or all alarms (restricted to the user's _group1_ list). The Alarms Viewer (Admin UI `/alarms-viewer`) lists the alarms not acknowledged or still active (realtime) and every alarm raised in a period (historical).
+
+    {
+        "_id": { "$oid": "6740c1f05afe8a451246eb4e" },
+        "tag": "KAW2TR1-21MW",
+        "pointKey": 3001,
+        "group1": "KAW2",
+        "group2": "TR1",
+        "description": "KAW2~TR1~Active Power",
+        "type": "analog",
+        "priority": 1,
+        "value": 61.2,
+        "valueString": "61.2 MW",
+        "alarmText": "61.2 MW ⤉ 🚩 HIHI",
+        "timeTag": { "$date": "2026-11-21T17:31:03.702Z" },
+        "timeTagAtSource": null,
+        "timeTagAtSourceOk": false,
+        "active": true,
+        "ack": 0,
+        "timeTagAck": null,
+        "ackUser": null,
+        "timeTagNormal": null,
+        "alarmRange": 2
+    }
+
+* _**__id_**_ [ObjectId] - MongoDB document id (the `alarm_id` of a single alarm acknowledgement).
+* _**_tag_**_, _**_pointKey_**_, _**_group1_**_, _**_group2_**_, _**_description_**_, _**_type_**_, _**_priority_**_ - Copied from the _realtimeData_ point.
+* _**_value_**_ [Double], _**_valueString_**_ [String] - Value that raised the alarm.
+* _**_alarmText_**_ [String] - Alarm text: analog, the value and the violated limit level; digital, `eventTextTrue`/`eventTextFalse`, else the value text.
+* _**_timeTag_**_ [Date] - Time the alarm was raised.
+* _**_timeTagAtSource_**_ [Date], _**_timeTagAtSourceOk_**_ [Boolean] - Source timestamp of the value.
+* _**_active_**_ [Boolean] - True while the condition lasts. Digital alarms with `alarmState` other than 0 or 1 (alarm on any change) are inserted inactive.
+* _**_ack_**_ [Int32] - 0 = not acknowledged, 1 = acknowledged.
+* _**_timeTagAck_**_ [Date], _**_ackUser_**_ [String] - Acknowledgement time and user (null until acknowledged).
+* _**_timeTagNormal_**_ [Date] - Time the alarm became inactive (null while active).
+* _**_alarmRange_**_ [Double] - Analog only: the violated range, as in _realtimeData_ `alarmRange`.
+
+## Data retention
+
+Instance 1 of _cs_data_processor_ (or _cs_data_processor-go_), on the active node, runs the retention once a day (first run 1 minute after start, then it checks every hour whether 24 h have passed since the last successful run). The retentions are whole days read from the _systemSettings_ document `{ "key": "global" }` (`soeRetentionDays`, `alarmsRetentionDays`, `histRetentionDays`; 60 when absent or invalid, at most 36500):
+
+* _soeData_ - events with `timeTag` older than the retention are deleted.
+* _alarmsData_ - acknowledged, inactive alarms with `timeTag` older than the retention are deleted; unacknowledged or active alarms are kept.
+* _hist_ - the time series `expireAfterSeconds` is set to the retention (MongoDB expires the buckets).
+
+The same run creates the _alarmsData_ indexes and converts a capped _soeData_ into a normal collection.
 
 ## _processInstances_ collection
 
@@ -504,7 +555,7 @@ Example document for the _CALCULATIONS_ module. Currently, this process supports
 
 ## _hist_ collection
 
-MongoDB time series collection written by _cs_data_processor_ (and the Go _cs_data_processor-go_) with the same records and filters (`historianPeriod`, `historianDeadBand`, `isNotForHistorical`) as the PostgreSQL historian. Inserts are unacknowledged (`w: 0`) bulk writes, so this historian is best-effort. Records older than `expireAfterSeconds` (60 days as seeded) are removed automatically; change it with `db.runCommand({ collMod: "hist", expireAfterSeconds: N })`.
+MongoDB time series collection written by _cs_data_processor_ (and the Go _cs_data_processor-go_) with the same records and filters (`historianPeriod`, `historianDeadBand`, `isNotForHistorical`) as the PostgreSQL historian. Inserts are unacknowledged (`w: 0`) bulk writes, so this historian is best-effort. Records older than `expireAfterSeconds` are removed automatically; the data processor keeps it equal to `histRetentionDays` (see [Data retention](#data-retention)), so set the retention in the Admin UI rather than with `collMod`.
 
     {
         tag: "KAW2AL-21MTWT",
@@ -530,7 +581,7 @@ MongoDB time series collection written by _cs_data_processor_ (and the Go _cs_da
 |---|---|---|
 | Role | Secondary historian, needs no extra database | Primary historian |
 | Written by | _cs_data_processor_ directly (`insertMany`, `w: 0`) | _cs_data_processor_ writes SQL files, `src/process_pg_sql` (`process_pg_hist` service) loads them |
-| Retention | `expireAfterSeconds` (60 days as seeded) | TimescaleDB `add_retention_policy('hist', INTERVAL '45 days')` in `sql/create_tables.sql` (`sql/delete_old.sql` for manual pruning) |
+| Retention | `expireAfterSeconds` = `histRetentionDays` (60 days by default) | TimescaleDB `add_retention_policy('hist', INTERVAL '45 days')` in `sql/create_tables.sql` (`sql/delete_old.sql` for manual pruning) |
 | Quality fields | `invalid`, `timeTagAtSource`, `timeTagAtSourceOk`, `cot` | `time_tag_at_source`, `flags` bit mask |
 | Read by | _OPC-UA-Server_ HistoryRead (default backend, `historian: "mongodb"`) | _server_realtime_auth_ `/Invoke` HistoryRead and GraphQL, Grafana, Metabase, _OPC-UA-Server_ with `historian: "postgresql"` |
 

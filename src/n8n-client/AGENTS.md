@@ -32,6 +32,7 @@ platform in both directions:
 
 ## Work Guidance
 
+- The `soeData` change stream (`watchSoe`) reopens itself 5 s after it closes while connected (a rename or drop of `soeData`, e.g. the data processor's one-time capped-collection conversion, invalidates it)
 - Outbound uses the same change-stream pipeline convention as `mqtt-sparkplug`
   (forwards *processed* value changes: updates where `sourceDataUpdate` is NOT in
   `updatedFields`, plus `replace`).

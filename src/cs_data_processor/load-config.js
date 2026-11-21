@@ -57,6 +57,8 @@ function LoadConfig(confFileArg, logLevelArg, instArg) {
   configObj.HistCollectionName = 'hist'
   configObj.UsersCollectionName = 'users'
   configObj.SoeDataCollectionName = 'soeData'
+  configObj.AlarmsDataCollectionName = 'alarmsData'
+  configObj.SystemSettingsCollectionName = 'systemSettings'
   configObj.CommandsQueueCollectionName = 'commandsQueue'
   configObj.ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
   configObj.ProtocolConnectionsCollectionName = 'protocolConnections'

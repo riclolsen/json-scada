@@ -171,6 +171,20 @@ export function registerInspectTools(server: McpServer, mgr: ConnectionManager) 
             ack: '0=not acknowledged, 1=acknowledged, 2=eliminated',
           },
         },
+        alarmsData: {
+          description: 'Alarm list: one document per alarm occurrence (realtime: ack 0 or active true)',
+          keyFields: {
+            timeTag: 'time the alarm was raised',
+            tag: 'point tag',
+            pointKey: 'point key (realtimeData _id)',
+            alarmText: 'alarm text (value and limit level, or event text)',
+            active: 'true while the alarm condition lasts',
+            ack: '0=not acknowledged, 1=acknowledged',
+            timeTagAck: 'acknowledgement time',
+            ackUser: 'user who acknowledged',
+            timeTagNormal: 'time the alarm became inactive',
+          },
+        },
         commandsQueue: {
           description: 'Queue for commands to be dispatched',
           keyFields: {

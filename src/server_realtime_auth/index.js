@@ -39,6 +39,7 @@ const ALLOW_FRAMING = (process.env.JS_ALLOW_FRAMING || '').toLowerCase() === 'tr
 const QUERYJSON_AP = '/queryJSON' // API Access point for special custom queries returning JSON
 const COLL_REALTIME = 'realtimeData'
 const COLL_SOE = 'soeData'
+const COLL_ALARMS = 'alarmsData'
 const COLL_COMMANDS = 'commandsQueue'
 const COLL_ACTIONS = 'userActions'
 const GRAPHQL_AP = process.env.JS_GRAPHQL_AP || '/apollo' // same as graphql-server.js
@@ -238,6 +239,11 @@ const MaxFilteredReadRows = 100000 // max points returned by a ContentFilter rea
 // nodes of one write request (commands, acks, property writes); the clients
 // write one at a time, a larger batch is a script or a flood of commands
 const MaxWriteNodes = 100
+// acknowledgement of alarmsData documents
+const alarmAckUpdate = (username) => ({
+  $set: { ack: 1, timeTagAck: new Date(), ackUser: username },
+})
+
 // out-of-range alarm limits of analog points (alarmRange 1..3 / -1..-3)
 const LimitFields = [
   'hiLimit', 'hihiLimit', 'hihihiLimit', 'loLimit', 'loloLimit', 'lololoLimit',
@@ -1008,6 +1014,11 @@ function maskConnectionString(cs) {
 
                 if (node.Value.Body & opc.Acknowledge.AckAllAlarms) {
                   Log.log('Ack All Alarms')
+                  // the alarm list, then the alarmed flag of the points
+                  await db.collection(COLL_ALARMS).updateMany(
+                    { ack: 0, ...group1Restriction },
+                    alarmAckUpdate(username)
+                  )
                   let result = await db.collection(COLL_REALTIME).updateMany(
                     {
                       alarmed: true,
@@ -1058,45 +1069,82 @@ function maskConnectionString(cs) {
                   })
                 } else if (node.Value.Body & opc.Acknowledge.AckOneAlarm) {
                   Log.log('Ack alarm: ' + node.NodeId.Id)
-                  let result = await db
+                  // one alarm of the list (_Properties.alarm_id) or all the
+                  // alarms of the point; the point stays alarmed while it
+                  // has unacknowledged alarms
+                  const almId = node._Properties?.alarm_id
+                  const alarmObjectId =
+                    typeof almId === 'string' && ObjectId.isValid(almId)
+                      ? new ObjectId(almId)
+                      : null
+                  const point = await db
                     .collection(COLL_REALTIME)
-                    .updateOne(findPoint, {
-                      $set: {
-                        alarmed: false,
-                      },
-                    })
-                  // make digital event tag return to zero after acknowledged
-                  result = await db.collection(COLL_REALTIME).updateOne(
-                    {
-                      $and: [
-                        findPoint,
-                        { type: 'digital' },
-                        { isEvent: true },
-                        {
-                          $or: [
-                            { origin: 'supervised' },
-                            { origin: 'calculated' },
-                          ],
-                        },
-                      ],
-                    },
-                    [
+                    .findOne(findPoint, { projection: { _id: 1 } })
+                  let unackedLeft = 0
+                  if (point) {
+                    await db.collection(COLL_ALARMS).updateMany(
                       {
-                        $set: {
-                          value: 0,
-                          valueString: '$stateTextFalse',
-                          timeTagAtSource: null,
-                          timeTagAtSourceOk: null,
-                        },
+                        pointKey: point._id,
+                        ack: 0,
+                        ...(alarmObjectId ? { _id: alarmObjectId } : {}),
                       },
-                    ]
-                  )
-                  UserActionsQueue.enqueue({
-                    username: username,
-                    action: 'Ack Point Alarm',
-                    pointKey: node.NodeId.Id,
-                    timeTag: new Date(),
-                  })
+                      alarmAckUpdate(username)
+                    )
+                    if (alarmObjectId)
+                      unackedLeft = await db
+                        .collection(COLL_ALARMS)
+                        .countDocuments({ pointKey: point._id, ack: 0 }, { limit: 1 })
+                  }
+                  if (unackedLeft > 0) {
+                    UserActionsQueue.enqueue({
+                      username: username,
+                      action: 'Ack Alarm',
+                      pointKey: node.NodeId.Id,
+                      alarmId: alarmObjectId,
+                      timeTag: new Date(),
+                    })
+                  } else {
+                    let result = await db
+                      .collection(COLL_REALTIME)
+                      .updateOne(findPoint, {
+                        $set: {
+                          alarmed: false,
+                        },
+                      })
+                    // make digital event tag return to zero after acknowledged
+                    result = await db.collection(COLL_REALTIME).updateOne(
+                      {
+                        $and: [
+                          findPoint,
+                          { type: 'digital' },
+                          { isEvent: true },
+                          {
+                            $or: [
+                              { origin: 'supervised' },
+                              { origin: 'calculated' },
+                            ],
+                          },
+                        ],
+                      },
+                      [
+                        {
+                          $set: {
+                            value: 0,
+                            valueString: '$stateTextFalse',
+                            timeTagAtSource: null,
+                            timeTagAtSourceOk: null,
+                          },
+                        },
+                      ]
+                    )
+                    UserActionsQueue.enqueue({
+                      username: username,
+                      action: alarmObjectId ? 'Ack Alarm' : 'Ack Point Alarm',
+                      pointKey: node.NodeId.Id,
+                      ...(alarmObjectId ? { alarmId: alarmObjectId } : {}),
+                      timeTag: new Date(),
+                    })
+                  }
                 }
                 if (node.Value.Body & opc.Acknowledge.SilenceBeep) {
                   Log.log('Silence Beep')

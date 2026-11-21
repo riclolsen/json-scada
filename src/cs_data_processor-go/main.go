@@ -63,6 +63,7 @@ func main() {
 	StartRedundancy(ctx, cfg, 5*time.Second, proc)
 	StartMaintenance(ctx, cfg)
 	StartCommStatus(ctx, cfg)
+	StartRetention(ctx, cfg)
 
 	runChangeStream(ctx, cfg, proc)
 }
