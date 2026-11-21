@@ -24,6 +24,7 @@ const Log = require('./simple-logger')
 const LoadConfig = require('./load-config')
 const Redundancy = require('./redundancy')
 const CommStatus = require('./commstatus')
+const Limits = require('./limits')
 const {
   M: Metrics,
   Stage,
@@ -633,6 +634,7 @@ const pipeline = [
 
                 let isSOE = false
                 let alarmRange = 0
+                let rangeEscalated = false // to a more severe limit level
 
                 if (change.operationType === 'insert') {
                   // document inserted
@@ -838,47 +840,22 @@ const pipeline = [
                   if (fullDocument?.hysteresis)
                     hysteresis = parseFloat(fullDocument.hysteresis)
 
-                  // check for limits
+                  // check for limits (all the configured levels, see limits.js)
                   if (
-                    // value != fullDocument.value &&
-                    'hiLimit' in fullDocument &&
-                    fullDocument.hiLimit !== null &&
-                    'loLimit' in fullDocument &&
-                    fullDocument.loLimit !== null &&
+                    Limits.hasLimits(fullDocument) &&
                     !fullDocument.alarmDisabled
                   ) {
-                    if (value > fullDocument.hiLimit + hysteresis) {
-                      alarmRange = 1
-                    } else if (
-                      value <
-                      fullDocument.loLimit - hysteresis
-                    ) {
-                      alarmRange = -1
-                    } else if (
-                      value < fullDocument.hiLimit - hysteresis &&
-                      value > fullDocument.loLimit + hysteresis
-                    ) {
-                      alarmed = false
-                      alarmRange = 0
-                    } else if (fullDocument?.alarmRange)
-                      // keep the old range if out of range
-                      alarmRange = fullDocument.alarmRange
+                    const r = Limits.alarmRangeOf(
+                      fullDocument,
+                      value,
+                      hysteresis,
+                      fullDocument?.alarmRange
+                    )
+                    alarmRange = r.range
+                    rangeEscalated = r.escalated
+                    if (r.normal) alarmed = false
 
                     // create a SOE entry for the limits alarm/normalization when analog alarm condition changes
-                    //if (alarmed != fullDocument.alarmed)
-                    //if (
-                    //    fullDocument.value <= fullDocument.hiLimit + hysteresis &&
-                    //    value > fullDocument.hiLimit + hysteresis
-                    //    ||
-                    //    fullDocument.value >= fullDocument.hiLimit - hysteresis &&
-                    //    value < fullDocument.hiLimit - hysteresis
-                    //    ||
-                    //    fullDocument.value >= fullDocument.loLimit - hysteresis  &&
-                    //    value < fullDocument.loLimit - hysteresis
-                    //    ||
-                    //    fullDocument.value <= fullDocument.loLimit + hysteresis  &&
-                    //    value > fullDocument.loLimit + hysteresis
-                    //      )
                     if (!fullDocument.alarmDisabled)
                       if (fullDocument?.alarmRange != alarmRange) {
                         if (alarmRange != 0) alarmed = true
@@ -895,7 +872,10 @@ const pipeline = [
                               Math.abs(fullDocument?.value)
                             ? ' ⤈'
                             : '') +
-                          (alarmed ? ' 🚩' : ' 🆗')
+                          (alarmed ? ' 🚩' : ' 🆗') +
+                          (alarmRange !== 0
+                            ? ' ' + Limits.rangeLabel(alarmRange)
+                            : '')
                         db.collection(jsConfig.SoeDataCollectionName)
                           .insertOne(
                             {
@@ -990,7 +970,8 @@ const pipeline = [
                     !fullDocument.alarmed ||
                     (fullDocument.type === 'digital' &&
                       value !== fullDocument.value) ||
-                    (fullDocument.type === 'digital' && isSOE)
+                    (fullDocument.type === 'digital' && isSOE) ||
+                    rangeEscalated
                   ) {
                     alarmTime = new Date()
                   }
@@ -1021,7 +1002,8 @@ const pipeline = [
                       (alarmed &&
                         fullDocument?.isEvent === false &&
                         fullDocument.type === 'digital') ||
-                      (alarmed && fullDocument?.alarmed === false)
+                      (alarmed && fullDocument?.alarmed === false) ||
+                      (alarmed && rangeEscalated)
                     ) {
                       // a new alarm, then update beep var
                       Log.log('NEW BEEP, tag: ' + fullDocument.tag)

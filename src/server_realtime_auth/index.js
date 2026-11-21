@@ -238,13 +238,20 @@ const MaxFilteredReadRows = 100000 // max points returned by a ContentFilter rea
 // nodes of one write request (commands, acks, property writes); the clients
 // write one at a time, a larger batch is a script or a flood of commands
 const MaxWriteNodes = 100
+// out-of-range alarm limits of analog points (alarmRange 1..3 / -1..-3)
+const LimitFields = [
+  'hiLimit', 'hihiLimit', 'hihihiLimit', 'loLimit', 'loloLimit', 'lololoLimit',
+]
+const LimitIsHigh = { hiLimit: true, hihiLimit: true, hihihiLimit: true }
+const limitsOf = (p) => Object.fromEntries(LimitFields.map((f) => [f, p?.[f]]))
 // fields of the points returned by a ContentFilter read
 const FilteredReadFields = Object.fromEntries(
   ['_id', 'tag', 'type', 'value', 'valueString', 'valueDefault', 'invalid',
     'timeTag', 'timeTagAtSource', 'timeTagAtSourceOk', 'timeTagAlarm',
     'alarmed', 'alarmRange', 'alarmState', 'alarmDisabled', 'frozen', 'isEvent',
     'transit', 'group1', 'group2', 'group3', 'description',
-    'ungroupedDescription', 'hiLimit', 'loLimit', 'hysteresis',
+    'ungroupedDescription', 'hiLimit', 'hihiLimit', 'hihihiLimit', 'loLimit',
+    'loloLimit', 'lololoLimit', 'hysteresis',
     'stateTextTrue', 'stateTextFalse', 'unit', 'annotation', 'notes',
     'commandOfSupervised', 'supervisedOfCommand', 'origin', 'priority'].map(
     (f) => [f, 1]
@@ -253,7 +260,7 @@ const FilteredReadFields = Object.fromEntries(
 // fields of a point read before a property write (the rest is not needed)
 const PropertyWriteFields = Object.fromEntries(
   ['_id', 'tag', 'type', 'group1', 'value', 'description', 'unit', 'priority',
-    'annotation', 'notes', 'alarmDisabled', 'loLimit', 'hiLimit', 'hysteresis',
+    'annotation', 'notes', 'alarmDisabled', ...LimitFields, 'hysteresis',
     'eventTextTrue', 'eventTextFalse'].map((f) => [f, 1])
 )
 
@@ -1534,30 +1541,21 @@ function maskConnectionString(cs) {
                             annotation: node.Value._Properties?.annotation,
                           }
 
-                      let loLimitNew = {}
                       // absent fields are left unchanged; a null limit (an
                       // Infinity serialized as JSON) means no limit
                       const props = node.Value?._Properties || {}
-                      const limitOf = (v, inf) =>
-                        v === null ? inf : finiteNumber(v)
-                      if (userRights?.enterLimits && props.loLimit !== undefined)
-                        if (
-                          prevData?.loLimit !== limitOf(props.loLimit, -Infinity)
-                        )
-                          loLimitNew = {
-                            loLimit: new Double(
-                              limitOf(props.loLimit, -Infinity)
-                            ),
-                          }
-
-                      let hiLimitNew = {}
-                      if (userRights?.enterLimits && props.hiLimit !== undefined)
-                        if (
-                          prevData?.hiLimit !== limitOf(props.hiLimit, Infinity)
-                        )
-                          hiLimitNew = {
-                            hiLimit: new Double(limitOf(props.hiLimit, Infinity)),
-                          }
+                      let limitsNew = {}
+                      if (userRights?.enterLimits)
+                        for (const k of LimitFields) {
+                          if (props[k] === undefined) continue
+                          const lim =
+                            props[k] === null
+                              ? LimitIsHigh[k]
+                                ? Infinity
+                                : -Infinity
+                              : finiteNumber(props[k])
+                          if (prevData?.[k] !== lim) limitsNew[k] = new Double(lim)
+                        }
 
                       let hysteresisNew = {}
                       if (
@@ -1568,11 +1566,6 @@ function maskConnectionString(cs) {
                           hysteresisNew = {
                             hysteresis: new Double(finiteNumber(props.hysteresis)),
                           }
-
-                      // loloLimit: node.Value._Properties.loLimit,
-                      // lololoLimit: node.Value._Properties.loLimit,
-                      // hihiLimit: node.Value._Properties.hiLimit,
-                      // hihihiLimit: node.Value._Properties.hiLimit,
 
                       let notesNew = {}
                       if (userRights?.enterNotes && props.notes !== undefined)
@@ -1593,8 +1586,7 @@ function maskConnectionString(cs) {
                         $set: {
                           ...alarmDisableNew,
                           ...annotationNew,
-                          ...loLimitNew,
-                          ...hiLimitNew,
+                          ...limitsNew,
                           ...hysteresisNew,
                           ...notesNew,
                           ...valueNew,
@@ -1620,8 +1612,7 @@ function maskConnectionString(cs) {
                         if (prevData.type === 'analog') {
                           if (
                             'alarmDisabled' in alarmDisableNew ||
-                            'hiLimit' in hiLimitNew ||
-                            'loLimit' in loLimitNew ||
+                            Object.keys(limitsNew).length > 0 ||
                             'hysteresis' in hysteresisNew
                           ) {
                             Log.log('Update for range check: ' + node.NodeId.Id)
@@ -1881,8 +1872,7 @@ function maskConnectionString(cs) {
                   valueString: 1,
                   invalid: 1,
                   timeTag: 1,
-                  loLimit: 1,
-                  hiLimit: 1,
+                  ...Object.fromEntries(LimitFields.map((f) => [f, 1])),
                   hysteresis: 1,
                   alarmed: 1,
                   alarmRange: 1,
@@ -2133,8 +2123,7 @@ function maskConnectionString(cs) {
                           group3: pointInfo.group3,
                           description: pointInfo.description,
                           ungroupedDescription: pointInfo.ungroupedDescription,
-                          hiLimit: pointInfo.hiLimit,
-                          loLimit: pointInfo.loLimit,
+                          ...limitsOf(pointInfo),
                           hysteresis: pointInfo.hysteresis,
                           stateTextTrue: pointInfo.stateTextTrue,
                           stateTextFalse: pointInfo.stateTextFalse,
@@ -2246,8 +2235,7 @@ function maskConnectionString(cs) {
                       group3: node.group3,
                       description: node.description,
                       ungroupedDescription: node.ungroupedDescription,
-                      hiLimit: node.hiLimit,
-                      loLimit: node.loLimit,
+                      ...limitsOf(node),
                       hysteresis: node.hysteresis,
                       stateTextTrue: node.stateTextTrue,
                       stateTextFalse: node.stateTextFalse,

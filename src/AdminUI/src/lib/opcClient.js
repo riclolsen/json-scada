@@ -138,6 +138,29 @@ function buildContentFilter(station, bay, onlyAlarms) {
   return cf
 }
 
+// Out-of-range alarm limit fields of analog points, from the least severe.
+export const HiLimitFields = ['hiLimit', 'hihiLimit', 'hihihiLimit']
+export const LoLimitFields = ['loLimit', 'loloLimit', 'lololoLimit']
+
+// The limits of a point, Infinity (high) or -Infinity (low) when not set.
+function limitsOf(prop) {
+  const out = {}
+  for (const k of HiLimitFields)
+    out[k] = typeof prop[k] === 'number' && !isNaN(prop[k]) ? prop[k] : Infinity
+  for (const k of LoLimitFields)
+    out[k] = typeof prop[k] === 'number' && !isNaN(prop[k]) ? prop[k] : -Infinity
+  return out
+}
+
+// Label of an alarm range (alarmRange of an analog point): HI, HIHI, HIHIHI,
+// LO, LOLO, LOLOLO, '' when normal.
+export function alarmRangeLabel(range) {
+  const n = Math.trunc(range)
+  if (n > 0 && n <= 3) return 'HI'.repeat(n)
+  if (n < 0 && n >= -3) return 'LO'.repeat(-n)
+  return ''
+}
+
 // Convert one OPC read Result element + its _Properties into a normalized point.
 function normalizePoint(element, cfg) {
   const prop = element._Properties || {}
@@ -218,10 +241,10 @@ function normalizePoint(element, cfg) {
     isEvent: !!prop.isEvent,
     commandKey: prop.commandOfSupervised || 0,
     supervisedOfCommand: prop.supervisedOfCommand || 0,
-    hiLimit:
-      isNaN(prop.hiLimit) || prop.hiLimit === null ? Infinity : prop.hiLimit,
-    loLimit:
-      isNaN(prop.loLimit) || prop.loLimit === null ? -Infinity : prop.loLimit,
+    // out-of-range alarm limits: Infinity / -Infinity when not set
+    ...limitsOf(prop),
+    // 1..3 above hi/hihi/hihihiLimit, -1..-3 below lo/lolo/lololoLimit, 0 normal
+    alarmRange: typeof prop.alarmRange === 'number' ? prop.alarmRange : 0,
     hysteresis: prop.hysteresis,
     stateTextTrue: prop.stateTextTrue,
     stateTextFalse: prop.stateTextFalse,

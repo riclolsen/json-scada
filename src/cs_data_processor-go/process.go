@@ -256,6 +256,7 @@ func (p *Processor) handleChange(ev changeEvent) {
 
 	isSOE := false
 	alarmRange := 0.0
+	rangeEscalated := false // to a more severe limit level
 
 	// consider SOE when a digital change carries a source timestamp, or an
 	// analog marked as isEvent does
@@ -427,26 +428,14 @@ func (p *Processor) handleChange(ev changeEvent) {
 			hysteresis = fd.numOr("hysteresis", 0)
 		}
 
-		// check for limits
-		if fd.has("hiLimit") && !fd.isNull("hiLimit") &&
-			fd.has("loLimit") && !fd.isNull("loLimit") && !alarmDisabled {
-			hiLimit := fd.numOr("hiLimit", math.NaN())
-			loLimit := fd.numOr("loLimit", math.NaN())
+		// check for limits (all the configured levels, see limits.go)
+		if hasLimits(fd) && !alarmDisabled {
 			prevRange, prevRangeOk := fd.num("alarmRange")
-
-			switch {
-			case value > hiLimit+hysteresis:
-				alarmRange = 1
-			case value < loLimit-hysteresis:
-				alarmRange = -1
-			case value < hiLimit-hysteresis && value > loLimit+hysteresis:
+			r := alarmRangeOf(fd, value, hysteresis)
+			alarmRange = float64(r.rng)
+			rangeEscalated = r.escalated
+			if r.normal {
 				alarmed = false
-				alarmRange = 0
-			default:
-				// keep the old range when in the hysteresis band
-				if fd.truthy("alarmRange") {
-					alarmRange = prevRange
-				}
 			}
 
 			// SOE entry when the analog alarm condition changes.
@@ -472,7 +461,11 @@ func (p *Processor) handleChange(ev changeEvent) {
 					flag = " \U0001F197"
 					ack = 1 // enter as acknowledged when normalized
 				}
-				eventText := jsFixedString(value, 3) + " " + unit + arrow + flag
+				label := ""
+				if alarmRange != 0 {
+					label = " " + rangeLabel(int(alarmRange))
+				}
+				eventText := jsFixedString(value, 3) + " " + unit + arrow + flag + label
 				p.emitSoe(bson.D{
 					{Key: "tag", Value: tag},
 					{Key: "pointKey", Value: rawOrNil(fd.idValue())},
@@ -535,7 +528,8 @@ func (p *Processor) handleChange(ev changeEvent) {
 	if !alarmDisabled && alarmed {
 		if !fd.truthy("alarmed") ||
 			(docType == "digital" && (!fdValueOk || value != fdValue)) ||
-			(docType == "digital" && isSOE) {
+			(docType == "digital" && isSOE) ||
+			rangeEscalated {
 			alarmTime = time.Now()
 			hasAlarmTime = true
 		}
@@ -562,7 +556,8 @@ func (p *Processor) handleChange(ev changeEvent) {
 		if !alarmDisabled {
 			if (alarmed && isSOE && isEventStrictTrue && docType == "digital" && value != 0) ||
 				(alarmed && isEventStrictFalse && docType == "digital") ||
-				(alarmed && fdAlarmedIsFalse) {
+				(alarmed && fdAlarmedIsFalse) ||
+				(alarmed && rangeEscalated) {
 				// a new alarm, update the beep point
 				Log(LogLevelNormal, "NEW BEEP, tag: %s", tag)
 				priority, priorityOk := fd.num("priority")

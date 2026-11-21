@@ -142,20 +142,13 @@
             />
             <!-- limits -->
             <line
-              v-if="info && isFinite(info.hiLimit)"
-              class="limit hi"
+              v-for="l in limitLines"
+              :key="l.key"
+              :class="['limit', l.side, 'lvl' + l.level]"
               :x1="M.left"
               :x2="width - M.right"
-              :y1="yPx(info.hiLimit)"
-              :y2="yPx(info.hiLimit)"
-            />
-            <line
-              v-if="info && isFinite(info.loLimit)"
-              class="limit lo"
-              :x1="M.left"
-              :x2="width - M.right"
-              :y1="yPx(info.loLimit)"
-              :y2="yPx(info.loLimit)"
+              :y1="yPx(l.value)"
+              :y2="yPx(l.value)"
             />
             <!-- series -->
             <polyline v-if="markers !== 'points'" class="series" :points="seriesPath" />
@@ -199,7 +192,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { loadViewersConfig, getViewersConfig } from '../lib/viewersConfig'
-import { onAccessDenied, readPoints, readHistory } from '../lib/opcClient'
+import { onAccessDenied, readPoints, readHistory, HiLimitFields, LoLimitFields } from '../lib/opcClient'
 import { Flags } from '../lib/opcCodes'
 import { decodeQuality } from '../lib/viewerHelpers'
 
@@ -617,6 +610,21 @@ const hover = computed(() => {
   return { x, tm, v, y: v === null ? null : yPx(v) }
 })
 
+// configured out-of-range alarm limits, from the most severe high to the
+// most severe low (level 1 = hi/loLimit, 2 = hihi/lolo, 3 = hihihi/lololo)
+const limitLines = computed(() => {
+  const p = info.value
+  if (!p) return []
+  const out = []
+  HiLimitFields.forEach((key, i) => {
+    if (isFinite(p[key])) out.unshift({ key, value: p[key], side: 'hi', level: i + 1 })
+  })
+  LoLimitFields.forEach((key, i) => {
+    if (isFinite(p[key])) out.push({ key, value: p[key], side: 'lo', level: i + 1 })
+  })
+  return out
+})
+
 const legendLines = computed(() => {
   const lines = []
   if (hover.value) {
@@ -627,10 +635,8 @@ const legendLines = computed(() => {
   } else if (info.value) {
     lines.push({ text: (info.value.tag || '') + '  =  ' + currentText.value, cls: 'lg-main' })
   }
-  if (info.value && isFinite(info.value.hiLimit))
-    lines.push({ text: t('trendViewer.hiLimit') + ': ' + formatValue(info.value.hiLimit), cls: 'lg-hi' })
-  if (info.value && isFinite(info.value.loLimit))
-    lines.push({ text: t('trendViewer.loLimit') + ': ' + formatValue(info.value.loLimit), cls: 'lg-lo' })
+  for (const l of limitLines.value)
+    lines.push({ text: t('trendViewer.' + l.key) + ': ' + formatValue(l.value), cls: 'lg-' + l.side })
   return lines
 })
 const legendW = computed(() => Math.min(plotW.value - 8, 8 + 7 * Math.max(0, ...legendLines.value.map((l) => l.text.length))))
@@ -838,6 +844,14 @@ onUnmounted(() => {
 .limit {
   stroke-width: 1.2;
   stroke-dasharray: 6 4;
+}
+.limit.lvl2 {
+  stroke-width: 1.6;
+  stroke-dasharray: 10 3;
+}
+.limit.lvl3 {
+  stroke-width: 2;
+  stroke-dasharray: none;
 }
 .limit.hi,
 .lg-hi {

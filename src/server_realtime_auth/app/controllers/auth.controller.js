@@ -328,6 +328,41 @@ exports.createTag = async (req, res) => {
   }
 }
 
+// fields of an analog tag that change its out-of-range alarm check
+const alarmCheckFields = [
+  'hiLimit', 'hihiLimit', 'hihihiLimit', 'loLimit', 'loloLimit', 'lololoLimit',
+  'hysteresis', 'alarmDisabled',
+]
+// a null limit (an Infinity serialized as JSON) is equal to an infinite one
+const limitValue = (v) => (v === null || v === undefined || !isFinite(v) ? null : Number(v))
+function changesAlarmCheck(stored, body) {
+  return alarmCheckFields.some(
+    (k) =>
+      k in body &&
+      (k === 'alarmDisabled'
+        ? !!body[k] !== !!stored[k]
+        : limitValue(body[k]) !== limitValue(stored[k]))
+  )
+}
+// the data processor recomputes the alarm range of the tag (as for limits
+// changed by an operator); merged on the server so a driver write is kept
+function requestRangeCheck(_id) {
+  Tag.collection
+    .updateOne({ _id: _id }, [
+      {
+        $set: {
+          sourceDataUpdate: {
+            $mergeObjects: [
+              { $ifNull: ['$sourceDataUpdate', {}] },
+              { rangeCheck: new Date().getTime() },
+            ],
+          },
+        },
+      },
+    ])
+    .catch((e) => Log.log('Update for range check error: ' + e.message))
+}
+
 exports.updateTag = async (req, res) => {
   try {
     registerUserAction(req, 'updateTag')
@@ -367,8 +402,10 @@ exports.updateTag = async (req, res) => {
       if (IsNumberVal(req.body.protocolSourceASDU))
         req.body.protocolSourceASDU = parseFloat(req.body.protocolSourceASDU)
 
-      await Tag.findOneAndUpdate({ _id: _id }, req.body)
+      const before = await Tag.findOneAndUpdate({ _id: _id }, req.body).lean()
       res.status(200).send({ error: false })
+      if (before?.type === 'analog' && changesAlarmCheck(before, req.body))
+        requestRangeCheck(before._id)
     } else res.status(200).send({ error: 'No _id in update request.' })
   } catch (err) {
     Log.log(err)

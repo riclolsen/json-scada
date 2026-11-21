@@ -465,7 +465,11 @@ const typeDefs = `#graphql
     annotation: String
     notes: String
     loLimit: Float
+    loloLimit: Float
+    lololoLimit: Float
     hiLimit: Float
+    hihiLimit: Float
+    hihihiLimit: Float
     hysteresis: Float
     alarmDisabled: Boolean
     "Set together with newValue to substitute (manually enter) the point value."
@@ -1791,7 +1795,9 @@ const resolvers = {
         requireTokenRight(ctx, 'enterNotes', 'User has no right to enter notes!')
         if (prevData.notes !== properties.notes) set.notes = properties.notes
       }
-      for (const lim of ['loLimit', 'hiLimit', 'hysteresis']) {
+      for (const lim of [
+        'loLimit', 'loloLimit', 'lololoLimit', 'hiLimit', 'hihiLimit', 'hihihiLimit', 'hysteresis',
+      ]) {
         if (lim in properties && properties[lim] !== null) {
           requireTokenRight(ctx, 'enterLimits', 'User has no right to enter limits!')
           if (prevData[lim] !== properties[lim]) set[lim] = new Double(properties[lim])
@@ -1825,8 +1831,7 @@ const resolvers = {
       if (prevData.type === 'analog') {
         if (
           'alarmDisabled' in set ||
-          'hiLimit' in set ||
-          'loLimit' in set ||
+          Object.keys(set).some((k) => k.endsWith('Limit')) ||
           'hysteresis' in set
         ) {
           // merge on the server: a copy read earlier could overwrite what a

@@ -263,13 +263,14 @@ Do not rename existing tags to fit the conventions. Tag names are referenced by 
 
 ### Fields that can be configured and altered by the operators.
 
-* _**_hiLimit_**_ [Double] - High limit for out-of-range alarm. Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
-* _**_hihiLimit_**_ [Double] - High-high limit for out-of-range alarm. Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
-* _**_hihihiLimit_**_ [Double] - High-high-high limit for out-of-range alarm. Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
-* _**_loLimit_**_ [Double] - Low limit for out-of-range alarm. Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
-* _**_loloLimit_**_ [Double] - Low-low limit for out-of-range alarm. Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
-* _**_lololoLimit_**_ [Double] - Low-low-low limit for out-of-range alarm. Use -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
+* _**_hiLimit_**_ [Double] - High limit for out-of-range alarm (level 1, _alarmRange_ 1). Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
+* _**_hihiLimit_**_ [Double] - High-high limit for out-of-range alarm (level 2, _alarmRange_ 2). Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
+* _**_hihihiLimit_**_ [Double] - High-high-high limit for out-of-range alarm (level 3, _alarmRange_ 3). Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
+* _**_loLimit_**_ [Double] - Low limit for out-of-range alarm (level 1, _alarmRange_ -1). Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
+* _**_loloLimit_**_ [Double] - Low-low limit for out-of-range alarm (level 2, _alarmRange_ -2). Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
+* _**_lololoLimit_**_ [Double] - Low-low-low limit for out-of-range alarm (level 3, _alarmRange_ -3). Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
 * _**_hysteresis_**_ [Double] - Hysteresis (maximum absolute value variation that will not produce out-of-range alarms) for limits verification. Only meaningful for _type=analog_. **Mandatory parameter**.
+  The data processor checks each configured limit level independently (a null or missing limit is not checked; the limits should not decrease from _lololoLimit_ to _hihihiLimit_). A level is entered when the value passes its limit by more than the hysteresis and left when it comes back by more than the hysteresis, so a value inside a hysteresis band keeps the previous range. Every range change creates an SOE event (text ending with the level: HI, HIHI, HIHIHI, LO, LOLO, LOLOLO; 🆗 when normalized); a change to a more severe level, or to the other side, is a new alarm (beep, new _timeTagAlarm_) even when the previous one is not acknowledged.
 * _**_substituted_**_ [Boolean] - When true, indicates that the value is substituted locally by the operator. **Mandatory parameter**.
 * _**_alarmDisabled_**_ [Boolean] - When true, indicates that alarms are disabled for the point. **Mandatory parameter**.
 * _**_annotation_**_ [String] - Blocking annotation text (reason command for blocking). **Mandatory parameter**.
@@ -280,7 +281,7 @@ Do not rename existing tags to fit the conventions. Tag names are referenced by 
 ### Fields updated by the system.
 
 * _**_alarmed_**_ [Boolean] - When true means the point is alarmed. **Mandatory parameter**.
-* _**_alarmRange_**_ [Double] - Current alarm range for analog tags. 0=normal, 1=hiLimit violated, -1=loLimit violated. **Mandatory parameter**.
+* _**_alarmRange_**_ [Double] - Current alarm range for analog tags. 0=normal, 1/2/3=hiLimit/hihiLimit/hihihiLimit violated, -1/-2/-3=loLimit/loloLimit/lololoLimit violated (the most severe level violated). **Mandatory parameter**.
 * _**_alerted_**_ [Boolean] - When true means the point is alerted (Grafana alert). **Optional parameter**.
 * _**_alertState_**_ [String] - Grafana alert state name. **Optional parameter**.
 * _**_historianLastValue_**_ [Double] - Last value sent to historian (for dead band processing). Only for analog tags. **Mandatory parameter**.
