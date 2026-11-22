@@ -410,6 +410,11 @@ const initials = computed(() => (props.loggedInUser || '?').slice(0, 2).toUpperC
   gap: 2px;
 }
 /* thin scrollbar matching the theme when the menu does not fit */
+/* navigation chrome: clicks and drags must not select its text */
+.app-sidebar {
+  user-select: none;
+  -webkit-user-select: none;
+}
 .app-sidebar :deep(.v-navigation-drawer__content) {
   scrollbar-width: thin;
   scrollbar-color: rgba(var(--v-theme-on-surface), 0.25) transparent;
