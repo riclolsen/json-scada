@@ -16,10 +16,11 @@ mongo-cxx-driver, OpenSSL, vcpkg or CMake.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `dnp3-go`, `cmd/` + `internal/` layout as in `src/iec60870-5`
-- **Library:** `github.com/dscsystems/go-dnp3` v0.8.2 (GPLv3+, pure Go) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-dnp3` v0.9.0 (GPLv3+, pure Go) — **pin the version**,
   the API is pre-1.0 and the SKILL.md in that repo says so explicitly. JSON-SCADA is GPL-3.0, so
   the copyleft is not a problem; note it rather than re-litigating it.
-  - Used beyond the basics: device attributes (group 0) on the server, `multidrop.Bus` everywhere.
+  - Used beyond the basics: device attributes (group 0) on the server and read by the client
+    (`master.Session.ReadAttributes`), the `secevent` security policy, `multidrop.Bus` everywhere.
     Not used: file transfer (group 70) and `multidrop.Registry` — `dnp3util.BuildGroups` owns bus
     construction. `multidrop.DefaultQueue` is still 16, so `StationQueue` is still needed.
   - v0.5.0 widened `dnp3.Indexed.Index` (and `master.Update.Index`) to `uint32`. It also
@@ -63,6 +64,10 @@ mongo-cxx-driver, OpenSSL, vcpkg or CMake.
     `DisableAttributes`, `EventBuffer.Discard`. v0.8.1 fixes events a master had just confirmed
     being reported again when a request arrived in the same read as the confirm. The server still accepts restart requests, as
     `NopApplication` does; the C++ server refuses them.
+  - v0.9.0 added the `secevent` package (security events, `Config.Security` on the master, the
+    outstation and `multidrop.Config`, `Session.PeerInfo`, `netpeer` MAC lookup); without a policy
+    nothing changes. A multidrop station's connection carries no peer, and `Attachable` is lost
+    behind a wrapper: `dnp3util` makes up for both (see Work Guidance).
   - Stats counters available if the stats document ever wants them:
     `outstation.Stats.RepeatedRequests`/`IncompleteRequests`, `master.Stats.FragmentsDiscarded`.
   - Before the next bump, diff the API of the packages this module imports rather than trusting
@@ -77,6 +82,9 @@ mongo-cxx-driver, OpenSSL, vcpkg or CMake.
     the other shared JSON-SCADA helpers
   - `internal/dnp3util` — group tables, quality mapping, CROB codes, endpoints, the
     `multidrop.Bus` grouping layer, the counting and link-state channel wrappers
+  - `internal/dnp3sec` — security events (`secEvents`) and peer identification
+    (`stats.peerIdentity`) of both drivers: the go-dnp3 policy and its filter, the driver's
+    command and identity checks
   - `internal/clientapp` — the master driver (← `Dnp3ClientCpp`)
   - `internal/serverapp` — the outstation driver (← `Dnp3Server`)
 - **Build:** `build.bat`, or `go build -ldflags="-s -w" -o ../../bin/dnp3-client ./cmd/dnp3client`
@@ -98,7 +106,7 @@ mongo-cxx-driver, OpenSSL, vcpkg or CMake.
 
 - The C++ drivers were the specification. Before changing behaviour marked `parity:`, read what
   they did in git history (`git show e0227836^:src/dnp3/...`). Quirks are reproduced on purpose and
-  numbered Q in `README.md`; intentional differences are numbered D1..D35 there — add to that list
+  numbered Q in `README.md`; intentional differences are numbered D1..D37 there — add to that list
   rather than diverging silently.
 - **A batch the client writer could not write is requeued** (`ValueQueue.Requeue`), never dropped.
   An auto-created address is marked when its document is built and unmarked by `settleInserts` when
@@ -197,6 +205,29 @@ mongo-cxx-driver, OpenSSL, vcpkg or CMake.
   key the library derives is answered here — keep it passing on every library bump, because a gap
   mixes the library's values into the response. Do not add 249 (conformance) or 248 (serial
   number); see `README.md`. The g0v255 list is answered by the library from the same set.
+- **Security events go through one `dnp3sec.Reporter` per connection**, with its own
+  `netpeer.Cache` seeded from `stats.peerIdentity`: the process-wide cache keys history by IP, and
+  stations sharing an IP have different link addresses, which would report
+  `peer.link_addr_changed` falsely. A bus line's channel events go to the lead connection's
+  reporter (`StationSpec.Security`).
+- **Bus sessions get the line's peer from `dnp3util`**: `Counters` stores it at `Connect`,
+  `withLinePeer` gives each station connection a `PeerInfo()`, and the counting and link-state
+  wrappers forward `PeerInfo()` and `AttachSecurity` to what they wrap. A refused connection on a
+  passive endpoint reaches `Counters.SetRefusedHook`. `TestLoopbackOverTheDriverBus` and
+  `TestRefusedConnectionIsReported` pin it.
+- **The driver's command refusal is the stored one.** The server's handler is installed even with
+  `commandsEnabled` off (it answers NOT_SUPPORTED) so every refusal is reported with its tag and
+  reason, and `Server.DropServerRefusals` leaves out go-dnp3's `cmd.rejected` of the same object;
+  on the client `DropClientRefusals` leaves out `remote.rejected` carrying a command status, which
+  `Client.Answer` reports, and the refused attribute read. go-dnp3's `remote.rejected` names the
+  response's function, not the request's: match the task name in its detail. The client maps
+  NOT_SUPPORTED to `cmd.rejected`, never to `cmd.object_unknown`: outstations, this server among
+  them, answer it for disabled controls too.
+- **Identification is keyed to a connection, never to a poll.** The client identifies each new
+  value of `master.Stats.Connections` (a reconnection between two polls of `Connected()` is still
+  seen), waits for `Session.PeerInfo()` (Connected comes first), and asks the attributes on every
+  connection. The server guards `Server.Opened` with the generation `Opening` returns, so a peer
+  described after its connection closed is dropped. Refusals are throttled per master address.
 - **The active channels are built with `channel.NoRetry` and the driver retries in `countchan`.**
   Do not put the retry back into the library channel: it loops inside `Connect` and returns only
   a context error at the end, so `numOpenFail` never increments and the reason the port would not
@@ -232,8 +263,8 @@ mongo-cxx-driver, OpenSSL, vcpkg or CMake.
 ## Known gaps
 
 - Octet strings (groups 110/111) are decoded and discarded, as in the C++ drivers.
-- Device attributes are served but not writable, and the client driver does not read them; there
-  is nowhere in the JSON-SCADA schema to put what it would learn.
+- Device attributes are served but not writable. The client reads them only into
+  `stats.peerIdentity`.
 - Group 50 (time and interval) destinations are unsupported: `outstation.DatabaseConfig` has no
   such family.
 - A passive TCP/TLS connection serves one master connection at a time; the bus multiplexes

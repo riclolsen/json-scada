@@ -26,11 +26,14 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"dnp3-go/internal/dnp3sec"
 	"dnp3-go/internal/dnp3util"
 
 	"github.com/dscsystems/go-dnp3/channel"
 	"github.com/dscsystems/go-dnp3/master"
+	"github.com/dscsystems/go-dnp3/secevent"
 	"github.com/riclolsen/json-scada/src/go-common/jstags"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // Driver identity.
@@ -99,8 +102,19 @@ type Connection struct {
 	TimeSyncMode                 int
 	EnableUnsolicited            bool
 	AutoCreateTags               bool
+	// PeerIdentification reads the outstation's device attributes on every
+	// connection into stats.peerIdentity and reports their changes.
+	PeerIdentification bool
+	// storedIdentity is stats.peerIdentity as the connection document held
+	// it at startup, the reference for changes across a restart.
+	storedIdentity bson.M
 
 	// Runtime state.
+
+	// Sec is the connection's security state (identity, command events),
+	// and policy the go-dnp3 security policy of its session and bus.
+	Sec    *dnp3sec.Client
+	policy *secevent.Policy
 
 	// Chan is the sub-channel of the shared bus this session runs on.
 	Chan channel.Channel
@@ -115,6 +129,10 @@ type Connection struct {
 	// wasConnected tracks the previous poll of Connected(), so a fall to
 	// disconnected can invalidate the connection's points exactly once.
 	wasConnected bool
+	// identifiedConn is the session connection count (master.Stats
+	// .Connections) last identified: a reconnection between two polls of
+	// Connected() is still a new connection to identify.
+	identifiedConn uint64
 
 	// Touched only by the MongoDB writer goroutine, after the initial preload.
 	// tagKeys allocates _id values inside this connection's partition.

@@ -33,12 +33,28 @@ import (
 	"sync/atomic"
 
 	"github.com/dscsystems/go-dnp3/channel"
+	"github.com/dscsystems/go-dnp3/secevent"
 )
 
 // LinkState reports whether the session on a channel currently has a
 // connection.
 type LinkState struct {
-	up atomic.Bool
+	up   atomic.Bool
+	hook atomic.Pointer[func(up bool)]
+}
+
+// SetHook sets the function told when the session's link comes up and when it
+// goes down. It runs on the session's goroutine, so it must not block.
+func (l *LinkState) SetHook(f func(up bool)) {
+	if l != nil {
+		l.hook.Store(&f)
+	}
+}
+
+func (l *LinkState) notify(up bool) {
+	if f := l.hook.Load(); f != nil {
+		(*f)(up)
+	}
 }
 
 // Up reports whether the link is currently established.
@@ -68,6 +84,7 @@ func (c *linkStateChannel) Connect(ctx context.Context) (io.ReadWriteCloser, err
 		return nil, err
 	}
 	c.state.up.Store(true)
+	c.state.notify(true)
 	return &linkStateConn{ch: c, inner: conn}, nil
 }
 
@@ -83,6 +100,9 @@ type linkStateConn struct {
 	inner  io.ReadWriteCloser
 	closed atomic.Bool
 }
+
+// PeerInfo implements secevent.PeerInfoer for the connection underneath.
+func (c *linkStateConn) PeerInfo() secevent.PeerInfo { return secevent.PeerOf(c.inner) }
 
 func (c *linkStateConn) Read(p []byte) (int, error) {
 	n, err := c.inner.Read(p)
@@ -111,5 +131,6 @@ func (c *linkStateConn) Close() error {
 func (c *linkStateConn) markDown() {
 	if c.closed.CompareAndSwap(false, true) {
 		c.ch.state.up.Store(false)
+		c.ch.state.notify(false)
 	}
 }

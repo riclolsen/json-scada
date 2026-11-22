@@ -37,6 +37,7 @@ import (
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 
 	"github.com/dscsystems/go-dnp3/channel"
+	"github.com/dscsystems/go-dnp3/secevent"
 )
 
 // Retry is the backoff between connection attempts.
@@ -88,6 +89,33 @@ type Counters struct {
 	opens     atomic.Uint64
 	closes    atomic.Uint64
 	openFails atomic.Uint64
+
+	// line is the peer of the connection the channel last produced, for the
+	// sessions of a bus, whose own connections do not carry it (LinePeer).
+	line atomic.Pointer[secevent.PeerInfo]
+	// refused is called with the peer of a connection the allowed-address
+	// list turned away (SetRefusedHook).
+	refused atomic.Pointer[func(secevent.PeerInfo)]
+}
+
+// LinePeer describes the far end of the channel's current connection: its
+// address, TLS session or serial port. ok is false before the first one.
+func (c *Counters) LinePeer() (secevent.PeerInfo, bool) {
+	if c == nil {
+		return secevent.PeerInfo{}, false
+	}
+	if p := c.line.Load(); p != nil {
+		return *p, true
+	}
+	return secevent.PeerInfo{}, false
+}
+
+// SetRefusedHook sets the function told about each connection refused by the
+// allowed-address list (a passive connection's ipAddresses).
+func (c *Counters) SetRefusedHook(f func(secevent.PeerInfo)) {
+	if c != nil {
+		c.refused.Store(&f)
+	}
 }
 
 // CountersSnapshot is a consistent-enough read of the counters for a statistics
@@ -272,11 +300,16 @@ func (c *countChannel) Connect(ctx context.Context) (io.ReadWriteCloser, error) 
 		_ = idx
 
 		if !c.permitted(conn) {
+			if f := c.counters.refused.Load(); f != nil {
+				(*f)(secevent.PeerOf(conn))
+			}
 			c.counters.closes.Add(1)
 			_ = conn.Close()
 			continue
 		}
 		c.counters.opens.Add(1)
+		peer := secevent.PeerOf(conn)
+		c.counters.line.Store(&peer)
 		if c.opts.OpenDelay > 0 {
 			select {
 			case <-ctx.Done():
@@ -353,6 +386,17 @@ func (c *countChannel) resolvesTo(peer string) bool {
 	return false
 }
 
+// AttachSecurity implements secevent.Attachable: the library's endpoints
+// report what happens before a session sees a connection (a refused
+// certificate, a failed dial), so the bus's reporter is handed on to them.
+func (c *countChannel) AttachSecurity(em *secevent.Emitter) {
+	for _, inner := range c.inners {
+		if a, ok := inner.(secevent.Attachable); ok {
+			a.AttachSecurity(em)
+		}
+	}
+}
+
 func (c *countChannel) Close() error {
 	var firstErr error
 	for _, inner := range c.inners {
@@ -379,6 +423,9 @@ type countConn struct {
 	inner  io.ReadWriteCloser
 	closed atomic.Bool
 }
+
+// PeerInfo implements secevent.PeerInfoer for the connection underneath.
+func (c *countConn) PeerInfo() secevent.PeerInfo { return secevent.PeerOf(c.inner) }
 
 func (c *countConn) Read(p []byte) (int, error) {
 	n, err := c.inner.Read(p)

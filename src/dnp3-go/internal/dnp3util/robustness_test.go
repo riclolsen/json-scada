@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/dscsystems/go-dnp3/secevent"
 )
 
 // TestPassiveChannelRetriesBind: a listener that cannot bind at startup — the
@@ -85,5 +87,55 @@ func TestLinkAddressOutOfRange(t *testing.T) {
 		Channel: ChannelSpec{Name: "S", Mode: ModeTCPActive, IPAddresses: []string{"127.0.0.1:1"}}}}, true)
 	if err == nil || !strings.Contains(err.Error(), "remoteLinkAddress") {
 		t.Fatalf("an out-of-range link address was accepted: %v", err)
+	}
+}
+
+// TestRefusedConnectionIsReported: a peer outside the allowed-address list is
+// handed to the refused hook (a security event in the server driver) and the
+// line peer stays unset; an allowed one becomes the line's peer.
+func TestRefusedConnectionIsReported(t *testing.T) {
+	ch, counters, err := ChannelSpec{Name: "S", Mode: ModeTCPPassive, IPAddressLocalBind: "127.0.0.1:0"}.
+		BuildChannel([]string{"10.9.9.9"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ch.Close()
+	refused := make(chan string, 1)
+	counters.SetRefusedHook(func(p secevent.PeerInfo) { refused <- p.RemoteAddr.Addr().String() })
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	go func() {
+		if conn, err := ch.Connect(ctx); err == nil {
+			_ = conn.Close()
+		}
+	}()
+	// The listener binds on Connect; find its port through the inner server.
+	srv := ch.(*countChannel).inners[0].(interface{ Addr() net.Addr })
+	var addr net.Addr
+	for range 100 {
+		if addr = srv.Addr(); addr != nil {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if addr == nil {
+		t.Fatal("the listener never bound")
+	}
+	c, err := net.DialTimeout("tcp", addr.String(), time.Second)
+	if err != nil {
+		t.Fatalf("dial %s: %v", addr, err)
+	}
+	defer c.Close()
+	select {
+	case ip := <-refused:
+		if ip != "127.0.0.1" {
+			t.Errorf("refused peer = %s, want 127.0.0.1", ip)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the refused connection was not reported")
+	}
+	if _, ok := counters.LinePeer(); ok {
+		t.Error("a refused connection became the line's peer")
 	}
 }

@@ -29,11 +29,13 @@ import (
 	"syscall"
 	"time"
 
+	"dnp3-go/internal/dnp3sec"
 	"dnp3-go/internal/dnp3util"
 
 	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 
 	"github.com/dscsystems/go-dnp3/outstation"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -102,6 +104,17 @@ func Run(args jsconfig.Args, cfg jsconfig.Config) {
 		e.byNum[c.ProtocolConnectionNumber] = c
 	}
 
+	// Security events go to secEvents; each connection reports under its own
+	// identity, its bus under the first connection's.
+	secWriter := jssecevents.NewWriter(0)
+	go secWriter.Run(ctx, cfg)
+	for _, c := range conns {
+		e.setupSecurity(c, secWriter, jssecevents.Origin{ProtocolDriver: ProtocolDriverName,
+			ProtocolDriverInstanceNumber: args.InstanceNumber, ProtocolConnectionNumber: c.ProtocolConnectionNumber,
+			ConnectionName: c.Name, NodeName: cfg.NodeName})
+		go c.Sec.Run(ctx)
+	}
+
 	// Destinations are created before the outstations are sized, because the
 	// sizing reads what this pass has just written.
 	for _, conn := range conns {
@@ -152,6 +165,7 @@ func (e *Engine) buildChannels() error {
 			// For a passive connection the ipAddresses list is the set of
 			// clients allowed to connect.
 			AllowedRemoteIPs: c.IPAddresses,
+			Security:         c.policy,
 		})
 	}
 
@@ -162,16 +176,69 @@ func (e *Engine) buildChannels() error {
 	e.groups = groups
 
 	for _, g := range groups {
+		// The allowed-address list is the merged one of the connections on the
+		// endpoint; a refusal is reported under the first.
+		if lead := e.byNum[g.Members[0]]; lead != nil && lead.Sec != nil {
+			g.Counters.SetRefusedHook(lead.Sec.ConnectionRefused)
+		}
 		for num, ch := range g.Channels {
 			conn := e.byNum[num]
 			// The link state is read per station, not per bus: on a multi-drop
 			// line each session connects and reconnects on its own.
 			conn.Chan, conn.link = dnp3util.WrapLinkState(ch)
 			conn.Group = g
+			conn.link.SetHook(conn.linkChanged)
 			jslog.Log(jslog.LevelBasic, "%s - Created %s channel.", conn.Name, conn.ConnectionMode)
 		}
 	}
 	return nil
+}
+
+// setupSecurity gives a connection its security reporter, state and go-dnp3
+// policy.
+func (e *Engine) setupSecurity(c *Connection, w *jssecevents.Writer, origin jssecevents.Origin) {
+	rep := dnp3sec.NewReporter(w, origin, "server", c.PeerIdentification)
+	c.Sec = dnp3sec.NewServer(rep, c.storedIdentity, c.RemoteLinkAddress, func() *mongo.Collection {
+		if db := e.commandDB(); db != nil {
+			return db.Collection(jsmongo.RealtimeDataCollectionName)
+		}
+		return nil
+	})
+	rep.Drop = c.Sec.DropServerRefusals
+	c.policy = rep.Policy()
+}
+
+// peerWait bounds the wait for go-dnp3 to describe a master that just
+// connected (its MAC lookup is bounded at 200 ms).
+const peerWait = 3 * time.Second
+
+// linkChanged records the master of a connection that came up, and forgets
+// it when the link goes down. It runs on the session goroutine.
+func (c *Connection) linkChanged(up bool) {
+	if c.Sec == nil {
+		return
+	}
+	if !up {
+		c.Sec.Closed()
+		return
+	}
+	gen := c.Sec.Opening()
+	go func() {
+		// The session describes its peer once the channel has handed it the
+		// connection, which is after this. Opened ignores the result when the
+		// connection closed meanwhile.
+		for deadline := time.Now().Add(peerWait); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
+			if st := c.Station(); st != nil {
+				if p, ok := st.PeerInfo(); ok {
+					c.Sec.Opened(gen, p)
+					return
+				}
+			}
+		}
+		if p, ok := c.Group.Counters.LinePeer(); ok {
+			c.Sec.Opened(gen, p)
+		}
+	}()
 }
 
 // changeStreamLoop watches realtimeData and distributes every change to the

@@ -111,6 +111,8 @@ Intentional differences. Everything not listed here is meant to behave identical
 | D33 | Device time stamps are checked against a window relative to this machine's clock (from 2001-09-09 to a year ahead), and the client's own `timeTag` is not checked at all. The C++ client used the fixed window 2001-09-09 to 2033-05-18 for both, which would have discarded every time from 2033. |
 | D34 | The server ignores a destination whose object address is outside 0–65535, and clamps a counter value that does not fit 32 unsigned bits, flagging it DISCONTINUITY. The C++ server narrowed both, so address 65541 overwrote point 5 and a counter of -1 was sent as 4294967295. |
 | D35 | A passive endpoint that cannot be bound is retried until it can. Peers allowed by `ipAddresses` may be host names, addresses are compared in canonical form, and connections sharing an endpoint merge their lists. |
+| D36 | Both drivers report cyber-security events to `secEvents` (go-dnp3's detections and the driver's own: refused, unknown, mistyped, flooding and unnecessary commands, unexpected connections) and record the peer in `stats.peerIdentity`, under `peerIdentification` (on by default). The C++ drivers report none of it. See [`cmd/dnp3client/README.md`](cmd/dnp3client/README.md#security-events-and-peer-identification) and [`cmd/dnp3server/README.md`](cmd/dnp3server/README.md#security-events-and-peer-identification). |
+| D37 | With `peerIdentification`, the client reads the outstation's device attributes (group 0, variation 254) after every connection, and reports a change of vendor, model, versions or serial number. The C++ client never reads group 0. |
 
 
 

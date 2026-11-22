@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	"dnp3-go/internal/dnp3sec"
+
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 
@@ -154,6 +156,8 @@ func connectionFromDoc(doc bson.M) *Connection {
 		TimeSyncMode:                 jsmongo.GetInt(doc, "timeSyncMode", 0),
 		EnableUnsolicited:            jsmongo.GetBool(doc, "enableUnsolicited", true),
 		AutoCreateTags:               jsmongo.GetBool(doc, "autoCreateTags", false),
+		PeerIdentification:           jsmongo.GetBool(doc, "peerIdentification", true),
+		storedIdentity:               dnp3sec.StoredIdentity(doc),
 	}
 	for _, rs := range jsmongo.GetDocArray(doc, "rangeScans") {
 		c.RangeScans = append(c.RangeScans, RangeScan{

@@ -31,6 +31,7 @@ import (
 
 	"github.com/dscsystems/go-dnp3/channel"
 	"github.com/dscsystems/go-dnp3/multidrop"
+	"github.com/dscsystems/go-dnp3/secevent"
 )
 
 // StationSpec is one connection's place on a channel.
@@ -46,6 +47,11 @@ type StationSpec struct {
 	// ScanHint is the shortest configured poll period in seconds, used only to
 	// warn about pacing on a shared line. Zero means unknown.
 	ScanHint int
+	// Security is the security event policy of the connection. The bus of a
+	// channel reports under the policy of its first connection: line noise,
+	// frames for no station, and the channel's own events (refused
+	// certificates, failed dials). Nil reports nothing.
+	Security *secevent.Policy
 }
 
 // Group is one physical channel and the sub-channels of the connections on it.
@@ -125,6 +131,7 @@ func BuildGroups(specs []StationSpec, master bool) ([]*Group, error) {
 			Log:        jslog.NewStackLogger(lead.Channel.Endpoint()),
 			Turnaround: TurnaroundFor(lead.Channel, len(group)),
 			Queue:      StationQueue,
+			Security:   lead.Security,
 		}
 
 		bus := multidrop.New(ch, cfg)
@@ -152,7 +159,7 @@ func BuildGroups(specs []StationSpec, master bool) ([]*Group, error) {
 				return nil, fmt.Errorf("%s - cannot share %s: %w",
 					s.Name, s.Channel.Endpoint(), err)
 			}
-			g.Channels[s.ConnectionNumber] = sub
+			g.Channels[s.ConnectionNumber] = withLinePeer(sub, counters)
 			g.Members = append(g.Members, s.ConnectionNumber)
 		}
 

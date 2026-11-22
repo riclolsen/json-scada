@@ -330,6 +330,8 @@
               'IEC60870-5-103',
               'ICCP',
               'ICCP_SERVER',
+              'DNP3',
+              'DNP3_SERVER',
             ].includes(editedConnection.protocolDriver)
           "
         ></v-switch>
