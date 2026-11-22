@@ -59,7 +59,7 @@ export const navGroups = [
       },
       { id: 'nodered', titleKey: 'dashboard.nodered', route: '/nodered', page: '/#/nodered', adminOnly: true },
       { id: 'n8n', titleKey: 'dashboard.n8n', route: '/n8n', page: '/#/n8n', adminOnly: true },
-      { id: 'apollo', titleKey: 'dashboard.apollo', route: '/apollo', page: '/#/apollo' },
+      { id: 'apollo', titleKey: 'dashboard.apollo', route: '/apollo', page: '/#/apollo', adminOnly: true },
       { id: 'logViewer', titleKey: 'dashboard.logViewer', route: '/log-viewer', page: '/log-viewer-ui', adminOnly: true },
     ],
   },
