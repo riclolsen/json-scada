@@ -14,10 +14,12 @@ import (
 	"time"
 
 	"modbus-go/internal/drv"
+	"modbus-go/internal/mbsec"
 
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 	"github.com/riclolsen/json-scada/src/go-common/jsredundancy"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 	"github.com/riclolsen/json-scada/src/go-common/jsstats"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -28,7 +30,7 @@ import (
 var App = drv.AppDefs{
 	Name:      "MODBUS",
 	EnvPrefix: "JS_MODBUS_",
-	Version:   "0.3.0",
+	Version:   "0.4.0",
 	Msg:       "{json:scada} - Modbus Client Driver (Go)",
 }
 
@@ -80,6 +82,11 @@ func Main(argv []string) int {
 	var ctl *jsredundancy.Controller
 	active := func() bool { return ctl != nil && ctl.Active() }
 
+	secWriter := jssecevents.NewWriter(0)
+	wctx, stopWriter := context.WithCancel(context.Background())
+	defer stopWriter()
+	go secWriter.Run(wctx, s.Config)
+
 	var conns []*Connection
 	seen := map[float64]bool{}
 	for _, d := range docs {
@@ -93,6 +100,10 @@ func Main(argv []string) int {
 		}
 		conn := NewConnection(cfg, MongoSink{Coll: rtColl})
 		conn.Commands = MongoCommands{Coll: cmdColl, Name: cfg.Name}
+		conn.SetSecurity(&mbsec.Reporter{W: secWriter, Role: "client", Origin: jssecevents.Origin{
+			ProtocolDriver: App.Name, ProtocolDriverInstanceNumber: s.Instance,
+			ProtocolConnectionNumber: int(cfg.ProtocolConnectionNumber), ConnectionName: cfg.Name,
+			NodeName: s.Config.NodeName}}, rtColl)
 		conn.Active = active
 		if cfg.AutoCreateTags {
 			if err := AutoCreateTags(ctx, cfg, MongoTags{Coll: rtColl}); err != nil {
@@ -135,8 +146,12 @@ func Main(argv []string) int {
 		OnTick: func(db *mongo.Database) {
 			entries := make([]jsstats.Entry, 0, len(conns))
 			for _, c := range conns {
+				st := c.Stats().BSON()
+				if id := c.PeerIdentity(); id != nil {
+					st["peerIdentity"] = id
+				}
 				entries = append(entries, jsstats.Entry{
-					ConnectionNumber: c.Cfg.ProtocolConnectionNumber, Stats: c.Stats().BSON(), Label: c.Cfg.Name,
+					ConnectionNumber: c.Cfg.ProtocolConnectionNumber, Stats: st, Label: c.Cfg.Name,
 					IsConnected: jsstats.Bool(c.Stats().Status == "connected"),
 				})
 			}
@@ -167,6 +182,12 @@ loop:
 	jslog.Log(jslog.LevelNoLog, "Driver - shutting down...")
 	for _, c := range conns {
 		c.Stop()
+	}
+	// deliver the security events queued so far
+	stopWriter()
+	select {
+	case <-secWriter.Done():
+	case <-time.After(3 * time.Second):
 	}
 	jslog.Flush()
 	return 0

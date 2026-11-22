@@ -24,6 +24,7 @@ package jssecevents
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -56,15 +57,18 @@ func SeverityLevel(name string) int {
 
 // Event is one secEvents document. Empty fields are left out.
 type Event struct {
-	TimeTag       time.Time `bson:"timeTag"`
-	Kind          string    `bson:"kind"`               // stable identifier, e.g. "conn.unexpected"
-	Category      string    `bson:"category,omitempty"` // connection, tls, peer, access, control, ...
-	Severity      string    `bson:"severity"`           // info, notice, warning, alert, critical
-	SeverityLevel int       `bson:"severityLevel"`      // 0 (info) .. 4 (critical)
-	Action        string    `bson:"action,omitempty"`   // observed, rejected, disconnected, ...
-	Source        string    `bson:"source"`             // "library" (detected by the protocol library) or "driver"
-	Protocol      string    `bson:"protocol,omitempty"`
-	Role          string    `bson:"role,omitempty"` // client or server
+	// ID is assigned by the writer before the first insert attempt, so a
+	// retried batch that was partly inserted stores each event once.
+	ID            bson.ObjectID `bson:"_id,omitempty"`
+	TimeTag       time.Time     `bson:"timeTag"`
+	Kind          string        `bson:"kind"`               // stable identifier, e.g. "conn.unexpected"
+	Category      string        `bson:"category,omitempty"` // connection, tls, peer, access, control, ...
+	Severity      string        `bson:"severity"`           // info, notice, warning, alert, critical
+	SeverityLevel int           `bson:"severityLevel"`      // 0 (info) .. 4 (critical)
+	Action        string        `bson:"action,omitempty"`   // observed, rejected, disconnected, ...
+	Source        string        `bson:"source"`             // "library" (detected by the protocol library) or "driver"
+	Protocol      string        `bson:"protocol,omitempty"`
+	Role          string        `bson:"role,omitempty"` // client or server
 
 	ProtocolDriver               string `bson:"protocolDriver"`
 	ProtocolDriverInstanceNumber int    `bson:"protocolDriverInstanceNumber"`
@@ -115,6 +119,10 @@ type Writer struct {
 	done    chan struct{}
 	stopped atomic.Bool
 	macs    MACCache
+	// pending are the events taken from the queue and not yet stored; they
+	// survive a failed insert and a reconnection. Only the goroutine running
+	// RunWith touches it.
+	pending []any
 }
 
 // Writer limits.
@@ -122,7 +130,24 @@ const (
 	DefaultQueueSize = 4096
 	batchSize        = 200
 	flushEvery       = time.Second
+	// maxPending bounds the events kept while MongoDB is unreachable.
+	maxPending = 4 * DefaultQueueSize
 )
+
+// onlyDuplicates reports an insert whose only failures are duplicate keys:
+// events of a retried batch that an earlier attempt had already stored.
+func onlyDuplicates(err error) bool {
+	var bwe mongo.BulkWriteException
+	if !errors.As(err, &bwe) || bwe.WriteConcernError != nil || len(bwe.WriteErrors) == 0 {
+		return false
+	}
+	for _, we := range bwe.WriteErrors {
+		if we.Code != 11000 {
+			return false
+		}
+	}
+	return true
+}
 
 // NewWriter returns a writer; call Run to deliver its events.
 func NewWriter(queueSize int) *Writer {
@@ -196,33 +221,37 @@ func (w *Writer) Run(ctx context.Context, cfg jsconfig.Config) {
 }
 
 // RunWith inserts the queued events into coll until ctx ends or an insert
-// fails (the failed batch is kept for the next call).
+// fails. The events not stored stay pending for the next call: the writer
+// loses none to a MongoDB outage, only to a full queue (counted and
+// reported as meta.events_dropped).
 func (w *Writer) RunWith(ctx context.Context, coll *mongo.Collection) {
-	var batch []any
-	pendingDrops := uint64(0)
+	add := func(e Event) {
+		if e.ID.IsZero() {
+			e.ID = bson.NewObjectID()
+		}
+		if len(w.pending) >= maxPending { // bounded: the oldest is lost, and counted
+			w.pending = w.pending[1:]
+			w.dropped.Add(1)
+		}
+		w.pending = append(w.pending, e)
+	}
 	flush := func() bool {
 		if d := w.dropped.Swap(0); d > 0 {
-			pendingDrops += d
-		}
-		if pendingDrops > 0 {
-			batch = append(batch, Event{TimeTag: time.Now(), Kind: "meta.events_dropped", Category: "meta",
+			add(Event{TimeTag: time.Now(), Kind: "meta.events_dropped", Category: "meta",
 				Severity: "warning", SeverityLevel: SeverityLevel("warning"), Action: "observed", Source: "driver",
-				Count: int(pendingDrops), Detail: "security events lost: queue full"})
+				Count: int(d), Detail: "security events lost: queue full"})
 		}
-		if len(batch) == 0 {
-			return true
-		}
-		ictx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		_, err := coll.InsertMany(ictx, batch, options.InsertMany().SetOrdered(false))
-		cancel()
-		if err != nil {
-			jslog.Log(jslog.LevelDetailed, "secEvents - insert: %v", err)
-			if pendingDrops > 0 {
-				batch = batch[:len(batch)-1]
+		for len(w.pending) > 0 {
+			n := min(len(w.pending), batchSize)
+			ictx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			_, err := coll.InsertMany(ictx, w.pending[:n], options.InsertMany().SetOrdered(false))
+			cancel()
+			if err != nil && !onlyDuplicates(err) {
+				jslog.Log(jslog.LevelDetailed, "secEvents - insert: %v", err)
+				return false
 			}
-			return false
+			w.pending = append(w.pending[:0], w.pending[n:]...)
 		}
-		batch, pendingDrops = batch[:0], 0
 		return true
 	}
 	tick := time.NewTicker(flushEvery)
@@ -234,7 +263,7 @@ func (w *Writer) RunWith(ctx context.Context, coll *mongo.Collection) {
 			for drained := false; !drained; {
 				select {
 				case e := <-w.ch:
-					batch = append(batch, w.enrich(e))
+					add(w.enrich(e))
 				default:
 					drained = true
 				}
@@ -242,8 +271,8 @@ func (w *Writer) RunWith(ctx context.Context, coll *mongo.Collection) {
 			flush()
 			return
 		case e := <-w.ch:
-			batch = append(batch, w.enrich(e))
-			if len(batch) >= batchSize && !flush() {
+			add(w.enrich(e))
+			if len(w.pending) >= batchSize && !flush() {
 				return
 			}
 		case <-tick.C:

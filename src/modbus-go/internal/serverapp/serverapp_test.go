@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"modbus-go/internal/mbcore"
+	"modbus-go/internal/mbnet"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
@@ -209,5 +210,33 @@ func TestWriteHandler(t *testing.T) {
 	}
 	if m := next(); m["tag"] != "BIT" || m["value"] != 1.0 {
 		t.Fatalf("mask write %v", m)
+	}
+}
+
+// A session closed before its identification completes does not come back
+// in the statistics; the address is still remembered as known.
+func TestSecClosedSessionStaysClosed(t *testing.T) {
+	s := newServerSec(Config{PeerIdentification: true}, &mbnet.AddrMap{})
+	s.opened("127.0.0.1:40000", nil)
+	if n := len(s.statsDoc()["clients"].(bson.A)); n != 1 {
+		t.Fatalf("open session not listed at once: %d", n)
+	}
+	s.closed("127.0.0.1:40000")
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		s.mu.Lock()
+		_, known := s.known["127.0.0.1"]
+		s.mu.Unlock()
+		if known || time.Now().After(deadline) {
+			break
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	st := s.statsDoc()
+	if n := len(st["clients"].(bson.A)); n != 0 {
+		t.Errorf("closed session listed: %v", st)
+	}
+	if n := len(st["known"].(bson.A)); n != 1 {
+		t.Errorf("address not known: %v", st)
 	}
 }

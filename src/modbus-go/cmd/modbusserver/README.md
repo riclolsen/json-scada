@@ -77,6 +77,7 @@ db.protocolConnections.insertOne({
   allowTLSv12: true, allowTLSv13: true,
 
   keepProtocolRunningWhileInactive: false,
+  peerIdentification: true,
   stats: null
 })
 ```
@@ -94,6 +95,7 @@ the wrong type takes the default.
 | `enabled` | `true` | Only enabled connections are loaded. |
 | `commandsEnabled` | `true` | When `false`, every write is answered with exception 01 ILLEGAL FUNCTION. |
 | `keepProtocolRunningWhileInactive` | `false` | When `true`, the server also listens on the standby node of a redundant pair. |
+| `peerIdentification` | `true` | Record the identity of every master (address, MAC address, certificate) in `stats.peerIdentity` and report its changes as security events. See [Peer identification](#peer-identification). |
 
 ### Transport
 
@@ -299,7 +301,72 @@ While the node is active, every 5 seconds the driver writes the connection's `st
 | `writes` | Write requests received. |
 | `exceptions` | Exception responses sent. |
 | `lastError` | Text of the last listener error. |
+| `peerIdentity` | The masters' identities, when `peerIdentification` is on. See [Peer identification](#peer-identification). |
 | `nodeName`, `timeTag` | The node that wrote the stats, and when. |
+
+## Peer identification
+
+Masters do not answer requests, so a master is identified by what the server sees of it. With
+`peerIdentification` on (the default), on every master's connection the driver records its
+address, the MAC address of its IP from the operating system's neighbour (ARP) table (a master
+behind a router shows the router's MAC) and, in the TLS modes, its certificate.
+
+`stats.peerIdentity` holds `clients`, the identity of each master connected now, and `known`,
+the last identity of every master IP seen (the 64 most recent). On a new connection from a
+known IP, a change of the MAC address or of the certificate is reported as a security event
+(`peer.mac_changed`, `tls.cert_changed`); the first connection from an IP is reported as
+`peer.identified`. `known` is read back from `stats` at start, so a change across a driver
+restart is seen too. Nothing is recorded on a serial port.
+
+```json
+{
+  "clients": [
+    {
+      "address": "192.168.0.50:49812",
+      "ip": "192.168.0.50",
+      "mac": "00:1a:2b:3c:4d:5e",
+      "connectedAt": "2026-11-22T12:00:00Z"
+    }
+  ],
+  "known": [
+    { "ip": "192.168.0.50", "mac": "00:1a:2b:3c:4d:5e", "lastSeen": "2026-11-22T12:00:00Z" }
+  ]
+}
+```
+
+## Security events
+
+The driver reports unexpected or suspicious conditions to the `secEvents` collection (see
+`docs/schema.md`), listed by the Security Events viewer of the Admin UI. go-modbus's server
+listens behind the driver's front-end, so of its events (`source: "library"`) the driver keeps
+those about requests and the server itself (`proto.bad_mbap`, `proto.bad_pdu`,
+`dos.write_stall`, `conn.accept_error`, `meta.*`), naming the real master, and reports the
+connections itself:
+
+| Kind | When |
+|---|---|
+| `conn.unexpected` | A master not in `ipAddresses`, or a connection to the internal protocol server port that did not come through the listener. |
+| `conn.rejected_limit` | `maxClientConnections` reached. |
+| `tls.cert_rejected`, `tls.handshake_failed` | A client certificate refused (with its subject, issuer and fingerprint when known), or another handshake failure. |
+| `peer.identified`, `peer.mac_changed`, `tls.cert_changed` | First connection from an IP, and changes of its identity (see [Peer identification](#peer-identification)). |
+| `access.object_nonexistent` | A read of addresses without points (answered exception 02). |
+| `access.scan` | More than 20 such reads from one IP within a minute. |
+| `access.unit_unknown` | A request to a unit id not in `serverUnitIds` and without points (with `strictUnitId`, not answered). Not reported on a serial port, where the requests to the other slaves of the bus are normal. |
+| `access.unrecognized_service` | A function code the server does not serve. |
+| `access.enumeration` | Report Server ID (FC17), Read Device Identification (FC43) or a diagnostics (FC8) request. |
+| `ctrl.restart` | Diagnostics that restart or silence the device: restart communications, force listen only, clear counters (refused: the server does not serve FC8). |
+| `file.read`, `file.write` | Read or write file record (FC20, FC21; refused). |
+| `cmd.object_unknown` | A write to addresses without points. |
+| `cmd.rejected` | A write refused: commands disabled, a supervised point without `allowWritesToSupervised`, a value that does not decode, FC6 to part of a multi-register value. |
+| `ctrl.setting_edit` | A write stored in a supervised point (`allowWritesToSupervised`). |
+| `flood.controls` | More than 10 commands relayed from one IP within 10 seconds. |
+| `cmd.unnecessary` | An ON/OFF command to the state its supervised point already was in (a value last updated before the command arrived; a later one may be the command's own result). Checked in the background; the command is still relayed. |
+| `proto.bad_frame` | RTU frames dropped for a bad CRC. |
+
+A repeating condition of one master (the same unit, addresses or function code) is reported
+once every 10 minutes, with the number of occurrences in `count`. Modbus has no sequence
+numbers a server could check: a replayed request is seen only as a flood or an unnecessary
+command.
 
 ## Troubleshooting
 

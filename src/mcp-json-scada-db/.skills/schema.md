@@ -380,7 +380,7 @@ The alarm list. _cs_data_processor_ (and _cs_data_processor-go_) insert one docu
 
 ## _secEvents_ collection
 
-Cyber-security events: unexpected or suspicious conditions seen by the protocol drivers (the IEC 61850 client and server drivers, through `src/go-common/jssecevents`). One document per event; repeats of an event within a second may be folded into one with a `count`. The events come from the protocol library (`source: "library"`, go-iec61850's `secevent` channel: connections, TLS handshakes, associations, malformed PDUs) and from the drivers' own checks (`source: "driver"`). The Security Events viewer (Admin UI `/sec-events-viewer`, `POST /Invoke/auth/listSecEvents`) lists them for users whose roles grant _viewSecEvents_. _cs_data_processor_ removes them after `secEventsRetentionDays` (see [Data retention](#data-retention)); nothing else changes them.
+Cyber-security events: unexpected or suspicious conditions seen by the protocol drivers (the IEC 61850 and Modbus client and server drivers, through `src/go-common/jssecevents`). One document per event; repeats of an event within a second may be folded into one with a `count`. The events come from the protocol library (`source: "library"`, the `secevent` channel of go-iec61850 and go-modbus: connections, TLS handshakes, associations, malformed PDUs and MBAP headers) and from the drivers' own checks (`source: "driver"`). The Security Events viewer (Admin UI `/sec-events-viewer`, `POST /Invoke/auth/listSecEvents`) lists them for users whose roles grant _viewSecEvents_. _cs_data_processor_ removes them after `secEventsRetentionDays` (see [Data retention](#data-retention)); nothing else changes them.
 
     {
         "_id": { "$oid": "6740c1f05afe8a451246eb4f" },
@@ -409,29 +409,32 @@ Cyber-security events: unexpected or suspicious conditions seen by the protocol 
         "std62351": "x-go-iec61850.peer.mac_changed"
     }
 
+* _**__id_**_ [ObjectId] - Assigned by the driver when the event is queued, so a batch retried after a failed insert stores each event once (duplicates of an already stored event are ignored). A driver keeps unstored events in memory (at most 4096, the oldest dropped first and counted in a `meta.events_dropped` event) until the database accepts them.
 * _**_timeTag_**_ [Date] - Time of the event (of the last repeat when `count` > 1).
-* _**_kind_**_ [String] - Stable event identifier, `<category>.<name>`: the go-iec61850 `secevent` kinds (`conn.unexpected`, `tls.cert_rejected`, `peer.identity_changed`, `access.object_nonexistent`, `cmd.rejected`, `flood.controls`, `proto.*`, ...) and the drivers' own (`cmd.unnecessary`, `cmd.object_unknown`, `access.tag_unknown`, `report.sequence`, `report.unexpected`, `peer.identified`, `meta.events_dropped`).
+* _**_kind_**_ [String] - Stable event identifier, `<category>.<name>`: the go-iec61850 `secevent` kinds (`conn.unexpected`, `tls.cert_rejected`, `peer.identity_changed`, `access.object_nonexistent`, `cmd.rejected`, `flood.controls`, `proto.*`, ...) and the drivers' own (`cmd.unnecessary`, `cmd.object_unknown`, `access.tag_unknown`, `report.sequence`, `report.unexpected`, `peer.identified`, `meta.events_dropped`; the Modbus drivers' `access.unit_unknown`, `access.scan`, `access.enumeration`, `ctrl.restart`, `ctrl.setting_edit`, `file.read`, `file.write`, `cmd.stale_time`, `proto.bad_frame`, `proto.bad_response`, `proto.txn_mismatch`, `proto.unit_mismatch`, listed in their READMEs).
 * _**_category_**_ [String] - connection, tls, peer, association, protocol, access, control, configuration, unsolicited, flood, resource, file, meta.
 * _**_severity_**_ [String], _**_severityLevel_**_ [Int32] - info (0), notice (1), warning (2), alert (3), critical (4).
 * _**_action_**_ [String] - What was done: observed, ignored, rejected, throttled, disconnected, blocked.
 * _**_source_**_ [String] - `library` (detected by the protocol library) or `driver` (by the driver's code).
-* _**_protocol_**_, _**_role_**_ [String] - e.g. `mms` / `tls`; `client` or `server`.
+* _**_protocol_**_, _**_role_**_ [String] - e.g. `mms`, `modbus`, `tls`; `client` or `server`.
 * _**_protocolDriver_**_, _**_protocolDriverInstanceNumber_**_, _**_protocolConnectionNumber_**_, _**_connectionName_**_, _**_nodeName_**_ - The connection and node that reported it.
 * _**_sessionId_**_ [Int64] - Correlates the events of one connection or association.
 * _**_peerAddress_**_, _**_peerIp_**_, _**_peerMac_**_, _**_localAddress_**_ [String] - The peer; the MAC address is the operating system neighbour (ARP) table's, absent when unknown (a peer behind a router shows the router's).
 * _**_peer_**_ [Object] - What is known of the peer's identity: `tls` (`subject`, `issuer`, `serial`, `sha256`, `notAfter`, `verified`, `version`), `acse` (`callingApTitle`, `callingAeQualifier`, `calledApTitle`, `passwordPresented`), `macSource`.
-* _**_objectRef_**_, _**_fc_**_ [String] - The protocol object concerned (IEC 61850 reference and functional constraint).
-* _**_value_**_, _**_detail_**_, _**_error_**_ [String] - New value (of a changed identity, MAC, ...), one-line explanation and error text.
-* _**_fields_**_ [Object] - Protocol fields some events carry: `addCause`, `ctlNum`, `test`, `orCat`, `orIdent`, `accessError`, `service`, `invokeId`, `sqNum`, `stage`, `session` (summary of an ended connection), `raw` (hex of the offending PDU, truncated).
+* _**_objectRef_**_, _**_fc_**_ [String] - The protocol object concerned (IEC 61850 reference and functional constraint; Modbus `unit <id> <area>:<address> x<quantity>`). _**_tag_**_ [String] - The json-scada tag concerned, when one is.
+* _**_value_**_, _**_previous_**_, _**_detail_**_, _**_error_**_ [String] - New value (of a changed identity, MAC, ...), the value before a change, one-line explanation and error text.
+* _**_fields_**_ [Object] - Protocol fields some events carry: `addCause`, `ctlNum`, `test`, `orCat`, `orIdent`, `accessError`, `service`, `invokeId`, `sqNum`, `stage`, `session` (summary of an ended connection), `raw` (hex of the offending PDU, truncated); Modbus `unitId`, `functionCode`, `function`, `address`, `quantity`, `exception`, `exceptionName`, `subFunction`, `transactionId`.
 * _**_count_**_ [Int32], _**_firstSeen_**_ [Date] - Repeats folded into the event and the start of their window.
 * _**_technique_**_ [String] - MITRE ATT&CK for ICS technique, a routing hint. _**_std62351_**_ [String] - IEC 62351-14 event identifier, or an extension one (`x-go-iec61850.*`, `x-json-scada.*`).
 
 ### Peer identification
 
-The IEC61850 and IEC61850_SERVER connections have `peerIdentification` [Boolean] (default true). On every (re)established association the driver records the peer's identity in `protocolConnections.stats.peerIdentity` and reports changes of it (`peer.identity_changed`, `peer.mac_changed`, `tls.cert_changed`) as security events, comparing with the identity stored there, so a change across a driver restart is seen too:
+The IEC61850, IEC61850_SERVER, MODBUS and MODBUS_SERVER connections have `peerIdentification` [Boolean] (default true). On every (re)established association or connection the driver records the peer's identity in `protocolConnections.stats.peerIdentity` and reports changes of it (`peer.identity_changed`, `peer.mac_changed`, `tls.cert_changed`) as security events, comparing with the identity stored there, so a change across a driver restart is seen too:
 
 * Client: `vendor`, `model`, `revision` (MMS Identify), `devices` (per logical device the `phyNam` nameplate of `LPHD1.PhyNam` and the `namPlt` of `LLN0.NamPlt`), `ip`, `mac`, `tls` (the IED certificate), `address`, `collectedAt`, `keys` (the compared values).
 * Server: `clients` (the open associations: `address`, `ip`, `mac`, `acseIdentity`, `tls`, `passwordPresented`, `sessionId`, `connectedAt`) and `known` (the last identity of up to 64 client addresses: `ip`, `mac`, `acseIdentity`, `tlsSha256`, `lastSeen`).
+* Modbus client: `units` (per polled unit id, at most 8: `unitId`, `method` `FC43/14` with `conformityLevel` and `objects` such as `VendorName`, `ProductCode`, `MajorMinorRevision`, `ModelName`, or `FC17` with `serverId`; `error` when neither answers), `ip`, `mac`, `tls`, `address`, `collectedAt`, `keys`.
+* Modbus server: `clients` (the connected masters: `address`, `ip`, `mac`, `tls`, `connectedAt`) and `known` (up to 64 master IPs: `ip`, `mac`, `tlsSha256`, `tlsSubject`, `lastSeen`). Masters cannot be asked for an identification.
 
 ## Data retention
 

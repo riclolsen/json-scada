@@ -151,14 +151,23 @@ func (s *secState) emit(c *mms.ServerConn, e secevent.Event) {
 	s.writer.Emit(s.origin, toSecDoc(e, secSourceDriver))
 }
 
-// opened records a new association, in a goroutine of its own: the MAC
-// lookup may run a command and the connection handler must not wait.
+// opened records a new association at once; its identification runs in a
+// goroutine of its own (the MAC lookup may run a command and the connection
+// handler must not wait) and completes the entry only while the same
+// session is still open.
 func (s *secState) opened(c *mms.ServerConn, addr string) {
 	if s == nil || c == nil || !s.ident {
 		return
 	}
 	pi := c.PeerInfo()
 	session := c.SessionID()
+	if !pi.RemoteAddr.IsValid() {
+		return
+	}
+	s.mu.Lock()
+	s.open[addr] = bson.M{"address": addr, "ip": pi.RemoteAddr.Addr().Unmap().String(),
+		"sessionId": int64(session), "connectedAt": time.Now()}
+	s.mu.Unlock()
 	go s.identify(pi, session, addr)
 }
 
@@ -245,7 +254,10 @@ func (s *secState) identify(pi secevent.PeerInfo, session uint64, addr string) {
 		k["tlsSha256"] = fp
 	}
 	s.mu.Lock()
-	s.open[addr] = id
+	if cur, ok := s.open[addr]; ok && cur["sessionId"] == int64(session) { // still the same session
+		id["connectedAt"] = cur["connectedAt"]
+		s.open[addr] = id
+	}
 	s.known[ipS] = k
 	if len(s.known) > maxKnownPeers { // forget the oldest
 		oldest, at := "", time.Now()
@@ -373,7 +385,7 @@ func (s *secState) controlReceived(c *mms.ServerConn, peer string, mp *MappedPoi
 	if mp.Type != "digital" {
 		return
 	}
-	chk := cmdCheck{pointKey: mp.PointKey, tag: mp.Tag, ref: string(mp.ObjRef), value: value}
+	chk := cmdCheck{pointKey: mp.PointKey, tag: mp.Tag, ref: string(mp.ObjRef), value: value, at: time.Now()}
 	if c != nil {
 		chk.peer, chk.session = c.PeerInfo(), c.SessionID()
 	}
@@ -390,6 +402,7 @@ type cmdCheck struct {
 	value    float64
 	peer     secevent.PeerInfo
 	session  uint64
+	at       time.Time // received: the state must predate it
 }
 
 // checkLoop reports controls that would not change the state they command
@@ -417,7 +430,7 @@ func (s *secState) checkLoop(ctx context.Context, cfg jsconfig.Config) {
 			}
 			cli, rt = c, db.Collection(jsmongo.RealtimeDataCollectionName)
 		}
-		state, ok, err := supervisedState(ctx, rt, chk.pointKey)
+		state, ok, err := jssecevents.SupervisedState(ctx, rt, chk.pointKey, chk.at)
 		if err != nil {
 			jslog.Log(jslog.LevelDetailed, "secEvents - command check: %v", err)
 			_ = cli.Disconnect(context.Background())
@@ -427,38 +440,7 @@ func (s *secState) checkLoop(ctx context.Context, cfg jsconfig.Config) {
 		if ok && (state != 0) == (chk.value != 0) {
 			s.emit(nil, secevent.Event{Kind: kindCmdUnnecessary, Peer: chk.peer, SessionID: chk.session,
 				ObjectRef: chk.ref, Value: fmt.Sprint(chk.value),
-				Detail: "the supervised point already is in the commanded state (tag " + chk.tag + ")"})
+				Detail: "the supervised point already was in the commanded state (tag " + chk.tag + ")"})
 		}
 	}
-}
-
-// supervisedState reads the value of the point a command tag supervises;
-// ok is false when it has none or its quality is bad.
-func supervisedState(ctx context.Context, rt *mongo.Collection, cmdKey float64) (float64, bool, error) {
-	qctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	var cmd bson.M
-	err := rt.FindOne(qctx, bson.M{"_id": cmdKey}).Decode(&cmd)
-	if err == mongo.ErrNoDocuments {
-		return 0, false, nil
-	}
-	if err != nil {
-		return 0, false, err
-	}
-	sup := jsmongo.GetDouble(cmd, "supervisedOfCommand", 0)
-	if sup == 0 {
-		return 0, false, nil
-	}
-	var st bson.M
-	err = rt.FindOne(qctx, bson.M{"_id": sup}).Decode(&st)
-	if err == mongo.ErrNoDocuments {
-		return 0, false, nil
-	}
-	if err != nil {
-		return 0, false, err
-	}
-	if jsmongo.GetBool(st, "invalid", true) {
-		return 0, false, nil
-	}
-	return jsmongo.GetDouble(st, "value", 0), true, nil
 }

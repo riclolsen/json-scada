@@ -14,10 +14,12 @@ import (
 	"time"
 
 	"modbus-go/internal/drv"
+	"modbus-go/internal/mbsec"
 
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 	"github.com/riclolsen/json-scada/src/go-common/jsredundancy"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 	"github.com/riclolsen/json-scada/src/go-common/jsstats"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -28,7 +30,7 @@ import (
 var App = drv.AppDefs{
 	Name:      "MODBUS_SERVER",
 	EnvPrefix: "JS_MODBUSSRV_",
-	Version:   "0.3.0",
+	Version:   "0.4.0",
 	Msg:       "{json:scada} - Modbus Server Driver (Go)",
 }
 
@@ -74,6 +76,11 @@ func Main(argv []string) int {
 		return 0
 	}
 
+	secWriter := jssecevents.NewWriter(0)
+	wctx, stopWriter := context.WithCancel(context.Background())
+	defer stopWriter()
+	go secWriter.Run(wctx, s.Config)
+
 	var servers []*Server
 	seen := map[float64]bool{}
 	for _, d := range docs {
@@ -84,6 +91,10 @@ func Main(argv []string) int {
 		seen[cfg.ProtocolConnectionNumber] = true
 		srv := NewServer(cfg, MongoCommands{Coll: cmdColl}, nil)
 		srv.SetFeeder(&Watcher{Cfg: cfg, Coll: rtColl, PM: srv.PM})
+		srv.SetSecurity(&mbsec.Reporter{W: secWriter, Role: "server", Origin: jssecevents.Origin{
+			ProtocolDriver: App.Name, ProtocolDriverInstanceNumber: s.Instance,
+			ProtocolConnectionNumber: int(cfg.ProtocolConnectionNumber), ConnectionName: cfg.Name,
+			NodeName: s.Config.NodeName}}, rtColl)
 		servers = append(servers, srv)
 		jslog.Log(jslog.LevelNoLog, "Loaded server %s %q mode=%s", drv.AnyString(cfg.ProtocolConnectionNumber), cfg.Name, cfg.ConnectionMode)
 	}
@@ -117,8 +128,12 @@ func Main(argv []string) int {
 		OnTick: func(db *mongo.Database) {
 			entries := make([]jsstats.Entry, 0, len(servers))
 			for _, srv := range servers {
+				st := srv.Stats().BSON()
+				if id := srv.PeerIdentity(); id != nil {
+					st["peerIdentity"] = id
+				}
 				entries = append(entries, jsstats.Entry{
-					ConnectionNumber: srv.Cfg.ProtocolConnectionNumber, Stats: srv.Stats().BSON(), Label: srv.Cfg.Name,
+					ConnectionNumber: srv.Cfg.ProtocolConnectionNumber, Stats: st, Label: srv.Cfg.Name,
 					IsConnected: jsstats.Bool(srv.Stats().Clients > 0),
 				})
 			}
@@ -132,6 +147,12 @@ func Main(argv []string) int {
 	jslog.Log(jslog.LevelNoLog, "Driver - shutting down...")
 	for _, srv := range servers {
 		srv.Stop()
+	}
+	// deliver the security events queued so far
+	stopWriter()
+	select {
+	case <-secWriter.Done():
+	case <-time.After(3 * time.Second):
 	}
 	jslog.Flush()
 	return 0

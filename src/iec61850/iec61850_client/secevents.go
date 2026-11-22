@@ -76,11 +76,14 @@ type connSec struct {
 	flood    jssecevents.RateLimit
 	reported map[string]bool // per association: what was already reported once
 	identity bson.M          // stats.peerIdentity
-	peerCert *x509.Certificate
-	peerTLS  *secevent.TLSPeer
-	session  uint64
-	peerIP   netip.Addr
-	addr     string
+	// certReported is set once the refused certificate of the current dial
+	// was reported, so the dial error does not report it again.
+	certReported bool
+	peerCert     *x509.Certificate
+	peerTLS      *secevent.TLSPeer
+	session      uint64
+	peerIP       netip.Addr
+	addr         string
 }
 
 func (c *Iec61850Connection) secOrigin() jssecevents.Origin {
@@ -182,23 +185,18 @@ func (c *Iec61850Connection) PeerIdentityDoc() bson.M {
 
 // --- TLS ----------------------------------------------------------------
 
-// withCertEvents records the IED's certificate and reports a refused one.
+// withCertEvents records the IED's certificate and reports a refused one,
+// whether the driver's verification callback refused it or Go's own chain
+// and host name checks did (secDialFailed reports those).
 func (c *Iec61850Connection) withCertEvents(cfg *tls.Config) *tls.Config {
+	c.sec.mu.Lock()
+	c.sec.certReported = false
+	c.sec.mu.Unlock()
 	if verify := cfg.VerifyPeerCertificate; verify != nil {
 		cfg.VerifyPeerCertificate = func(raw [][]byte, chains [][]*x509.Certificate) error {
 			err := verify(raw, chains)
 			if err != nil {
-				t := &secevent.TLSPeer{}
-				if len(raw) > 0 {
-					if cert, perr := x509.ParseCertificate(raw[0]); perr == nil {
-						t.CertFields(cert)
-					} else {
-						t.FingerprintSHA256 = secevent.Fingerprint(raw[0])
-					}
-				}
-				c.secEmit(secevent.Event{Kind: secevent.KindTLSCertRejected, Protocol: "tls",
-					Action: secevent.Disconnected, Peer: secevent.PeerInfo{TLS: t}, Err: err,
-					Detail: "IED certificate refused"})
+				c.secCertRejected(raw, err)
 			}
 			return err
 		}
@@ -217,6 +215,45 @@ func (c *Iec61850Connection) withCertEvents(cfg *tls.Config) *tls.Config {
 		return nil
 	}
 	return cfg
+}
+
+// secCertRejected reports the IED's refused certificate, once per dial.
+func (c *Iec61850Connection) secCertRejected(raw [][]byte, err error) {
+	c.sec.mu.Lock()
+	done := c.sec.certReported
+	c.sec.certReported = true
+	c.sec.mu.Unlock()
+	if done {
+		return
+	}
+	t := &secevent.TLSPeer{}
+	if len(raw) > 0 {
+		if cert, perr := x509.ParseCertificate(raw[0]); perr == nil {
+			t.CertFields(cert)
+		} else {
+			t.FingerprintSHA256 = secevent.Fingerprint(raw[0])
+		}
+	}
+	c.secEmit(secevent.Event{Kind: secevent.KindTLSCertRejected, Protocol: "tls",
+		Action: secevent.Disconnected, Peer: secevent.PeerInfo{TLS: t}, Err: err,
+		Detail: "IED certificate refused"})
+}
+
+// secDialFailed reports a dial that failed on the IED's certificate in Go's
+// own verification (unknown authority, expired, wrong host name), which
+// does not pass through VerifyPeerCertificate.
+func (c *Iec61850Connection) secDialFailed(err error) {
+	if !jssecevents.IsCertError(err) {
+		return
+	}
+	var raw [][]byte
+	var ve *tls.CertificateVerificationError
+	if errors.As(err, &ve) {
+		for _, cert := range ve.UnverifiedCertificates {
+			raw = append(raw, cert.Raw)
+		}
+	}
+	c.secCertRejected(raw, err)
 }
 
 // --- identification -----------------------------------------------------
@@ -280,8 +317,20 @@ func identifyPeer(ctx context.Context, conn *Iec61850Connection, cli *client.Cli
 		addKey("cert", peerTLS.FingerprintSHA256, "certificate")
 	}
 
-	first := conn.PeerIdentityDoc() == nil
+	previous := conn.PeerIdentityDoc()
+	first := previous == nil
 	stored := bson.A{}
+	now := map[string]bool{}
+	for _, k := range keys {
+		now[k.k] = true
+	}
+	// Keep what this association could not read (Identify or a nameplate
+	// that failed), so a later change of it is still seen across restarts.
+	for _, k := range jsmongo.GetDocArray(previous, "keys") {
+		if kk := jsmongo.GetString(k, "k", ""); kk != "" && !now[kk] {
+			stored = append(stored, bson.M{"k": kk, "v": jsmongo.GetString(k, "v", "")})
+		}
+	}
 	for _, k := range keys {
 		stored = append(stored, bson.M{"k": k.k, "v": k.v})
 		prev, changed := conn.sec.changes.Observe(k.k, k.v)
@@ -428,7 +477,8 @@ func (c *Iec61850Connection) secReportSequence(st *rcbState, rep *client.Report)
 // --- commands -----------------------------------------------------------
 
 // secCommand counts a command for the flood detector and reports one that
-// would not change the state it commands.
+// would not change the state it commands. The check runs in the background,
+// against the state before the dispatch: it never delays the command.
 func (c *Iec61850Connection) secCommand(ctx context.Context, rt *mongo.Collection, e *Iec61850Entry, doc bson.M, value float64) {
 	c.sec.mu.Lock()
 	if c.sec.flood.Max == 0 {
@@ -442,15 +492,17 @@ func (c *Iec61850Connection) secCommand(ctx context.Context, rt *mongo.Collectio
 	if rt == nil || e.FC != model.CO || (value != 0 && value != 1) {
 		return
 	}
-	state, ok, err := supervisedState(ctx, rt, jsmongo.GetDouble(doc, "pointKey", 0))
-	if err != nil || !ok {
-		return
-	}
-	if (state != 0) == (value != 0) {
-		c.secEmit(secevent.Event{Kind: kindCmdUnnecessary, ObjectRef: e.Path, Value: fmt.Sprint(value),
-			Detail: "the supervised point already is in the commanded state (tag " +
-				jsmongo.GetString(doc, "tag", "") + ")"})
-	}
+	before, key, tag, ref := time.Now(), jsmongo.GetDouble(doc, "pointKey", 0), jsmongo.GetString(doc, "tag", ""), e.Path
+	go func() {
+		state, ok, err := jssecevents.SupervisedState(context.WithoutCancel(ctx), rt, key, before)
+		if err != nil || !ok {
+			return
+		}
+		if (state != 0) == (value != 0) {
+			c.secEmit(secevent.Event{Kind: kindCmdUnnecessary, ObjectRef: ref, Value: fmt.Sprint(value),
+				Detail: "the supervised point already was in the commanded state (tag " + tag + ")"})
+		}
+	}()
 }
 
 // secCommandRefused reports a command refused by the driver or the IED.
@@ -463,36 +515,4 @@ func (c *Iec61850Connection) secCommandRefused(kind secevent.Kind, ref string, e
 		e.Detail = strings.TrimSpace(detail + " at " + ce.Stage + ": " + ce.AddCause.String())
 	}
 	c.secEmit(e)
-}
-
-// supervisedState reads the value of the point a command tag supervises;
-// ok is false when it has none or its quality is bad.
-func supervisedState(ctx context.Context, rt *mongo.Collection, cmdKey float64) (float64, bool, error) {
-	if cmdKey == 0 {
-		return 0, false, nil
-	}
-	qctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	var cmd bson.M
-	if err := rt.FindOne(qctx, bson.M{"_id": cmdKey}).Decode(&cmd); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return 0, false, nil
-		}
-		return 0, false, err
-	}
-	sup := jsmongo.GetDouble(cmd, "supervisedOfCommand", 0)
-	if sup == 0 {
-		return 0, false, nil
-	}
-	var st bson.M
-	if err := rt.FindOne(qctx, bson.M{"_id": sup}).Decode(&st); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return 0, false, nil
-		}
-		return 0, false, err
-	}
-	if jsmongo.GetBool(st, "invalid", true) {
-		return 0, false, nil
-	}
-	return jsmongo.GetDouble(st, "value", 0), true, nil
 }

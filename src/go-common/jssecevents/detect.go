@@ -79,6 +79,7 @@ type RateLimit struct {
 
 	mu    sync.Mutex
 	state map[string]*rateState
+	swept time.Time
 }
 
 type rateState struct {
@@ -99,14 +100,23 @@ func (r *RateLimit) Hit(key string, now time.Time) (bool, int) {
 		r.state = map[string]*rateState{}
 	}
 	s := r.state[key]
-	if s == nil || now.Sub(s.start) >= r.Window {
-		if len(r.state) > 4096 { // bound the state: forget old windows
+	if s == nil && len(r.state) >= maxThrottleKeys {
+		// bound the state: forget old windows, at most once per sweepEvery;
+		// while still full, new keys share one entry
+		if now.Sub(r.swept) >= sweepEvery {
+			r.swept = now
 			for k, v := range r.state {
 				if now.Sub(v.start) >= r.Window {
 					delete(r.state, k)
 				}
 			}
 		}
+		if len(r.state) >= maxThrottleKeys {
+			key = overflowKey
+			s = r.state[key]
+		}
+	}
+	if s == nil || now.Sub(s.start) >= r.Window {
 		s = &rateState{start: now}
 		r.state[key] = s
 	}

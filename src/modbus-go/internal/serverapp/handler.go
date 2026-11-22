@@ -37,6 +37,7 @@ type Handler struct {
 	wh    *WriteHandler
 	addrs *mbnet.AddrMap
 	st    *counters
+	sec   *serverSec
 }
 
 // handlerError marks an exception the handler chose (already logged and
@@ -52,14 +53,23 @@ func (h *Handler) remote(clientAddr string) string { return h.addrs.Resolve(clie
 // front-end (a local process that found the private port would bypass TLS
 // and the allow-list), and applies strictUnitId: an unserved unit gets no
 // answer at all.
-func (h *Handler) gate(unit uint8, clientAddr, remote string) error {
+func (h *Handler) gate(unit uint8, fc modbus.FunctionCode, clientAddr, remote string) error {
 	if !h.addrs.Known(clientAddr) {
 		jslog.Log(jslog.LevelDetailed, "%s: [%s] request ignored: connection did not come through the listener", h.cfg.Name, clientAddr)
+		if h.sec != nil {
+			h.sec.bypass(clientAddr)
+		}
 		return modbus.ErrNoResponse
 	}
 	if unit != 0 && h.cfg.StrictUnitID && !h.pm.AcceptsUnit(int(unit)) {
 		jslog.Log(jslog.LevelDetailed, "%s: [%s] request ignored: unit id %d not served (strictUnitId is enabled)", h.cfg.Name, remote, unit)
+		if h.sec != nil {
+			h.sec.unitUnknown(remote, unit, int(fc), false)
+		}
 		return modbus.ErrNoResponse
+	}
+	if unit != 0 && h.sec != nil && !h.pm.KnowsUnit(int(unit)) {
+		h.sec.unitUnknown(remote, unit, int(fc), true)
 	}
 	h.st.lastRequest.Store(time.Now().UnixNano())
 	return nil
@@ -82,10 +92,31 @@ func (h *Handler) fail(remote string, unit uint8, pdu []byte, err error) error {
 	if err == nil {
 		return nil
 	}
+	if h.sec != nil && len(pdu) > 0 && isWriteFC(pdu[0]) {
+		h.sec.writeRefused(remote, unit, pdu, err)
+	}
 	h.st.exceptions.Add(1)
 	jslog.Log(jslog.LevelBasic, "%s: [%s] request error: unit=%d %s -> exception %s",
 		h.cfg.Name, remote, unit, mbcore.DescribeRequest(pdu), mbcore.ExceptionName(exceptionCode(err)))
 	return handlerError{err}
+}
+
+func isWriteFC(fc byte) bool {
+	switch fc {
+	case mbcore.FCWriteSingleCoil, mbcore.FCWriteSingleRegister, mbcore.FCWriteMultipleCoils,
+		mbcore.FCWriteMultipleRegisters, mbcore.FCMaskWriteRegister:
+		return true
+	}
+	return false
+}
+
+// readFailed answers Illegal Data Address to a read of addresses without
+// points, and reports it.
+func (h *Handler) readFailed(remote string, unit uint8, fc modbus.FunctionCode, area mbcore.Area, addr, qty uint16) error {
+	if h.sec != nil {
+		h.sec.readNonexistent(remote, unit, int(fc), area, addr, qty)
+	}
+	return h.fail(remote, unit, readPDU(byte(fc), addr, qty), modbus.ErrIllegalDataAddress)
 }
 
 func u16(v uint16) []byte { return []byte{byte(v >> 8), byte(v)} }
@@ -127,7 +158,7 @@ func coilsPDU(fc byte, addr uint16, bits []bool) []byte {
 // HandleCoils serves FC1, FC5 and FC15.
 func (h *Handler) HandleCoils(_ context.Context, req *modbus.CoilsRequest) ([]bool, error) {
 	remote := h.remote(req.ClientAddr)
-	if err := h.gate(req.UnitID, req.ClientAddr, remote); err != nil {
+	if err := h.gate(req.UnitID, req.FunctionCode, req.ClientAddr, remote); err != nil {
 		return nil, err
 	}
 	fc := byte(req.FunctionCode)
@@ -135,7 +166,7 @@ func (h *Handler) HandleCoils(_ context.Context, req *modbus.CoilsRequest) ([]bo
 		h.st.reads.Add(1)
 		bits, ok := h.pm.ReadBits(int(req.UnitID), mbcore.AreaCoil, int(req.Addr), int(req.Quantity))
 		if !ok {
-			return nil, h.fail(remote, req.UnitID, readPDU(fc, req.Addr, req.Quantity), modbus.ErrIllegalDataAddress)
+			return nil, h.readFailed(remote, req.UnitID, req.FunctionCode, mbcore.AreaCoil, req.Addr, req.Quantity)
 		}
 		return bits, nil
 	}
@@ -152,13 +183,13 @@ func (h *Handler) HandleCoils(_ context.Context, req *modbus.CoilsRequest) ([]bo
 // HandleDiscreteInputs serves FC2.
 func (h *Handler) HandleDiscreteInputs(_ context.Context, req *modbus.DiscreteInputsRequest) ([]bool, error) {
 	remote := h.remote(req.ClientAddr)
-	if err := h.gate(req.UnitID, req.ClientAddr, remote); err != nil {
+	if err := h.gate(req.UnitID, req.FunctionCode, req.ClientAddr, remote); err != nil {
 		return nil, err
 	}
 	h.st.reads.Add(1)
 	bits, ok := h.pm.ReadBits(int(req.UnitID), mbcore.AreaDiscrete, int(req.Addr), int(req.Quantity))
 	if !ok {
-		return nil, h.fail(remote, req.UnitID, readPDU(byte(req.FunctionCode), req.Addr, req.Quantity), modbus.ErrIllegalDataAddress)
+		return nil, h.readFailed(remote, req.UnitID, req.FunctionCode, mbcore.AreaDiscrete, req.Addr, req.Quantity)
 	}
 	return bits, nil
 }
@@ -166,7 +197,7 @@ func (h *Handler) HandleDiscreteInputs(_ context.Context, req *modbus.DiscreteIn
 // HandleHoldingRegisters serves FC3, FC6 and FC16.
 func (h *Handler) HandleHoldingRegisters(_ context.Context, req *modbus.HoldingRegistersRequest) ([]uint16, error) {
 	remote := h.remote(req.ClientAddr)
-	if err := h.gate(req.UnitID, req.ClientAddr, remote); err != nil {
+	if err := h.gate(req.UnitID, req.FunctionCode, req.ClientAddr, remote); err != nil {
 		return nil, err
 	}
 	fc := byte(req.FunctionCode)
@@ -174,7 +205,7 @@ func (h *Handler) HandleHoldingRegisters(_ context.Context, req *modbus.HoldingR
 		h.st.reads.Add(1)
 		regs, ok := h.pm.ReadRegisters(int(req.UnitID), mbcore.AreaHolding, int(req.Addr), int(req.Quantity))
 		if !ok {
-			return nil, h.fail(remote, req.UnitID, readPDU(fc, req.Addr, req.Quantity), modbus.ErrIllegalDataAddress)
+			return nil, h.readFailed(remote, req.UnitID, req.FunctionCode, mbcore.AreaHolding, req.Addr, req.Quantity)
 		}
 		return regs, nil
 	}
@@ -191,13 +222,13 @@ func (h *Handler) HandleHoldingRegisters(_ context.Context, req *modbus.HoldingR
 // HandleInputRegisters serves FC4.
 func (h *Handler) HandleInputRegisters(_ context.Context, req *modbus.InputRegistersRequest) ([]uint16, error) {
 	remote := h.remote(req.ClientAddr)
-	if err := h.gate(req.UnitID, req.ClientAddr, remote); err != nil {
+	if err := h.gate(req.UnitID, req.FunctionCode, req.ClientAddr, remote); err != nil {
 		return nil, err
 	}
 	h.st.reads.Add(1)
 	regs, ok := h.pm.ReadRegisters(int(req.UnitID), mbcore.AreaInput, int(req.Addr), int(req.Quantity))
 	if !ok {
-		return nil, h.fail(remote, req.UnitID, readPDU(byte(req.FunctionCode), req.Addr, req.Quantity), modbus.ErrIllegalDataAddress)
+		return nil, h.readFailed(remote, req.UnitID, req.FunctionCode, mbcore.AreaInput, req.Addr, req.Quantity)
 	}
 	return regs, nil
 }
@@ -205,7 +236,7 @@ func (h *Handler) HandleInputRegisters(_ context.Context, req *modbus.InputRegis
 // HandleMaskWrite serves FC22.
 func (h *Handler) HandleMaskWrite(_ context.Context, req *modbus.MaskWriteRequest) error {
 	remote := h.remote(req.ClientAddr)
-	if err := h.gate(req.UnitID, req.ClientAddr, remote); err != nil {
+	if err := h.gate(req.UnitID, req.FunctionCode, req.ClientAddr, remote); err != nil {
 		return err
 	}
 	h.st.writes.Add(1)

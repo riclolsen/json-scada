@@ -2,9 +2,16 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 
 	"github.com/dscsystems/go-iec61850/client"
@@ -141,5 +148,51 @@ func TestSecCommandFlood(t *testing.T) {
 	}
 	if k := kinds(queued(w)); k["flood.controls"] != 1 {
 		t.Errorf("events %v", k)
+	}
+}
+
+// A certificate refused by Go's own chain verification never reaches
+// VerifyPeerCertificate: the dial error reports it, once.
+func TestSecCertRejectedByChainVerification(t *testing.T) {
+	w := withSecWriter(t)
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	defer srv.Close()
+	conn := newTestConnection(srv.Listener.Addr().String())
+	cfg := conn.withCertEvents(&tls.Config{RootCAs: x509.NewCertPool(), ServerName: "example.com"})
+	c, err := tls.Dial("tcp", srv.Listener.Addr().String(), cfg)
+	if err == nil {
+		c.Close()
+		t.Fatal("untrusted certificate accepted")
+	}
+	conn.secDialFailed(fmt.Errorf("mms: TLS handshake: %w", err))
+	conn.secDialFailed(err)
+	evs := queued(w)
+	if k := kinds(evs); k["tls.cert_rejected"] != 1 || len(evs) != 1 {
+		t.Fatalf("events %v", k)
+	}
+	if evs[0].Peer == nil {
+		t.Errorf("no certificate in the event: %+v", evs[0])
+	}
+}
+
+// An identification that reads less than before keeps the keys it could
+// not read, so a later change of them is still detected.
+func TestSecIdentityKeepsUnreadKeys(t *testing.T) {
+	withSecWriter(t)
+	addr, _ := startTestIED(t)
+	conn := newTestConnection(addr)
+	conn.PeerIdentification = true
+	conn.seedIdentity(bson.M{"keys": bson.A{bson.M{"k": "phyNam:GONE", "v": "old nameplate"}}})
+	conn.secNewAssociation(splitHostPort(addr))
+	cli := connectTest(t, conn)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	identifyPeer(ctx, conn, cli, "", "", "", errors.New("not supported"))
+	found := false
+	for _, k := range jsmongo.GetDocArray(conn.PeerIdentityDoc(), "keys") {
+		found = found || (k["k"] == "phyNam:GONE" && k["v"] == "old nameplate")
+	}
+	if !found {
+		t.Errorf("unread key lost: %v", conn.PeerIdentityDoc()["keys"])
 	}
 }

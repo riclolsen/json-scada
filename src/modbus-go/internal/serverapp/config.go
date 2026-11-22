@@ -19,6 +19,8 @@ import (
 	"modbus-go/internal/mbcore"
 	"modbus-go/internal/mbnet"
 
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -67,6 +69,13 @@ type Config struct {
 	TLS mbnet.TLSOptions
 
 	KeepProtocolRunningWhileInactive bool
+
+	// PeerIdentification records the identity of every master (address, MAC,
+	// certificate) in stats.peerIdentity and reports its changes as security
+	// events. KnownPeers is the last identity per IP stored there, so a
+	// change across a driver restart is seen.
+	PeerIdentification bool
+	KnownPeers         []bson.M
 }
 
 // numArr is a list of rounded finite numbers, or def when empty or not a list.
@@ -150,6 +159,9 @@ func Normalize(doc bson.M) Config {
 		},
 
 		KeepProtocolRunningWhileInactive: drv.Bool(doc, "keepProtocolRunningWhileInactive", false),
+
+		PeerIdentification: drv.Bool(doc, "peerIdentification", true),
+		KnownPeers:         jsmongo.GetDocArray(jsmongo.GetDoc(jsmongo.GetDoc(doc, "stats"), "peerIdentity"), "known"),
 	}
 }
 

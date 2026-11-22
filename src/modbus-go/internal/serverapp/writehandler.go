@@ -13,6 +13,7 @@ package serverapp
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"modbus-go/internal/mbcore"
@@ -43,7 +44,19 @@ type WriteHandler struct {
 	cfg  Config
 	sink CommandSink
 	pm   *PointMap
+	sec  *serverSec // nil: no security events
 }
+
+// refusal is a write refused for a reason of its own (commands disabled, a
+// supervised point, a value that does not decode), as opposed to an address
+// without points. It unwraps to the exception answered.
+type refusal struct {
+	err      error
+	tag, why string
+}
+
+func (r refusal) Error() string { return r.why }
+func (r refusal) Unwrap() error { return r.err }
 
 // NewWriteHandler binds a handler to its map and command sink.
 func NewWriteHandler(cfg Config, sink CommandSink, pm *PointMap) *WriteHandler {
@@ -112,7 +125,8 @@ func (w *WriteHandler) RegisterWrite(unit, addr int, value uint16, remote string
 		if word.Offset != addr || word.Span != 1 {
 			jslog.Log(jslog.LevelBasic, "%s: write from %s to %s refused: FC6 writes one register of a %d-register %s",
 				w.cfg.Name, remote, word.Tag, word.Span, word.Asdu.Label())
-			return modbus.ErrIllegalDataAddress
+			return refusal{modbus.ErrIllegalDataAddress, word.Tag,
+				fmt.Sprintf("FC6 writes one register of a %d-register %s", word.Span, word.Asdu.Label())}
 		}
 		raw, err := w.decode(word, []uint16{value}, remote)
 		if err != nil {
@@ -197,7 +211,7 @@ func (w *WriteHandler) decode(p *Point, regs []uint16, remote string) (mbcore.Va
 	raw, err := DecodeWrittenValue(p, regs)
 	if err != nil {
 		jslog.Log(jslog.LevelBasic, "%s: write from %s to %s failed to decode as %s: %v", w.cfg.Name, remote, p.Tag, p.Asdu.Type, err)
-		return mbcore.Value{}, modbus.ErrIllegalDataValue
+		return mbcore.Value{}, refusal{modbus.ErrIllegalDataValue, p.Tag, fmt.Sprintf("value does not decode as %s", p.Asdu.Type)}
 	}
 	return raw, nil
 }
@@ -209,12 +223,12 @@ func (w *WriteHandler) check(p *Point, remote string) error {
 	}
 	if !w.cfg.CommandsEnabled {
 		jslog.Log(jslog.LevelBasic, "%s: write from %s to %s refused: commands are disabled for this connection", w.cfg.Name, remote, p.Tag)
-		return modbus.ErrIllegalFunction
+		return refusal{modbus.ErrIllegalFunction, p.Tag, "commands are disabled for this connection"}
 	}
 	if !p.IsCommand && !w.cfg.AllowWritesToSupervised {
 		jslog.Log(jslog.LevelBasic, "%s: write from %s to %s refused: point is supervised, not a command "+
 			"(set allowWritesToSupervised to permit direct writes)", w.cfg.Name, remote, p.Tag)
-		return modbus.ErrIllegalFunction
+		return refusal{modbus.ErrIllegalFunction, p.Tag, "write to a supervised point, not a command"}
 	}
 	return nil
 }
@@ -235,6 +249,9 @@ func (w *WriteHandler) run(ws []write, remote string) error {
 			w.relay(x.p, x.raw, remote)
 		} else {
 			w.pm.StoreWritten(x.p, x.raw)
+			if w.sec != nil {
+				w.sec.supervisedWrite(remote, x.p)
+			}
 			jslog.Log(jslog.LevelDetailed, "%s: write from %s stored in supervised %s raw=%s", w.cfg.Name, remote, x.p.Tag, x.raw.String())
 		}
 	}
@@ -244,6 +261,9 @@ func (w *WriteHandler) run(ws []write, remote string) error {
 // relay inserts the command of a checked write.
 func (w *WriteHandler) relay(p *Point, raw mbcore.Value, remote string) {
 	value, valueString := RouteCommandValue(p, raw)
+	if w.sec != nil {
+		w.sec.relayed(remote, p, value)
+	}
 	jslog.Log(jslog.LevelDebug, "%s: routing write from %s as command %s type=%s raw=%s -> value=%s",
 		w.cfg.Name, remote, p.Tag, p.TagType, raw.String(), mbcore.JSNumberString(value))
 	// Fire and forget: Modbus cannot wait for end-to-end confirmation.

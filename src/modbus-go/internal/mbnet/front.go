@@ -9,6 +9,7 @@ package mbnet
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -36,13 +37,44 @@ type Logger interface {
 // AddrMap remembers which master stands behind each loopback connection to the
 // go-modbus server, so handler log lines and relayed commands name the real
 // client instead of 127.0.0.1.
-type AddrMap struct{ m sync.Map }
+type AddrMap struct {
+	m sync.Map
+	// gone keeps closed connections for a while: the library reports the
+	// security events of a connection after it has closed.
+	goneMu sync.Mutex
+	gone   map[string]goneAddr
+}
+
+type goneAddr struct {
+	remote string
+	at     time.Time
+}
+
+// addrMemory is how long a closed connection still resolves.
+const addrMemory = 30 * time.Second
 
 // Put records the real remote of a loopback connection's local address.
 func (a *AddrMap) Put(local, remote string) { a.m.Store(local, remote) }
 
-// Delete forgets a loopback connection.
-func (a *AddrMap) Delete(local string) { a.m.Delete(local) }
+// Delete forgets a loopback connection; Resolve still names it for a while.
+func (a *AddrMap) Delete(local string) {
+	v, ok := a.m.LoadAndDelete(local)
+	if !ok {
+		return
+	}
+	now := time.Now()
+	a.goneMu.Lock()
+	if a.gone == nil {
+		a.gone = map[string]goneAddr{}
+	}
+	for k, g := range a.gone {
+		if now.Sub(g.at) > addrMemory {
+			delete(a.gone, k)
+		}
+	}
+	a.gone[local] = goneAddr{remote: v.(string), at: now}
+	a.goneMu.Unlock()
+}
 
 // Known reports whether a go-modbus ClientAddr is a connection the front-end
 // or an RTU gateway opened; any other one reached the private port directly.
@@ -55,6 +87,11 @@ func (a *AddrMap) Known(clientAddr string) bool {
 func (a *AddrMap) Resolve(clientAddr string) string {
 	if v, ok := a.m.Load(clientAddr); ok {
 		return v.(string)
+	}
+	a.goneMu.Lock()
+	defer a.goneMu.Unlock()
+	if g, ok := a.gone[clientAddr]; ok && time.Since(g.at) <= addrMemory {
+		return g.remote
 	}
 	return clientAddr
 }
@@ -80,11 +117,27 @@ type FrontConfig struct {
 	Upstream    string // the go-modbus server, 127.0.0.1:port
 	Addrs       *AddrMap
 	IdleGap     time.Duration // RTU inter-frame gap
-	AcceptUnit  func(unit byte) bool
+	AcceptUnit  func(remote string, unit byte) bool
 	Log         Logger
 	OnClient    func(remote string, connected bool, count int)
 	OnError     func(err error)
+	// Security hooks, each optional: a refused connection (reason
+	// RejectNotAllowed or RejectLimit), the outcome of a TLS handshake (err
+	// nil on success; rawCerts is the chain the client presented, when known)
+	// and a master whose session starts (cs nil on plain TCP).
+	OnReject    func(remote, reason string)
+	OnHandshake func(remote string, cs *tls.ConnectionState, rawCerts [][]byte, err error)
+	OnOpen      func(remote string, cs *tls.ConnectionState)
+	OnClose     func(remote string)
+	// OnBadFrame reports n RTU frames dropped for a bad CRC.
+	OnBadFrame func(remote string, n int)
 }
+
+// The reasons OnReject reports.
+const (
+	RejectNotAllowed = "not allowed"
+	RejectLimit      = "limit"
+)
 
 // Front accepts masters and forwards their requests to the go-modbus server.
 type Front struct {
@@ -158,6 +211,9 @@ func (f *Front) acceptLoop(ln net.Listener) {
 		if !f.allowed(c) {
 			f.cfg.Log.Info(fmt.Sprintf("client %s rejected: not in the ipAddresses allow-list", remote))
 			_ = c.Close()
+			if f.cfg.OnReject != nil {
+				f.cfg.OnReject(remote, RejectNotAllowed)
+			}
 			continue
 		}
 		f.mu.Lock()
@@ -165,6 +221,9 @@ func (f *Front) acceptLoop(ln net.Listener) {
 			f.mu.Unlock()
 			f.cfg.Log.Info(fmt.Sprintf("client %s rejected: maxClientConnections (%d) reached", remote, f.cfg.MaxClients))
 			_ = c.Close()
+			if f.cfg.OnReject != nil {
+				f.cfg.OnReject(remote, RejectLimit)
+			}
 			continue
 		}
 		f.clients[c] = struct{}{}
@@ -216,16 +275,26 @@ func (f *Front) serve(c net.Conn, remote string) {
 		}
 	}()
 	conn := c
+	var cs *tls.ConnectionState
 	if f.cfg.TLS != nil {
-		tc := tls.Server(c, f.cfg.TLS)
+		tcfg, raw := captureCerts(f.cfg.TLS)
+		tc := tls.Server(c, tcfg)
 		_ = tc.SetDeadline(time.Now().Add(30 * time.Second))
 		if err := tc.Handshake(); err != nil {
 			if f.cfg.OnError != nil {
 				f.cfg.OnError(fmt.Errorf("TLS handshake with %s failed: %w", remote, err))
 			}
+			if f.cfg.OnHandshake != nil {
+				f.cfg.OnHandshake(remote, nil, *raw, err)
+			}
 			return
 		}
 		_ = tc.SetDeadline(time.Time{})
+		st := tc.ConnectionState()
+		cs = &st
+		if f.cfg.OnHandshake != nil {
+			f.cfg.OnHandshake(remote, cs, nil, nil)
+		}
 		conn = tc
 		f.mu.Lock()
 		delete(f.clients, c)
@@ -236,10 +305,16 @@ func (f *Front) serve(c net.Conn, remote string) {
 	if f.cfg.OnClient != nil {
 		f.cfg.OnClient(remote, true, f.count())
 	}
+	if f.cfg.OnOpen != nil {
+		f.cfg.OnOpen(remote, cs)
+	}
+	if f.cfg.OnClose != nil {
+		defer f.cfg.OnClose(remote)
+	}
 	if f.cfg.Framing == FramingRTU {
 		up := NewUpstream(f.cfg.Upstream, remote, f.cfg.Addrs)
 		defer up.Close()
-		ServeRTU(&netFrameReader{c: conn, idle: f.cfg.IdleTimeout, gap: f.cfg.IdleGap}, conn, remote, up, f.cfg.AcceptUnit, f.cfg.Log)
+		ServeRTU(&netFrameReader{c: conn, idle: f.cfg.IdleTimeout, gap: f.cfg.IdleGap}, conn, remote, up, f.cfg.AcceptUnit, f.cfg.Log, f.cfg.OnBadFrame)
 		return
 	}
 	up, err := net.DialTimeout("tcp", f.cfg.Upstream, 5*time.Second)
@@ -255,6 +330,23 @@ func (f *Front) serve(c net.Conn, remote string) {
 		return
 	}
 	Pipe(conn, up, f.cfg.IdleTimeout)
+}
+
+// captureCerts returns cfg, or a copy of it whose verification callback also
+// keeps the chain the client presented (raw), so a refused certificate can be
+// described.
+func captureCerts(cfg *tls.Config) (*tls.Config, *[][]byte) {
+	raw := new([][]byte)
+	if cfg.VerifyPeerCertificate == nil {
+		return cfg, raw
+	}
+	c := cfg.Clone()
+	verify := cfg.VerifyPeerCertificate
+	c.VerifyPeerCertificate = func(rc [][]byte, chains [][]*x509.Certificate) error {
+		*raw = rc
+		return verify(rc, chains)
+	}
+	return c, raw
 }
 
 // traceConn hex-dumps what a master sends, at log level 3.
@@ -333,15 +425,25 @@ func isTimeout(err error) bool {
 // ServeRTU runs one RTU session: it cuts request frames, forwards each to the
 // go-modbus server and writes the RTU response back (none for broadcasts). It
 // returns when the link fails or, on a socket, when the client stays idle.
-func ServeRTU(rd frameReader, w io.Writer, remote string, up *Upstream, accept func(byte) bool, log Logger) {
+func ServeRTU(rd frameReader, w io.Writer, remote string, up *Upstream, accept func(string, byte) bool, log Logger,
+	onBadFrame func(remote string, n int)) {
 	var dec mbcore.RTURequestDecoder
+	badFrames := func() {
+		if n := dec.TakeDropped(); n > 0 {
+			log.Info(fmt.Sprintf("[%s] %d RTU frame(s) dropped: bad CRC", remote, n))
+			if onBadFrame != nil {
+				onBadFrame(remote, n)
+			}
+		}
+	}
+	defer badFrames()
 	buf := make([]byte, 512)
 	handle := func(frames []mbcore.RTUFrame) bool {
 		for _, fr := range frames {
 			if log.DebugEnabled() {
 				log.Debug(fmt.Sprintf("[%s] RX unit=%d %s | PDU: %s", remote, fr.Unit, mbcore.DescribeRequest(fr.PDU), mbcore.Hex(fr.PDU, 0)))
 			}
-			if fr.Unit != 0 && accept != nil && !accept(fr.Unit) {
+			if fr.Unit != 0 && accept != nil && !accept(remote, fr.Unit) {
 				log.Info(fmt.Sprintf("[%s] request ignored: unit id %d not served (strictUnitId is enabled)", remote, fr.Unit))
 				continue
 			}
@@ -377,6 +479,7 @@ func ServeRTU(rd frameReader, w io.Writer, remote string, up *Upstream, accept f
 			if !handle(dec.Push(buf[:n])) {
 				return
 			}
+			badFrames()
 		}
 		if err != nil {
 			if isTimeout(err) {
@@ -384,6 +487,7 @@ func ServeRTU(rd frameReader, w io.Writer, remote string, up *Upstream, accept f
 					if !handle(dec.OnIdle()) {
 						return
 					}
+					badFrames()
 					continue
 				}
 				if rd.IdleEndsSession() {
@@ -398,6 +502,7 @@ func ServeRTU(rd frameReader, w io.Writer, remote string, up *Upstream, accept f
 			if !handle(dec.OnIdle()) {
 				return
 			}
+			badFrames()
 		}
 	}
 }
@@ -486,7 +591,7 @@ func (u *Upstream) once(unit byte, pdu []byte) ([]byte, error) {
 // ServeSerial runs the RTU server on a serial port until ctx ends, reopening
 // the port 5 s after it fails.
 func ServeSerial(ctx context.Context, open func() (io.ReadWriteCloser, error), upstream string, addrs *AddrMap,
-	accept func(byte) bool, log Logger, onState func(open bool, err error)) {
+	accept func(string, byte) bool, log Logger, onState func(open bool, err error), onBadFrame func(remote string, n int)) {
 	for ctx.Err() == nil {
 		port, err := open()
 		if err != nil {
@@ -502,7 +607,7 @@ func ServeSerial(ctx context.Context, open func() (io.ReadWriteCloser, error), u
 		// The port's read timeout is the inter-frame gap, so the session sees ctx
 		// end within one gap and the port is closed only once it has returned.
 		up := NewUpstream(upstream, "serial", addrs)
-		ServeRTU(&SerialFrameReader{Port: port, Ctx: ctx}, port, "serial", up, accept, log)
+		ServeRTU(&SerialFrameReader{Port: port, Ctx: ctx}, port, "serial", up, accept, log, onBadFrame)
 		up.Close()
 		_ = port.Close()
 		if ctx.Err() != nil {

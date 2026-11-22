@@ -42,7 +42,7 @@ Both are described below.
 | `jscommands` | The `commandsQueue` pipeline, field extraction, expiry and ack/cancel writeback |
 | `jstags` | The auto-created tag defaults and the `_id` partition per connection |
 | `jsredundancy` | Active-node arbitration: the unchanged-count takeover rule |
-| `jssecevents` | The `secEvents` document, a non-blocking batched writer (`Writer.Emit` / `Run`, MAC enrichment), change trackers, rate limits and the OS neighbour-table MAC lookup; no protocol library dependency (drivers map their library's events onto `Event`) |
+| `jssecevents` | The `secEvents` document, a non-blocking batched writer (`Writer.Emit` / `Run`, MAC enrichment), change trackers, rate limits, throttles (`Throttle`: one event per period with a count), the OS neighbour-table MAC lookup, certificate and TLS session documents (`CertDoc`, `TLSStateDoc`, `IsCertError`) and the supervised state of a command tag as it was before a time (`SupervisedState(ctx, rt, cmdKey, before)`, for unnecessary commands, run after the dispatch). `Writer` assigns each event its `_id` and keeps unstored events across failed inserts and reconnections (bounded, oldest dropped and counted); `Throttle` and `RateLimit` are bounded to 4096 keys; no protocol library dependency (drivers map their library's events onto `Event`) |
 
 Planned, not yet implemented: `jsdriver`.
 

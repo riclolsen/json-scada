@@ -1,7 +1,8 @@
 # Modbus Client and Server Drivers (Go)
 
 Go drivers for Modbus in {json:scada}, built on
-[go-modbus](https://github.com/otfabric/go-modbus) (MIT). They replace the former Node.js
+[go-modbus](https://github.com/riclolsen/go-modbus) (MIT; a fork of
+[otfabric/go-modbus](https://github.com/otfabric/go-modbus) with security events). They replace the former Node.js
 drivers in `src/modbus` (sources removed in 0.69) and keep their configuration: the same
 protocol driver names, the same `protocolConnections` and `realtimeData` fields and defaults,
 the same command-line arguments and environment variables, and the same service names.
@@ -146,6 +147,12 @@ it, and the drivers add them around it:
   has them served by the library and sends the RTU response, or nothing for a broadcast.
 - **Commands ahead of polling.** Commands run one at a time, in arrival order. A command waits
   only for the request in progress, not for the poll cycle.
+- **Security events and peer identification.** Both drivers write security events to the
+  `secEvents` collection and record the peer's identity in `stats.peerIdentity`
+  (`peerIdentification`, on by default); see the driver READMEs. The server maps the library's
+  events (`ServerConfig.Security`) to the real master through the front-end's address map and
+  drops its connection events, which name the loopback; the front-end, the handler and the
+  PDU tap report the rest.
 
 The code:
 
@@ -155,6 +162,7 @@ The code:
 | `internal/mbcore` | Value codec and byte orders, addresses and ASDUs, CRC and RTU framing, request descriptions. No MongoDB. |
 | `internal/mbnet` | TLS settings, the client bridge, the server front-end and RTU gateway, serial ports |
 | `internal/drv` | Command line, config file, instance document, logging adapters, BSON conversions |
+| `internal/mbsec` | Security event kinds, their classification and the mapping of go-modbus's events onto `secEvents` documents |
 | `internal/clientapp` | The `MODBUS` driver |
 | `internal/serverapp` | The `MODBUS_SERVER` driver |
 | `internal/loopback` | Client against server tests |

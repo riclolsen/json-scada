@@ -1,11 +1,15 @@
 package jssecevents
 
 import (
+	"errors"
+	"fmt"
 	"net/netip"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 func TestTrackerReportsOnlyChanges(t *testing.T) {
@@ -79,5 +83,64 @@ func TestEmitCompletesAndNeverBlocks(t *testing.T) {
 	if e.SeverityLevel != 2 || e.Count != 1 || e.Source != "driver" || e.ProtocolConnectionNumber != 7 ||
 		e.NodeName != "n" || e.TimeTag.IsZero() || e.Action != "observed" {
 		t.Errorf("event not completed: %+v", e)
+	}
+}
+
+func TestThrottleCountsHeldBack(t *testing.T) {
+	th := Throttle{Every: time.Minute}
+	t0 := time.Unix(1000, 0)
+	if ok, n := th.Allow("k", t0); !ok || n != 1 {
+		t.Fatalf("first: %v %d", ok, n)
+	}
+	for i := 1; i <= 3; i++ {
+		if ok, _ := th.Allow("k", t0.Add(time.Duration(i)*time.Second)); ok {
+			t.Fatal("let through inside the period")
+		}
+	}
+	if ok, _ := th.Allow("other", t0); !ok {
+		t.Fatal("keys are independent")
+	}
+	if ok, n := th.Allow("k", t0.Add(time.Minute)); !ok || n != 4 {
+		t.Fatalf("after the period: %v %d, want true 4", ok, n)
+	}
+	th.Reset()
+	if ok, n := th.Allow("k", t0.Add(time.Minute+time.Second)); !ok || n != 1 {
+		t.Fatalf("after Reset: %v %d", ok, n)
+	}
+}
+
+func TestThrottleAndRateLimitAreBounded(t *testing.T) {
+	now := time.Unix(5000, 0)
+	th := Throttle{Every: time.Hour}
+	rl := RateLimit{Max: 1000, Window: time.Hour}
+	for i := 0; i < 3*maxThrottleKeys; i++ {
+		k := fmt.Sprint(i)
+		th.Allow(k, now)
+		rl.Hit(k, now)
+	}
+	if len(th.last) > maxThrottleKeys+1 || len(rl.state) > maxThrottleKeys+1 {
+		t.Fatalf("state grew: throttle %d, rate limit %d", len(th.last), len(rl.state))
+	}
+	// the overflow keys share one entry: one event per period, with the count
+	if ok, _ := th.Allow("new", now); ok {
+		t.Fatal("overflow key let through inside the period")
+	}
+	if ok, _ := th.Allow("new2", now.Add(2*time.Second)); ok {
+		t.Fatal("overflow key let through inside the period")
+	}
+	// after the period the expired keys are swept and new keys get their own
+	if ok, _ := th.Allow("new3", now.Add(time.Hour)); !ok || len(th.last) != 1 {
+		t.Fatalf("after the period: %v, %d keys", ok, len(th.last))
+	}
+}
+
+func TestOnlyDuplicates(t *testing.T) {
+	dup := mongo.BulkWriteException{WriteErrors: []mongo.BulkWriteError{{WriteError: mongo.WriteError{Code: 11000}}}}
+	if !onlyDuplicates(dup) {
+		t.Fatal("duplicate keys are a retried batch")
+	}
+	other := mongo.BulkWriteException{WriteErrors: []mongo.BulkWriteError{{WriteError: mongo.WriteError{Code: 11000}}, {WriteError: mongo.WriteError{Code: 121}}}}
+	if onlyDuplicates(other) || onlyDuplicates(errors.New("network")) {
+		t.Fatal("another failure is not a duplicate")
 	}
 }

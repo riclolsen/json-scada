@@ -129,3 +129,21 @@ func TestTagDocStateTexts(t *testing.T) {
 		}
 	}
 }
+
+// The FC17 identity key does not change with the run indicator status.
+func TestServerIDKeyIgnoresRunIndicator(t *testing.T) {
+	for _, c := range []struct{ a, b []byte }{
+		{[]byte{0x11, 0xFF, 'A', 'B'}, []byte{0x11, 0x00, 'A', 'B'}}, // indicator second
+		{[]byte{'D', 'E', 'V', 0xFF}, []byte{'D', 'E', 'V', 0x00}},   // indicator last
+	} {
+		if serverIDKey(c.a) != serverIDKey(c.b) {
+			t.Errorf("%X and %X differ: %s %s", c.a, c.b, serverIDKey(c.a), serverIDKey(c.b))
+		}
+	}
+	if serverIDKey([]byte{0x11, 0xFF, 'A', 'B'}) == serverIDKey([]byte{0x12, 0xFF, 'A', 'B'}) {
+		t.Error("a server id change is not seen")
+	}
+	if serverIDKey([]byte{0x11}) != "11" {
+		t.Error("one byte answer")
+	}
+}

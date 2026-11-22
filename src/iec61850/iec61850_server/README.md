@@ -124,8 +124,9 @@ after `secEventsRetentionDays` (Admin / System, default 60 days). Fields in
     client's address and the certificate's subject and fingerprint.
   - `cmd.rejected`: a control refused (commands disabled, a test control, a value of the wrong type).
   - `flood.controls`: more than 10 controls from one client IP within 10 s.
-  - `cmd.unnecessary`: a digital control whose supervised point already is in the commanded state
-    (closing a closed breaker); the command is still forwarded.
+  - `cmd.unnecessary`: a digital control whose supervised point already was in the commanded state
+    (closing a closed breaker; only a value last updated before the control arrived counts); checked
+    in the background, the command is still forwarded.
   - With `peerIdentification`: `peer.identified` (first association from an address),
     `peer.mac_changed`, `peer.identity_changed` (ACSE calling AP title / AE qualifier) and
     `tls.cert_changed` for the same IP address.

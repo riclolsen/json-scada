@@ -112,21 +112,26 @@ func runConnection(ctx context.Context, conn *Iec61850Connection) error {
 	cli, err := client.Dial(dialCtx, addr, opts...)
 	cancelDial()
 	if err != nil {
+		if conn.UseSecurity {
+			conn.secDialFailed(err)
+		}
 		return fmt.Errorf("%s Connection error: %w", conn.Name, err)
 	}
 	conn.SetClient(cli)
 
-	idCtx, cancelID := context.WithTimeout(ctx, conn.requestTimeout())
-	vendor, modelName, revision, err := cli.MMS().Identify(idCtx)
-	cancelID()
-	if err == nil {
-		jslog.Log(jslog.LevelBasic, "Vendor:   %s", vendor)
-		jslog.Log(jslog.LevelBasic, "Model:    %s", modelName)
-		jslog.Log(jslog.LevelBasic, "Revision: %s", revision)
-	} else {
-		jslog.Log(jslog.LevelDetailed, "%s Identify not supported: %v", conn.Name, err)
-	}
+	// MMS Identify is part of the peer identification: with it off the
+	// driver sends no identification request at all.
 	if conn.PeerIdentification {
+		idCtx, cancelID := context.WithTimeout(ctx, conn.requestTimeout())
+		vendor, modelName, revision, err := cli.MMS().Identify(idCtx)
+		cancelID()
+		if err == nil {
+			jslog.Log(jslog.LevelBasic, "Vendor:   %s", vendor)
+			jslog.Log(jslog.LevelBasic, "Model:    %s", modelName)
+			jslog.Log(jslog.LevelBasic, "Revision: %s", revision)
+		} else {
+			jslog.Log(jslog.LevelDetailed, "%s Identify not supported: %v", conn.Name, err)
+		}
 		identifyPeer(ctx, conn, cli, vendor, modelName, revision, err)
 	}
 
