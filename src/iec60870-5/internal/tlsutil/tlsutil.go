@@ -145,7 +145,7 @@ func BuildTLSConfig(cfg *model.ConnCfg, isServer bool) (*tls.Config, error) {
 	if isServer {
 		peerUsage = x509.ExtKeyUsageClientAuth
 	}
-	verifyPeer := func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+	check := func(rawCerts [][]byte) error {
 		if len(rawCerts) == 0 {
 			return fmt.Errorf("no peer certificate")
 		}
@@ -179,6 +179,23 @@ func BuildTLSConfig(cfg *model.ConnCfg, isServer bool) (*tls.Config, error) {
 			return err
 		}
 		return nil // chainValidation false: accept (C# parity)
+	}
+	// A refusal is a *tls.CertificateVerificationError carrying the peer's
+	// certificates, as Go's own verification returns: the security events
+	// (go-iecp5 and the drivers) then report it as a refused certificate,
+	// with the certificate.
+	verifyPeer := func(rawCerts [][]byte, _ [][]*x509.Certificate) error {
+		err := check(rawCerts)
+		if err == nil {
+			return nil
+		}
+		var certs []*x509.Certificate
+		for _, der := range rawCerts {
+			if c, perr := x509.ParseCertificate(der); perr == nil {
+				certs = append(certs, c)
+			}
+		}
+		return &tls.CertificateVerificationError{UnverifiedCertificates: certs, Err: err}
 	}
 
 	if isServer {

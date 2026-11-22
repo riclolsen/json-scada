@@ -111,8 +111,9 @@ type IecCmdAck struct {
 // SelectConfirm signals a positive select confirmation received for an SBO
 // command; the driver reacts by sending the stored execute twin.
 type SelectConfirm struct {
-	Ca  int
-	Ioa int
+	Ca   int
+	Ioa  int
+	Type asdu.TypeID // of the confirmed command
 }
 
 // InfoObject is the protocol-neutral output of BuildInfoObj: a single

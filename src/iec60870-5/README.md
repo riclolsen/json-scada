@@ -68,6 +68,8 @@ internal/
                      command validation/forwarding, DistributeAutoTags
   cs101util/         serial + link config mapping for the 101 drivers
   tlsutil/           *tls.Config from the connection certificate fields (PFX or PEM)
+  iecsec/            security events (secEvents) and peer identification (stats.peerIdentity):
+                     driver event kinds, filtering and mapping of go-iecp5's secevent channel
   testmongo/         test support: throwaway MongoDB (bundled mongod) for the Mongo-backed tests
 test/                protocol-level loopback tests (no MongoDB required)
 ```
@@ -130,6 +132,108 @@ Notable mappings and current limitations:
   ...); a non-empty `topics` restricts it to tags whose `group1` contains one of
   the substrings. See the per-driver READMEs under `cmd/*/README.md` for the
   full behavior and IOA ranges.
+- **`peerIdentification`** (boolean, default `true`): record the peer's
+  identity in `stats.peerIdentity` and report its changes as security events.
+  See [Security events and peer identification](#security-events-and-peer-identification).
+
+## Security events and peer identification
+
+Every driver reports unexpected or suspicious conditions to the `secEvents`
+collection (see `docs/schema.md`, listed by the Security Events viewer of the
+Admin UI), from two sources:
+
+- `source: "library"`: go-iecp5's `secevent` channel (v0.5.0). The library
+  checks every frame and ASDU: unexpected connections, TLS handshakes and
+  certificates, sequence numbers (I-frame N(S)/N(R) duplicates, gaps and
+  regressions, the 101/103 FCB repeat), malformed APCI/ASDU/FT1.2 frames and
+  fields, wrong direction, unknown causes, foreign link addresses, select
+  without execute, unsolicited confirmations, control actions (reset process,
+  parameter change and activation, clock step, end of initialisation, 103
+  setting change), file transfers, command brute force and floods. Routine
+  operation (connection opened or closed, STARTDT/STOPDT, interrogation,
+  clock sync, test command, link reset, each received command) is not stored.
+- `source: "driver"`: the drivers' own checks, which know the tags and the
+  configuration (see the per-role tables below).
+
+A server refusing a command, and a 104 client seeing a device refuse one, are
+reported by the driver (with the tag and the reason) instead of the library.
+With `peerIdentification` off, the identity events (`peer.identified`,
+`peer.identity_changed`, `peer.mac_changed*`, `peer.mac_shared`,
+`tls.cert_changed`) are left out.
+
+### Peer identification
+
+IEC 60870-5-101/104 define no device identification, so a peer is identified
+by what the connection shows of it: its address, the MAC address of its IP
+from the operating system's neighbour (ARP) table (a peer behind a router
+shows the router's MAC, and is left out), its TLS certificate and, on 101,
+the link address. IEC 60870-5-103 devices identify themselves: the
+identification ASDU 5 (sent after the reset of the communication unit, and on
+a restart) carries the compatibility level, 8 ASCII characters (manufacturer
+and product) and 4 octets of software identification.
+
+| Driver | `stats.peerIdentity` |
+|---|---|
+| `iec104client` | `address`, `ip`, `mac`, `tls`, `connectedAt` of the current server, and `keys` |
+| `iec101client` | `address` (the TCP peer, or `serial://<port>`), `linkAddress`, `ip`, `mac`, `tls`, `connectedAt`, `keys` |
+| `iec103client` | as the 101 client, plus `devices`: one entry per device that sent its identification (`commonAddress`, `identification`, `compatibilityLevel`, `softwareId` in hex, `fun`, `inf`, `cause`) |
+| `iec104server` | `clients`, the identity of each master connected now, and `known`, the last identity of every master IP seen (the 64 most recent: `ip`, `lastSeen`, `mac`, `tlsSha256`, `tlsSubject`) |
+| `iec101server` | not recorded (go-iecp5's 101 server exposes no peer connection) |
+
+`keys` (`k`, `v`) are the values compared between connections: `mac`, `cert`
+(the certificate's SHA-256) and, on 103, `ident:<commonAddress>`. They are read
+back from `stats` at start, so a change across a driver restart is reported
+too. The identity is collected each time the connection or link is
+(re)established; a 103 device that did not send its identification on a
+connection keeps its previous key.
+
+```json
+{
+  "address": "192.168.0.20:2404",
+  "ip": "192.168.0.20",
+  "mac": "00:1a:2b:3c:4d:5e",
+  "connectedAt": "2026-11-22T12:00:00Z",
+  "keys": [{ "k": "mac", "v": "00:1a:2b:3c:4d:5e" }]
+}
+```
+
+### Client events (`iec104client`, `iec101client`, `iec103client`)
+
+| Kind | When |
+|---|---|
+| `peer.identified` | First identification of the device. |
+| `peer.mac_changed`, `tls.cert_changed` | The MAC address or the certificate of the device changed (on 104 detected by go-iecp5, which also reports `peer.mac_changed_midsession` and `peer.mac_shared`). |
+| `peer.identity_changed` | A 103 device's identification (compatibility level, ASCII, software id) changed. |
+| `tls.cert_rejected` | The device's certificate was refused (subject, issuer, fingerprint). |
+| `ctrl.end_of_init` | The device restarted: 101 end of initialisation (the cause in `value`), 103 identification with cause start/restart or power on (104: from go-iecp5). |
+| `cmd.rejected` | A command not sent (commands disabled, a type the driver does not send), or refused by the device: negative confirmation, unknown type or cause (101/104), negative acknowledgement (103). |
+| `cmd.object_unknown` | The device answered a command with unknown IOA or common address. |
+| `cmd.stale_time` | A queued command older than its 10 s expiry, not sent (delayed, or replayed into `commandsQueue`). |
+| `flood.commands` | More than 10 commands to the device within 10 seconds. |
+| `cmd.unnecessary` | An ON/OFF command to the state its supervised point already was in (a value updated before the command was sent). Checked in the background; the command is still sent. |
+
+### Server events (`iec104server`, `iec101server`)
+
+| Kind | When |
+|---|---|
+| `conn.unexpected` | A 104 master not in `ipAddresses` (refused). |
+| `conn.rejected_limit` | `maxClientConnections` reached. |
+| `tls.cert_rejected`, `tls.handshake_failed`, `tls.no_client_cert` | A client certificate refused, or another handshake failure (from go-iecp5). |
+| `peer.identified` | First connection from a master IP (104). |
+| `access.unknown_ioa` | A read (C_RD_NA_1) of an object without a mapped point. |
+| `access.unknown_ca` | A read, command or interrogation to a common address without mapped points. |
+| `access.scan` | More than 20 distinct nonexistent objects requested by one master within a minute. |
+| `access.unknown_type` | A request of a type the server does not serve. |
+| `file.upload` | A file transfer request (the servers serve no files). |
+| `cmd.object_unknown` | A command to an object without a mapped point. |
+| `cmd.rejected` | A command refused: commands disabled for the connection, the test bit set, an invalid value, an unexpected select, a qualifier mismatch, a database error. |
+| `cmd.execute_without_select` | An execute without a valid select on a select-before-operate point. |
+| `cmd.stale_timetag` | A time-tagged command outside the 20 s window (a replayed command, or clocks out of step). |
+| `cmd.unnecessary` | An ON/OFF (C_SC/C_DC) command to the state the point already was in. Checked in the background; the command is still forwarded. |
+| `flood.commands`, `cmd.brute_force` | Command floods and repeated refused commands (from go-iecp5). |
+
+A 101 server also gets go-iecp5's link layer events (`link.foreign_address`,
+`link.unexpected_address`, `seq.fcb_repeat`, `proto.cs101_*`).
 
 ### Known limitations vs. the C# drivers
 
@@ -178,6 +282,17 @@ Deliberately different from the C# drivers:
   select is held per connection for the master link that sent it, expires
   after 30 s and is consumed by the execute (the C# drivers used one
   process-wide slot).
+- `commandsEnabled: false` on a server refuses every process command and
+  parameter with a negative confirmation (not only the automatic mapping of
+  command destinations), and so does one with the test bit set (nothing is
+  queued). Counter interrogation and reset process are forwarded as before.
+- A station interrogation answers the points of its common address only; the
+  global address takes every point of the connection. An interrogation of a
+  common address no tag is mapped to gets a negative confirmation.
+- The 101/104 clients execute the stored select-before-operate twin once, on a
+  positive select confirmation that matches its common address, object address
+  and type within 30 s of the select; the pending execute is dropped when the
+  connection is lost.
 - The servers wait for room when a link's send buffer is full instead of
   dropping the ASDU, so a large interrogation or a burst of spontaneous data
   arrives complete. A link that has accepted nothing for 10 s (a 104 standby
@@ -203,6 +318,7 @@ Deliberately different from the C# drivers:
 ```sh
 go test ./internal/conv/      # encode/decode unit tests
 go test ./internal/tlsutil/   # TLS peer verification (generated certificates)
+go test ./internal/iecsec/    # security event filtering, mapping, scan detection, peer identity changes
 go test ./internal/cs101util/ # serial vs TCP port names
 go test ./test/               # cs104 client <-> server protocol loopback (no MongoDB)
 go test ./internal/cliapp/    # client writer latency, batching and tag auto-creation (MongoDB)

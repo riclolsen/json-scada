@@ -78,6 +78,16 @@ func (e *Engine) Interrogation(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU,
 	q := int(qoi)
 	out := e.reply(replyTo)
 	jslog.Log(jslog.LevelBasic, "%s[%d] Group interrogation BEGIN", conName, q)
+	// a station interrogation answers the points of its common address; only
+	// the global address takes every one of the connection
+	global := isGlobalCA(replyTo, pack.CommonAddr)
+	if !global && !e.knownCA(srv, int(pack.CommonAddr)) {
+		srv.Sec.UnknownCA(replyTo, pack, "interrogation")
+		e.negativeCon(replyTo, pack)
+		jslog.Log(jslog.LevelBasic, "%s[%d] Group interrogation of unknown common address %d", conName, q, int(pack.CommonAddr))
+		return
+	}
+	ca := int(pack.CommonAddr)
 
 	// connection and group must hold on the same destination entry
 	var groupCond interface{}
@@ -86,12 +96,16 @@ func (e *Engine) Interrogation(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU,
 	} else {
 		groupCond = bson.M{"$in": bson.A{q, q - 20}}
 	}
+	elem := bson.M{
+		"protocolDestinationConnectionNumber": srv.Cfg.ProtocolConnectionNumber,
+		"protocolDestinationGroup":            groupCond,
+	}
+	if !global {
+		elem["protocolDestinationCommonAddress"] = jsmongo.AddrMatch(ca)
+	}
 	filter := bson.M{
-		"origin": bson.M{"$ne": "command"},
-		"protocolDestinations": bson.M{"$elemMatch": bson.M{
-			"protocolDestinationConnectionNumber": srv.Cfg.ProtocolConnectionNumber,
-			"protocolDestinationGroup":            groupCond,
-		}},
+		"origin":               bson.M{"$ne": "command"},
+		"protocolDestinations": bson.M{"$elemMatch": elem},
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -120,7 +134,8 @@ func (e *Engine) Interrogation(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU,
 		p := &list[i]
 		for j := range p.ProtocolDestinations {
 			d := &p.ProtocolDestinations[j]
-			if int(d.ConnectionNumber) == int(srv.Cfg.ProtocolConnectionNumber) && groupMatches(q, d.Group) {
+			if int(d.ConnectionNumber) == int(srv.Cfg.ProtocolConnectionNumber) && groupMatches(q, d.Group) &&
+				(global || int(d.CommonAddress) == ca) {
 				items = append(items, item{p, d})
 			}
 		}

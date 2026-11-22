@@ -104,7 +104,7 @@ func Decode(pack *asdu.ASDU, connNumber int) DecodeResult {
 
 	selChase := func(ioa asdu.InfoObjAddr, inSelect bool) {
 		if inSelect && pack.Coa.Cause == asdu.ActivationCon && !pack.Coa.IsNegative {
-			res.Selects = append(res.Selects, SelectConfirm{Ca: ca, Ioa: int(ioa)})
+			res.Selects = append(res.Selects, SelectConfirm{Ca: ca, Ioa: int(ioa), Type: pack.Type})
 		}
 	}
 

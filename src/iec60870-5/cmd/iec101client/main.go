@@ -31,12 +31,14 @@ import (
 
 	"github.com/riclolsen/go-iecp5/asdu"
 	"github.com/riclolsen/go-iecp5/cs101"
+	"github.com/riclolsen/go-iecp5/secevent"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"iec60870-5/internal/cliapp"
 	"iec60870-5/internal/conv"
 	"iec60870-5/internal/cs101util"
+	"iec60870-5/internal/iecsec"
 	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
 	"iec60870-5/internal/mongoutil"
@@ -44,11 +46,12 @@ import (
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 	"github.com/riclolsen/json-scada/src/go-common/jsredundancy"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 )
 
 const (
 	protocolDriverName = "IEC60870-5-101"
-	driverVersion      = "0.4.0"
+	driverVersion      = "0.5.0"
 )
 
 // redundancy arbitrates the active node; command execution gates on it.
@@ -60,6 +63,9 @@ type conn101 struct {
 	engConn *cliapp.Conn
 	params  asdu.Params
 	config  cs101.Config
+	// disp delivers go-iecp5's security events of every client this
+	// connection creates to engConn.Sec
+	disp *secevent.Dispatcher
 
 	mu  sync.Mutex
 	cli *cs101.Client
@@ -92,8 +98,17 @@ func (h *cliHandler) decode(pack *asdu.ASDU) error {
 	res := conv.Decode(pack, connNumber)
 	h.e.EnqueueValues(res.Values)
 	h.e.EnqueueAcks(res.Acks)
+	h.c.engConn.Sec.Answer(pack)
+	if pack.Type == asdu.M_EI_NA_1 {
+		_, coi := pack.GetEndOfInitialization()
+		detail := fmt.Sprintf("the outstation reports end of initialisation (%v)", coi)
+		if coi.Cause == asdu.COIRemoteReset {
+			detail += ": it was reset remotely"
+		}
+		h.c.engConn.Sec.Restarted(int(pack.CommonAddr), fmt.Sprint(coi), detail, iecsec.PackFields(pack))
+	}
 	for _, sel := range res.Selects {
-		if exec := h.c.engConn.SelectedFor(sel.Ioa); exec != nil {
+		if exec := h.c.engConn.TakeSelected(sel); exec != nil {
 			cli := h.c.client()
 			if cli == nil {
 				continue
@@ -150,15 +165,19 @@ func startClient(c *conn101, e *cliapp.Engine) error {
 	if jslog.Level() >= jslog.LevelDebug {
 		cli.SetLogMode(true)
 	}
+	cli.SetCyberDispatcher(c.disp)
 	cli.SetOnConnectHandler(func(cl *cs101.Client) {
 		jslog.Log(jslog.LevelBasic, "%s", c.cfg.Name+" - Connected (link alive)")
+		c.engConn.Sec.Connected(c.cfg.PortName, int(c.config.LinkAddress), iecsec.ConnOf(cl.Port()))
 	})
 	cli.SetConnectionLostHandler(func(cl *cs101.Client, err error) {
 		jslog.Log(jslog.LevelBasic, "%s - Connection lost: %v", c.cfg.Name, err)
+		c.engConn.ClearSelected()
 		go e.InvalidateConnPoints(int(c.cfg.ProtocolConnectionNumber))
 	})
 	cli.SetConnectErrorHandler(func(cl *cs101.Client, err error) {
 		jslog.Log(jslog.LevelBasic, "%s - Connect error: %v", c.cfg.Name, err)
+		c.engConn.Sec.CertRefused(c.cfg.PortName, err)
 	})
 	c.mu.Lock()
 	c.cli = cli
@@ -288,6 +307,9 @@ func main() {
 	}
 
 	engine := cliapp.New(cfg, protocolDriverName, instanceNumber, redundancy.Active)
+	// security events: one writer for the process, one reporter per connection
+	secWriter := jssecevents.NewWriter(0)
+	go secWriter.Run(context.Background(), cfg)
 	var conns []*conn101
 	for _, cc := range connCfgs {
 		c := &conn101{cfg: cc}
@@ -298,6 +320,11 @@ func main() {
 			os.Exit(-1)
 		}
 		engConn := &cliapp.Conn{Cfg: cc}
+		rep := &iecsec.Reporter{W: secWriter, Role: "client", Protocol: "iec101", Ident: cc.PeerIdentificationVal(),
+			Origin: jssecevents.Origin{ProtocolDriver: protocolDriverName, ProtocolDriverInstanceNumber: instanceNumber,
+				ProtocolConnectionNumber: int(cc.ProtocolConnectionNumber), ConnectionName: cc.Name, NodeName: cfg.NodeName}}
+		engConn.Sec = iecsec.NewClient(rep, iecsec.StoredIdentity(cc.Stats), false)
+		c.disp = secevent.NewDispatcher(rep.Sink(), secevent.Options{})
 		engConn.IsConnected = func() bool {
 			cli := c.client()
 			return cli != nil && cli.IsLinkActive()
@@ -331,12 +358,7 @@ func main() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			_, _ = collConns.UpdateOne(ctx,
 				bson.M{"protocolConnectionNumber": c.cfg.ProtocolConnectionNumber},
-				bson.M{"$set": bson.M{"stats": bson.M{
-					"nodeName":       cfg.NodeName,
-					"timeTag":        time.Now(),
-					"linkLayerState": state,
-					"isConnected":    linkActive,
-				}}})
+				bson.M{"$set": bson.M{"stats": cliapp.LinkStats(c.engConn, cfg.NodeName, state, linkActive)}})
 			cancel()
 		}
 	}

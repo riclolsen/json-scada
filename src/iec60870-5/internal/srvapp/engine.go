@@ -33,6 +33,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"iec60870-5/internal/conv"
+	"iec60870-5/internal/iecsec"
 	"iec60870-5/internal/model"
 
 	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
@@ -108,6 +109,9 @@ type Conn struct {
 	HasSession func() bool
 	// OriginatorIP returns the remote endpoint(s) string for command records.
 	OriginatorIP func() string
+	// Sec reports the security events of the connection and keeps the
+	// masters' identity (stats.peerIdentity); nil only logs them.
+	Sec *iecsec.Server
 
 	outQ    infoQueue
 	dropped atomic.Int64 // spontaneous objects dropped on a full out-queue
@@ -224,12 +228,16 @@ func (e *Engine) RunStatusLoop(instanceNumber int, version string) {
 			}
 			for _, c := range e.Conns {
 				connected := c.HasSession != nil && c.HasSession()
+				set := bson.M{
+					"stats.nodeName":    e.Cfg.NodeName,
+					"stats.timeTag":     now,
+					"stats.isConnected": connected,
+				}
+				if id := c.Sec.StatsDoc(); id != nil {
+					set["stats.peerIdentity"] = id
+				}
 				err := updateConnectionStats(ctx, db.Collection(jsmongo.ProtocolConnectionsCollectionName),
-					c.Cfg.ProtocolConnectionNumber, bson.M{
-						"stats.nodeName":    e.Cfg.NodeName,
-						"stats.timeTag":     now,
-						"stats.isConnected": connected,
-					})
+					c.Cfg.ProtocolConnectionNumber, set)
 				if err != nil {
 					jslog.Log(jslog.LevelDetailed, "%s - Error updating stats: %s", c.Cfg.Name, err.Error())
 				}

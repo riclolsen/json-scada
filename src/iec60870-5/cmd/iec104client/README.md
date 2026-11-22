@@ -71,6 +71,7 @@ Each instance for this driver can have many client connection defined that must 
 - _**description**_ [String] - Description for the purpose of a connection. Just documental. **Optional parameter**.
 - _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 - _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
+- _**peerIdentification**_ [Boolean] - Records the peer's identity in _stats.peerIdentity_ when the connection is (re)established, and reports its changes as security events. Default: true. **Optional parameter**.
 - _**ipAddressLocalBind**_ [String] - Not used for this driver. **Optional parameter**.
 - _**ipAddresses**_ [Array of Strings] - Array of IP addresses and ports for IEC-104 servers to be scanned (only the first 2 servers are currently supported). When there are 2 servers configured, only one is connected and scanned at each time, servers are swapped when disconnected. **Mandatory parameter**.
 - _**localLinkAddress**_ [Double] - Local link address for the connection (originator address). **Mandatory parameter**.
@@ -156,6 +157,10 @@ The optional connection parameter _**autoCreateTags**_ [Boolean, default false] 
 - Only monitored (supervised) points are created; command tags are never auto-created and must be configured manually.
 
 Once the tags exist you can rename, group, scale (`kconv1`/`kconv2`) and edit them normally. Set _autoCreateTags_ back to `false` when the address map is stable.
+
+## Security events
+
+The driver reports unexpected or suspicious conditions to the _secEvents_ collection, listed by the Security Events viewer of the Admin UI: go-iecp5 checks every APDU from the server (sequence numbers, malformed frames, unexpected confirmations and unsolicited answers, a restart of the server, MAC address changes mid-session); the driver adds the commands it did not send or the server refused (with the tag), stale queued commands, command floods and unnecessary commands. With _peerIdentification_ on, the driver records the server's address, IP, MAC address (from the neighbour table) and TLS certificate in _stats.peerIdentity_ and reports a change between connections, also across driver restarts. See [Security events and peer identification](../../README.md#security-events-and-peer-identification) for the event kinds and the _stats.peerIdentity_ document.
 
 ## Command Line Arguments
 

@@ -318,7 +318,18 @@
             editedConnection.peerIdentification !== false ? $t('common.true') : $t('common.false')
           }`"
           :title="$t('admin.protocolConnections.peerIdentificationHint')"
-          v-if="['IEC61850', 'IEC61850_SERVER', 'MODBUS', 'MODBUS_SERVER'].includes(editedConnection.protocolDriver)"
+          v-if="
+            [
+              'IEC61850',
+              'IEC61850_SERVER',
+              'MODBUS',
+              'MODBUS_SERVER',
+              'IEC60870-5-104',
+              'IEC60870-5-104_SERVER',
+              'IEC60870-5-101',
+              'IEC60870-5-103',
+            ].includes(editedConnection.protocolDriver)
+          "
         ></v-switch>
 
         <v-card class="mt-n4" tile variant="outlined">

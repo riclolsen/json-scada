@@ -34,11 +34,13 @@ import (
 
 	"github.com/riclolsen/go-iecp5/asdu"
 	"github.com/riclolsen/go-iecp5/cs104"
+	"github.com/riclolsen/go-iecp5/secevent"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"iec60870-5/internal/cliapp"
 	"iec60870-5/internal/conv"
+	"iec60870-5/internal/iecsec"
 	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
 	"iec60870-5/internal/mongoutil"
@@ -47,11 +49,12 @@ import (
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 	"github.com/riclolsen/json-scada/src/go-common/jsredundancy"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 )
 
 const (
 	protocolDriverName = "IEC60870-5-104"
-	driverVersion      = "0.4.0"
+	driverVersion      = "0.5.0"
 )
 
 // redundancy arbitrates the active node; command execution gates on it.
@@ -64,6 +67,9 @@ type conn104 struct {
 	tlsCfg  *tls.Config
 	params  asdu.Params
 	config  cs104.Config
+	// disp delivers go-iecp5's security events of every client this
+	// connection creates (one per connection attempt) to engConn.Sec
+	disp *secevent.Dispatcher
 
 	mu              sync.Mutex
 	cli             *cs104.Client
@@ -129,9 +135,10 @@ func (h *cliHandler) ASDUHandler(cn asdu.Connect, pack *asdu.ASDU, _ *cs104.Serv
 	res := conv.Decode(pack, connNumber)
 	h.e.EnqueueValues(res.Values)
 	h.e.EnqueueAcks(res.Acks)
+	h.c.engConn.Sec.Answer(pack)
 	// SBO: send the stored execute twin when the select is confirmed
 	for _, sel := range res.Selects {
-		if exec := h.c.engConn.SelectedFor(sel.Ioa); exec != nil {
+		if exec := h.c.engConn.TakeSelected(sel); exec != nil {
 			coa := asdu.CauseOfTransmission{Cause: asdu.Activation}
 			if err := conv.SendCommand(cn, coa, asdu.CommonAddr(sel.Ca), exec); err != nil {
 				jslog.Log(jslog.LevelBasic, "%s - Error sending execute after select: %s", h.c.cfg.Name, err.Error())
@@ -166,14 +173,19 @@ func startClient(c *conn104, e *cliapp.Engine) error {
 	if c.tlsCfg != nil {
 		opt.SetTLSConfig(c.tlsCfg)
 	}
+	opt.SetSecurityPolicy(iecsec.Policy(c.cfg.PeerIdentificationVal()))
 
 	cli := cs104.NewClient(&cliHandler{c: c, e: e}, opt)
+	cli.SetCyberDispatcher(c.disp)
 	if jslog.Level() >= jslog.LevelDebug {
 		cli.LogMode(true)
 	}
 	cli.SetOnConnectHandler(func(cl *cs104.Client) {
 		c.connecting.Store(false)
 		jslog.Log(jslog.LevelBasic, "%s", c.cfg.Name+" - Connected")
+		p := cl.PeerInfo()
+		c.engConn.Sec.SetPeer(p)
+		c.engConn.Sec.Begin(iecsec.PeerBase(addr, p))
 		cl.SendStartDt() // required to activate the 104 link
 	})
 	cli.SetOnActivatedHandler(func(cl *cs104.Client) {
@@ -188,6 +200,7 @@ func startClient(c *conn104, e *cliapp.Engine) error {
 	cli.SetConnectionLostHandler(func(cl *cs104.Client) {
 		c.connecting.Store(false)
 		wasConnected := c.connected.Swap(false)
+		c.engConn.ClearSelected()
 		jslog.Log(jslog.LevelBasic, "%s", c.cfg.Name+" - Connection closed")
 		if wasConnected {
 			go e.InvalidateConnPoints(int(c.cfg.ProtocolConnectionNumber))
@@ -347,6 +360,9 @@ func main() {
 	}
 
 	engine := cliapp.New(cfg, protocolDriverName, instanceNumber, redundancy.Active)
+	// security events: one writer for the process, one reporter per connection
+	secWriter := jssecevents.NewWriter(0)
+	go secWriter.Run(context.Background(), cfg)
 	var conns []*conn104
 	for _, cc := range connCfgs {
 		if len(cc.IPAddresses) < 1 || cc.IPAddresses[0] == "" {
@@ -390,6 +406,12 @@ func main() {
 		c.tlsCfg = tlsCfg
 
 		engConn := &cliapp.Conn{Cfg: cc}
+		rep := &iecsec.Reporter{W: secWriter, Role: "client", Protocol: "iec104",
+			Ident: cc.PeerIdentificationVal(), Drop: iecsec.DropClientRefusals,
+			Origin: jssecevents.Origin{ProtocolDriver: protocolDriverName, ProtocolDriverInstanceNumber: instanceNumber,
+				ProtocolConnectionNumber: int(cc.ProtocolConnectionNumber), ConnectionName: cc.Name, NodeName: cfg.NodeName}}
+		engConn.Sec = iecsec.NewClient(rep, iecsec.StoredIdentity(cc.Stats), true)
+		c.disp = secevent.NewDispatcher(rep.Sink(), secevent.Options{})
 		engConn.IsConnected = func() bool {
 			cli := c.client()
 			return cli != nil && cli.IsActive()
@@ -422,11 +444,7 @@ func main() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			_, _ = collConns.UpdateOne(ctx,
 				bson.M{"protocolConnectionNumber": c.cfg.ProtocolConnectionNumber},
-				bson.M{"$set": bson.M{"stats": bson.M{
-					"nodeName":    cfg.NodeName,
-					"timeTag":     time.Now(),
-					"isConnected": isConnected,
-				}}})
+				bson.M{"$set": bson.M{"stats": c.statsDoc(cfg.NodeName, isConnected)}})
 			cancel()
 		}
 	}
@@ -449,6 +467,15 @@ func main() {
 	}
 
 	select {} // run forever
+}
+
+// statsDoc is the connection's stats document.
+func (c *conn104) statsDoc(nodeName string, isConnected bool) bson.M {
+	st := bson.M{"nodeName": nodeName, "timeTag": time.Now(), "isConnected": isConnected}
+	if id := c.engConn.Sec.PeerIdentity(); id != nil {
+		st["peerIdentity"] = id
+	}
+	return st
 }
 
 func defInt(v, def int) int {

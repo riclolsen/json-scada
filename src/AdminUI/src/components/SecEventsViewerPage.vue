@@ -114,6 +114,7 @@ const CATEGORIES = [
   'peer',
   'association',
   'protocol',
+  'sequence',
   'access',
   'control',
   'configuration',
