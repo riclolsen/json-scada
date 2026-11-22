@@ -37,6 +37,7 @@ REM STDOUT logging
 nssm set JSON_SCADA_calculations AppStdout C:\json-scada\log\calculations.log
 nssm set JSON_SCADA_calculations AppRotateOnline 1
 nssm set JSON_SCADA_calculations AppRotateBytes 10000000
+nssm set JSON_SCADA_calculations AppRotateFiles 1
 nssm set JSON_SCADA_calculations Start SERVICE_AUTO_START
 REM See log rotation options https://nssm.cc/usage#io
 
@@ -45,6 +46,7 @@ nssm set JSON_SCADA_cs_data_processor AppDirectory "C:\json-scada\src\cs_data_pr
 nssm set JSON_SCADA_cs_data_processor AppStdout C:\json-scada\log\cs_data_processor.log
 nssm set JSON_SCADA_cs_data_processor AppRotateOnline 1
 nssm set JSON_SCADA_cs_data_processor AppRotateBytes 10000000
+nssm set JSON_SCADA_cs_data_processor AppRotateFiles 1
 nssm set JSON_SCADA_cs_data_processor Start SERVICE_AUTO_START
 
 REM Change Stream Data Processor in Go: alternative executable for CS_DATA_PROCESSOR
@@ -56,6 +58,7 @@ REM nssm set JSON_SCADA_cs_data_processor AppEnvironmentExtra JS_CSDATAPROC_METR
 REM nssm set JSON_SCADA_cs_data_processor AppStdout C:\json-scada\log\cs_data_processor.log
 REM nssm set JSON_SCADA_cs_data_processor AppRotateOnline 1
 REM nssm set JSON_SCADA_cs_data_processor AppRotateBytes 10000000
+REM nssm set JSON_SCADA_cs_data_processor AppRotateFiles 1
 REM nssm set JSON_SCADA_cs_data_processor Start SERVICE_AUTO_START
 
 nssm install JSON_SCADA_cs_custom_processor "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\cs_custom_processor\dist\cs_custom_processor.js" 1 1 "c:\json-scada\conf\json-scada.json"
@@ -63,8 +66,8 @@ nssm set JSON_SCADA_cs_custom_processor AppDirectory "C:\json-scada\src\cs_custo
 nssm set JSON_SCADA_cs_custom_processor AppStdout C:\json-scada\log\cs_custom_processor.log
 nssm set JSON_SCADA_cs_custom_processor AppRotateOnline 1
 nssm set JSON_SCADA_cs_custom_processor AppRotateBytes 10000000
+nssm set JSON_SCADA_cs_custom_processor AppRotateFiles 1
 nssm set JSON_SCADA_cs_custom_processor Start SERVICE_DEMAND_START
-
 
 REM server_realtime_auth (token based auth and RBAC)
 
@@ -85,6 +88,7 @@ nssm set JSON_SCADA_server_realtime_auth Start SERVICE_AUTO_START
 nssm set JSON_SCADA_server_realtime_auth AppEnvironmentExtra JS_JWT_SECRET=%buffer%
 nssm set JSON_SCADA_server_realtime_auth AppStdout C:\json-scada\log\server_realtime_auth.log
 nssm set JSON_SCADA_server_realtime_auth AppRotateOnline 1
+nssm set JSON_SCADA_server_realtime_auth AppRotateFiles 1
 nssm set JSON_SCADA_server_realtime_auth AppRotateBytes 10000000
 
 REM Use environment variables to connect (for reading) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
@@ -109,6 +113,7 @@ nssm set JSON_SCADA_alarm_beep AppDirectory "C:\json-scada\src\alarm_beep"
 nssm set JSON_SCADA_alarm_beep_auth AppStdout C:\json-scada\log\alarm_beep.log
 nssm set JSON_SCADA_alarm_beep AppRotateOnline 1
 nssm set JSON_SCADA_alarm_beep AppRotateBytes 10000000
+nssm set JSON_SCADA_alarm_beep AppRotateFiles 1
 nssm set JSON_SCADA_alarm_beep Start SERVICE_DEMAND_START
 
 REM WARNING! This service has no security access control, use with care.
@@ -124,6 +129,7 @@ nssm set JSON_SCADA_process_rtdata AppDirectory "C:\json-scada\src\process_pg_sq
 nssm set JSON_SCADA_process_rtdata AppStdout C:\json-scada\log\process_pg_rtdata.log
 nssm set JSON_SCADA_process_rtdata AppRotateOnline 1
 nssm set JSON_SCADA_process_rtdata AppRotateBytes 10000000
+nssm set JSON_SCADA_process_rtdata AppRotateFiles 1
 nssm set JSON_SCADA_process_rtdata Start SERVICE_AUTO_START
 rem Use environment variables to connect (for writing) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
 rem nssm set JSON_SCADA_process_rtdata AppEnvironmentExtra PGHOST=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
@@ -133,6 +139,7 @@ nssm set JSON_SCADA_process_hist AppDirectory "C:\json-scada\src\process_pg_sql"
 nssm set JSON_SCADA_process_hist AppStdout C:\json-scada\log\process_pg_hist.log
 nssm set JSON_SCADA_process_hist AppRotateOnline 1
 nssm set JSON_SCADA_process_hist AppRotateBytes 10000000
+nssm set JSON_SCADA_process_hist AppRotateFiles 1
 nssm set JSON_SCADA_process_hist Start SERVICE_AUTO_START
 REM Use environment variables to connect (for writing) to PostgreSQL historian (https://www.postgresql.org/docs/current/libpq-envars.html)
 REM nssm set JSON_SCADA_process_hist AppEnvironmentExtra PGHOST=127.0.0.1 PGPORT=5432 PGDATABASE=json_scada PGUSER=json_scada PGPASSWORD=json_scada
@@ -150,91 +157,99 @@ nssm set JSON_SCADA_mqttsparkplugclient AppDirectory "C:\json-scada\src\mqtt-spa
 nssm set JSON_SCADA_mqttsparkplugclient AppStdout C:\json-scada\log\mqttsparkplugclient.log
 nssm set JSON_SCADA_mqttsparkplugclient AppRotateOnline 1
 nssm set JSON_SCADA_mqttsparkplugclient AppRotateBytes 10000000
+nssm set JSON_SCADA_mqttsparkplugclient AppRotateFiles 1
 nssm set JSON_SCADA_mqttsparkplugclient Start SERVICE_DELAYED_AUTO_START
 
 nssm install JSON_SCADA_iec104client "C:\json-scada\bin\iec104client.exe" 1 1
 nssm set JSON_SCADA_iec104client AppStdout C:\json-scada\log\iec104client.log
 nssm set JSON_SCADA_iec104client AppRotateOnline 1
 nssm set JSON_SCADA_iec104client AppRotateBytes 10000000
+nssm set JSON_SCADA_iec104client AppRotateFiles 1
 nssm set JSON_SCADA_iec104client Start SERVICE_DELAYED_AUTO_START
 
 nssm install JSON_SCADA_iec104server "C:\json-scada\bin\iec104server.exe" 1 1
 nssm set JSON_SCADA_iec104server AppStdout C:\json-scada\log\iec104server.log
 nssm set JSON_SCADA_iec104server AppRotateOnline 1
 nssm set JSON_SCADA_iec104server AppRotateBytes 10000000
+nssm set JSON_SCADA_iec104server AppRotateFiles 1
 nssm set JSON_SCADA_iec104server Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_iec101client "C:\json-scada\bin\iec101client.exe" 1 1 
 nssm set JSON_SCADA_iec101client AppStdout C:\json-scada\log\iec101client.log
 nssm set JSON_SCADA_iec101client AppRotateOnline 1
 nssm set JSON_SCADA_iec101client AppRotateBytes 10000000
+nssm set JSON_SCADA_iec101client AppRotateFiles 1
 nssm set JSON_SCADA_iec101client Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_iec101server "C:\json-scada\bin\iec101server.exe" 1 1
 nssm set JSON_SCADA_iec101server AppStdout C:\json-scada\log\iec101server.log
 nssm set JSON_SCADA_iec101server AppRotateOnline 1
 nssm set JSON_SCADA_iec101server AppRotateBytes 10000000
+nssm set JSON_SCADA_iec101server AppRotateFiles 1
 nssm set JSON_SCADA_iec101server Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_iec103client "C:\json-scada\bin\iec103client.exe" 1 1
 nssm set JSON_SCADA_iec103client AppStdout C:\json-scada\log\iec103client.log
 nssm set JSON_SCADA_iec103client AppRotateOnline 1
 nssm set JSON_SCADA_iec103client AppRotateBytes 10000000
+nssm set JSON_SCADA_iec103client AppRotateFiles 1
 nssm set JSON_SCADA_iec103client Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_iccpclient "C:\json-scada\bin\iccp-client.exe" 1 1
 nssm set JSON_SCADA_iccpclient AppStdout C:\json-scada\log\iccpclient.log
 nssm set JSON_SCADA_iccpclient AppRotateOnline 1
 nssm set JSON_SCADA_iccpclient AppRotateBytes 10000000
+nssm set JSON_SCADA_iccpclient AppRotateFiles 1
 nssm set JSON_SCADA_iccpclient Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_iccpserver "C:\json-scada\bin\iccp-server.exe" 1 1
 nssm set JSON_SCADA_iccpserver AppStdout C:\json-scada\log\iccpserver.log
 nssm set JSON_SCADA_iccpserver AppRotateOnline 1
 nssm set JSON_SCADA_iccpserver AppRotateBytes 10000000
+nssm set JSON_SCADA_iccpserver AppRotateFiles 1
 nssm set JSON_SCADA_iccpserver Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_dnp3client "C:\json-scada\bin\dnp3-client.exe" 1 1
 nssm set JSON_SCADA_dnp3client AppStdout C:\json-scada\log\dnp3client.log
 nssm set JSON_SCADA_dnp3client AppRotateOnline 1
 nssm set JSON_SCADA_dnp3client AppRotateBytes 10000000
+nssm set JSON_SCADA_dnp3client AppRotateFiles 1
 nssm set JSON_SCADA_dnp3client Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_dnp3server "C:\json-scada\bin\dnp3-server.exe" 1 1
 nssm set JSON_SCADA_dnp3server AppStdout C:\json-scada\log\dnp3server.log
 nssm set JSON_SCADA_dnp3server AppRotateOnline 1
 nssm set JSON_SCADA_dnp3server AppRotateBytes 10000000
+nssm set JSON_SCADA_dnp3server AppRotateFiles 1
 nssm set JSON_SCADA_dnp3server Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_opcuaclient "C:\json-scada\bin\opcua-client.exe" 1 1
 nssm set JSON_SCADA_opcuaclient AppStdout C:\json-scada\log\opcuaclient.log
 nssm set JSON_SCADA_opcuaclient AppRotateOnline 1
 nssm set JSON_SCADA_opcuaclient AppRotateBytes 10000000
+nssm set JSON_SCADA_opcuaclient AppRotateFiles 1
 nssm set JSON_SCADA_opcuaclient Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_opcdaclient "C:\json-scada\bin\OPC-DA-Client.exe" 1 1
 nssm set JSON_SCADA_opcdaclient AppStdout C:\json-scada\log\opcdaclient.log
 nssm set JSON_SCADA_opcdaclient AppRotateOnline 1
 nssm set JSON_SCADA_opcdaclient AppRotateBytes 10000000
+nssm set JSON_SCADA_opcdaclient AppRotateFiles 1
 nssm set JSON_SCADA_opcdaclient Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_iec61850client "C:\json-scada\bin\iec61850_client.exe" 1 1
 nssm set JSON_SCADA_iec61850client AppStdout C:\json-scada\log\iec61850client.log
 nssm set JSON_SCADA_iec61850client AppRotateOnline 1
 nssm set JSON_SCADA_iec61850client AppRotateBytes 10000000
+nssm set JSON_SCADA_iec61850client AppRotateFiles 1
 nssm set JSON_SCADA_iec61850client Start SERVICE_DEMAND_START
 
 nssm install JSON_SCADA_iec61850server "C:\json-scada\bin\iec61850_server.exe" 1 1
 nssm set JSON_SCADA_iec61850server AppStdout C:\json-scada\log\iec61850server.log
 nssm set JSON_SCADA_iec61850server AppRotateOnline 1
 nssm set JSON_SCADA_iec61850server AppRotateBytes 10000000
+nssm set JSON_SCADA_iec61850server AppRotateFiles 1
 nssm set JSON_SCADA_iec61850server Start SERVICE_DEMAND_START
-
-REM nssm install JSON_SCADA_i104m "C:\json-scada\bin\i104m.exe" 1 1 
-REM nssm set JSON_SCADA_i104m AppStdout C:\json-scada\log\i104m.log
-REM nssm set JSON_SCADA_i104m AppRotateOnline 1
-REM nssm set JSON_SCADA_i104m AppRotateBytes 10000000
-REM nssm set JSON_SCADA_i104m Start SERVICE_DEMAND_START
 
 rem PLC4J client: Java alternative executable for the PLC4X driver (requires JRE 17+).
 rem Enable EITHER plc4xclient OR plc4jclient for a given instance number, never both.
@@ -242,6 +257,7 @@ nssm install JSON_SCADA_plc4jclient "C:\json-scada\platform-windows\jdk-runtime\
 nssm set JSON_SCADA_plc4jclient AppStdout C:\json-scada\log\plc4jclient.log
 nssm set JSON_SCADA_plc4jclient AppRotateOnline 1
 nssm set JSON_SCADA_plc4jclient AppRotateBytes 10000000
+nssm set JSON_SCADA_plc4jclient AppRotateFiles 1
 nssm set JSON_SCADA_plc4jclient Start SERVICE_DEMAND_START
 
 REM service for the CIM-EMS driver (load flow, state estimation, contingency analysis; Python in
@@ -252,6 +268,7 @@ nssm set JSON_SCADA_cim_ems AppStdout C:\json-scada\log\cim_ems.log
 nssm set JSON_SCADA_cim_ems AppStderr C:\json-scada\log\cim_ems.log
 nssm set JSON_SCADA_cim_ems AppRotateOnline 1
 nssm set JSON_SCADA_cim_ems AppRotateBytes 10000000
+nssm set JSON_SCADA_cim_ems AppRotateFiles 1
 nssm set JSON_SCADA_cim_ems Start SERVICE_DEMAND_START
 
 REM Svedala CIM-EMS demo: field simulator writing the SVEDALA_FIELD points and executing their breaker commands.
@@ -262,19 +279,8 @@ nssm set JSON_SCADA_cim_ems_demo_field AppStdout C:\json-scada\log\cim_ems_demo_
 nssm set JSON_SCADA_cim_ems_demo_field AppStderr C:\json-scada\log\cim_ems_demo_field.log
 nssm set JSON_SCADA_cim_ems_demo_field AppRotateOnline 1
 nssm set JSON_SCADA_cim_ems_demo_field AppRotateBytes 10000000
+nssm set JSON_SCADA_cim_ems_demo_field AppRotateFiles 1
 nssm set JSON_SCADA_cim_ems_demo_field Start SERVICE_DEMAND_START
-
-rem nssm install JSON_SCADA_plc4xclient "C:\json-scada\bin\plc4x-client.exe" 1 1
-rem nssm set JSON_SCADA_plc4xclient AppStdout C:\json-scada\log\plc4xclient.log
-rem nssm set JSON_SCADA_plc4xclient AppRotateOnline 1
-rem nssm set JSON_SCADA_plc4xclient AppRotateBytes 10000000
-rem nssm set JSON_SCADA_plc4xclient Start SERVICE_DEMAND_START
-
-rem nssm install JSON_SCADA_plctags "C:\json-scada\bin\PLCTagsClient.exe" 1 1 
-rem nssm set JSON_SCADA_plctags AppStdout C:\json-scada\log\plctags.log
-rem nssm set JSON_SCADA_plctags AppRotateOnline 1
-rem nssm set JSON_SCADA_plctags AppRotateBytes 10000000
-rem nssm set JSON_SCADA_plctags Start SERVICE_DEMAND_START
 
 REM service for OPC-UA Server
 nssm install JSON_SCADA_opcuaserver "C:\json-scada\platform-windows\nodejs-runtime\node.exe" "C:\json-scada\src\OPC-UA-Server\index.js" 1 1 "c:\json-scada\conf\json-scada.json"
@@ -282,6 +288,7 @@ nssm set JSON_SCADA_opcuaserver AppDirectory "C:\json-scada\src\OPC-UA-Server"
 nssm set JSON_SCADA_opcuaserver AppStdout C:\json-scada\log\opcuaserver.log
 nssm set JSON_SCADA_opcuaserver AppRotateOnline 1
 nssm set JSON_SCADA_opcuaserver AppRotateBytes 10000000
+nssm set JSON_SCADA_opcuaserver AppRotateFiles 1
 nssm set JSON_SCADA_opcuaserver Start SERVICE_AUTO_START
 
 REM service for MODBUS Client (change Start to SERVICE_AUTO_START to enable)
@@ -290,6 +297,7 @@ nssm set JSON_SCADA_modbusclient AppDirectory "C:\json-scada\bin"
 nssm set JSON_SCADA_modbusclient AppStdout C:\json-scada\log\modbusclient.log
 nssm set JSON_SCADA_modbusclient AppRotateOnline 1
 nssm set JSON_SCADA_modbusclient AppRotateBytes 10000000
+nssm set JSON_SCADA_modbusclient AppRotateFiles 1
 nssm set JSON_SCADA_modbusclient Start SERVICE_DEMAND_START
 
 REM service for MODBUS Server (change Start to SERVICE_AUTO_START to enable)
@@ -298,6 +306,7 @@ nssm set JSON_SCADA_modbusserver AppDirectory "C:\json-scada\bin"
 nssm set JSON_SCADA_modbusserver AppStdout C:\json-scada\log\modbusserver.log
 nssm set JSON_SCADA_modbusserver AppRotateOnline 1
 nssm set JSON_SCADA_modbusserver AppRotateBytes 10000000
+nssm set JSON_SCADA_modbusserver AppRotateFiles 1
 nssm set JSON_SCADA_modbusserver Start SERVICE_DEMAND_START
 
 REM service for ONVIF Camera
@@ -306,6 +315,7 @@ nssm set JSON_SCADA_onvif AppDirectory "C:\json-scada\src\camera-onvif"
 nssm set JSON_SCADA_onvif AppStdout C:\json-scada\log\onvif.log
 nssm set JSON_SCADA_onvif AppRotateOnline 1
 nssm set JSON_SCADA_onvif AppRotateBytes 10000000
+nssm set JSON_SCADA_onvif AppRotateFiles 1
 nssm set JSON_SCADA_onvif Start SERVICE_DEMAND_START
 
 REM service for telegraf listener
@@ -314,6 +324,7 @@ nssm set JSON_SCADA_telegraf_listener AppDirectory "C:\json-scada\src\telegraf-l
 nssm set JSON_SCADA_telegraf_listener AppStdout C:\json-scada\log\telegraf_listener.log
 nssm set JSON_SCADA_telegraf_listener AppRotateOnline 1
 nssm set JSON_SCADA_telegraf_listener AppRotateBytes 10000000
+nssm set JSON_SCADA_telegraf_listener AppRotateFiles 1
 nssm set JSON_SCADA_telegraf_listener Start SERVICE_AUTO_START
 
 REM service for the N8N protocol driver (bidirectional n8n integration)
@@ -322,6 +333,7 @@ nssm set JSON_SCADA_n8nclient AppDirectory "C:\json-scada\src\n8n-client"
 nssm set JSON_SCADA_n8nclient AppStdout C:\json-scada\log\n8nclient.log
 nssm set JSON_SCADA_n8nclient AppRotateOnline 1
 nssm set JSON_SCADA_n8nclient AppRotateBytes 10000000
+nssm set JSON_SCADA_n8nclient AppRotateFiles 1
 nssm set JSON_SCADA_n8nclient Start SERVICE_DEMAND_START
 
 REM optional service for a local Node-RED runtime (install with install_nodered.bat first)
@@ -330,6 +342,7 @@ nssm set JSON_SCADA_nodered_runtime AppDirectory "C:\json-scada\platform-windows
 nssm set JSON_SCADA_nodered_runtime AppStdout C:\json-scada\log\nodered_runtime.log
 nssm set JSON_SCADA_nodered_runtime AppRotateOnline 1
 nssm set JSON_SCADA_nodered_runtime AppRotateBytes 10000000
+nssm set JSON_SCADA_nodered_runtime AppRotateFiles 1
 nssm set JSON_SCADA_nodered_runtime Start SERVICE_AUTO_START
 
 REM service for the NODE-RED protocol driver (bidirectional Node-RED integration)
@@ -338,6 +351,7 @@ nssm set JSON_SCADA_nodered_driver AppDirectory "C:\json-scada\src\node-red-driv
 nssm set JSON_SCADA_nodered_driver AppStdout C:\json-scada\log\nodered_driver.log
 nssm set JSON_SCADA_nodered_driver AppRotateOnline 1
 nssm set JSON_SCADA_nodered_driver AppRotateBytes 10000000
+nssm set JSON_SCADA_nodered_driver AppRotateFiles 1
 nssm set JSON_SCADA_nodered_driver Start SERVICE_AUTO_START
 
 REM Log.io file monitor service
