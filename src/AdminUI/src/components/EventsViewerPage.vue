@@ -179,6 +179,8 @@ const nonCriticalSound = ref(null)
 let pollTimer = null
 let statusTimer = null
 let beepTimer = null
+// set on unmount: async work still running then must not start timers again
+let disposed = false
 let lastSuccess = Date.now()
 let lastCntUpdates = -1
 const notifState = {}
@@ -351,6 +353,7 @@ function modeToAggregate(m) {
 }
 
 async function pollTick() {
+  if (disposed) return
   if (mode.value !== 3 && mode.value !== 4) {
     fanState.value = '.'
     try {
@@ -377,6 +380,8 @@ async function pollTick() {
     rows.value = []
     failed.value = true
   }
+  if (disposed) return
+  clearTimeout(pollTimer) // a status change, ack or mode change meanwhile scheduled one
   pollTimer = setTimeout(pollTick, cfg.value.EventsViewer_RefreshTime * 1000)
 }
 
@@ -387,8 +392,10 @@ function activeStationFilter() {
 }
 
 async function statusTick() {
+  if (disposed) return
   try {
     const pts = await opc.readPoints([BEEP_POINTKEY, CNTUPDATES_POINTKEY], true, cfg.value)
+    if (disposed) return
     const beep = pts.find((p) => p.key === BEEP_POINTKEY)
     const cnt = pts.find((p) => p.key === CNTUPDATES_POINTKEY)
     if (beep) {
@@ -412,6 +419,7 @@ async function statusTick() {
   } catch (e) {
     /* ignore */
   }
+  if (disposed) return
   statusTimer = setTimeout(statusTick, 2000)
 }
 
@@ -674,6 +682,7 @@ function setBeforeUnload(on) {
 onMounted(async () => {
   onAccessDenied(() => router.push('/login'))
   cfg.value = await loadViewersConfig()
+  if (disposed) return
 
   // GPS/local initialization per config
   const tg = cfg.value.EventsViewer_TimeGPSorLocal
@@ -693,6 +702,7 @@ onMounted(async () => {
   }
 
   group1List.value = (await opc.getGroup1List()).filter((s) => s !== '')
+  if (disposed) return
   group1List.value.forEach((s) => (stationChecked[s] = true))
 
   // stored settings; a mode in the URL or route props wins. Frozen (3) comes
@@ -728,6 +738,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
   clearTimeout(pollTimer)
   clearTimeout(statusTimer)
   clearInterval(beepTimer)

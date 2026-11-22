@@ -188,6 +188,8 @@ const nonCriticalSound = ref(null)
 
 let pollTimer = null
 let beepTimer = null
+// set on unmount: async work still running then must not start timers again
+let disposed = false
 let lastSuccess = Date.now()
 
 // point info/command dialog (shared component)
@@ -318,6 +320,7 @@ const rootStyle = computed(() => ({
 
 // --- data fetch / polling ----------------------------------------------------
 async function pollTick() {
+  if (disposed) return
   // Tabular mode requires a station filter before querying (legacy mudaFiltro).
   const skip = !isAlarmsViewer.value && filterStation.value === ''
   if (!blockUpdates.value && !skip) {
@@ -353,6 +356,7 @@ async function pollTick() {
   }
   const base = cfg.value.TabularViewer_RefreshTime * 1000
   const interval = isAlarmsViewer.value ? base / 1.5 : base
+  if (disposed) return
   pollTimer = setTimeout(pollTick, interval)
 }
 
@@ -530,11 +534,13 @@ function beforeUnloadGuard(e) {
 onMounted(async () => {
   onAccessDenied(() => router.push('/login'))
   cfg.value = await loadViewersConfig()
+  if (disposed) return
   {
     const fs = parseInt(getUserSetting('tab_fontsize'))
     if (!isNaN(fs) && fs >= 10 && fs <= 30) fontScale.value = fs
   }
   group1List.value = await opc.getGroup1List()
+  if (disposed) return
   // initial filter from query (tabular mode)
   if (!isAlarmsViewer.value) {
     if (route.value.query.subst) filterStation.value = route.value.query.subst
@@ -554,6 +560,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
   clearTimeout(pollTimer)
   clearInterval(beepTimer)
   window.removeEventListener('keydown', onKeydown)

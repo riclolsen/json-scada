@@ -186,6 +186,8 @@ const nonCriticalSound = ref(null)
 
 let pollTimer = null
 let beepTimer = null
+// set on unmount: async work still running then must not start timers again
+let disposed = false
 let lastSuccess = Date.now()
 
 // --- columns -----------------------------------------------------------------
@@ -309,6 +311,7 @@ const rootStyle = computed(() => ({
 
 // --- realtime feed -----------------------------------------------------------
 async function pollTick() {
+  if (disposed) return
   if (mode.value === 'realtime') {
     fanState.value = '.'
     try {
@@ -327,6 +330,8 @@ async function pollTick() {
       failed.value = true
     }
   }
+  if (disposed) return
+  clearTimeout(pollTimer) // a mode change or ack-all meanwhile scheduled one
   pollTimer = setTimeout(pollTick, (cfg.value.TabularViewer_RefreshTime * 1000) / 1.5)
 }
 
@@ -526,11 +531,13 @@ function setBeforeUnload(on) {
 onMounted(async () => {
   onAccessDenied(() => router.push('/login'))
   cfg.value = await loadViewersConfig()
+  if (disposed) return
   {
     const fs = parseInt(getUserSetting('tab_fontsize'))
     if (!isNaN(fs) && fs >= 10 && fs <= 30) fontScale.value = fs
   }
   group1List.value = (await opc.getGroup1List()).filter((s) => s !== '')
+  if (disposed) return
   loadFilters()
   loadPrefs()
   if (route.value.query.mode === 'historical') mode.value = 'historical'
@@ -549,6 +556,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
   clearTimeout(pollTimer)
   clearInterval(beepTimer)
   window.removeEventListener('keydown', onKeydown)

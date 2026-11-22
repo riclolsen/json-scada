@@ -728,6 +728,8 @@ function downloadCsv() {
 let pollTimer = 0
 let clockTimer = 0
 let ro = null
+// set on unmount: async work still running then must not start timers again
+let disposed = false
 
 onMounted(async () => {
   onAccessDenied(() => router.push('/login'))
@@ -747,9 +749,11 @@ onMounted(async () => {
     return
   }
   await loadViewersConfig()
+  if (disposed) return
   loading.value = true
   try {
     const pts = await readPoints([pointRef], true, getViewersConfig())
+    if (disposed) return
     if (pts.length) {
       info.value = pts[0]
       current.value = pts[0]
@@ -766,6 +770,7 @@ onMounted(async () => {
 
   histFrom = xMin.value - (xMax.value - xMin.value) * 0.25
   await loadHistory(histFrom, Date.now())
+  if (disposed) return
   pollLive()
   pollTimer = setInterval(pollLive, POLL_MS)
   clockTimer = setInterval(() => {
@@ -775,6 +780,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
   clearInterval(pollTimer)
   clearInterval(clockTimer)
   clearTimeout(histTimer)

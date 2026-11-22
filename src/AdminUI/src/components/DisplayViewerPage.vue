@@ -230,6 +230,8 @@ const nonCriticalSound = ref(null)
 
 let engine = null
 let beepTimer = null
+// set on unmount: async work still running then must not start timers again
+let disposed = false
 let slideTimer = null
 let slideStart = 0
 
@@ -488,7 +490,9 @@ function onKeydown(e) {
 onMounted(async () => {
   onAccessDenied(() => router.push('/login'))
   const cfg = await loadViewersConfig()
+  if (disposed) return
   screenItems.value = await loadScreenList()
+  if (disposed) return
 
   engine = new SageEngine({
     container: svgContainer.value,
@@ -521,6 +525,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
   if (engine) engine.dispose()
   clearInterval(beepTimer)
   clearInterval(slideTimer)

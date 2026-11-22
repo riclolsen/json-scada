@@ -118,6 +118,7 @@ export class SageEngine {
     this.blinkOn = true
     this.blinkList = []
     this.disposed = false
+    this.loadSeq = 0 // bumped per loadScreen: a superseded load stops at its next await
     this.pass = 0
     this.timeMachine = false // historical-replay mode (pauses realtime polling)
     this.tmTime = null
@@ -345,6 +346,9 @@ export class SageEngine {
 
   // --- screen load -----------------------------------------------------------
   async loadScreen(svgUrl, opts = {}) {
+    const seq = ++this.loadSeq
+    // disposed or a newer loadScreen started while this one awaited
+    const stale = () => this.disposed || seq !== this.loadSeq
     this.stop()
     this.bindings = []
     this.plotBindings = []
@@ -371,6 +375,7 @@ export class SageEngine {
     this.keyByTag.clear()
     const resp = await fetch(svgUrl)
     const text = await resp.text()
+    if (stale()) return
     this.container.innerHTML = text
     this.svgEl = this.container.querySelector('svg')
     if (!this.svgEl) throw new Error('No <svg> root in ' + svgUrl)
@@ -387,9 +392,11 @@ export class SageEngine {
     window.ShowHideTranslate = (idorobj, xd, yd) => this.showHideTranslate(idorobj, xd, yd)
 
     await this.runEmbeddedScripts()
+    if (stale()) return
     this.parse()
     this.startBlink()
     await this.refresh()
+    if (stale()) return
     this.startPinnedAnnotations()
   }
 
@@ -1367,6 +1374,9 @@ export class SageEngine {
     } catch (e) {
       this.onStatus('Server error')
     }
+    // left the page or entered replay while the reads were pending
+    if (this.disposed || this.timeMachine) return
+    clearTimeout(this.refreshTimer) // a refresh started meanwhile scheduled one
     this.refreshTimer = setTimeout(
       () => this.refresh(),
       this.cfg.ScreenViewer_RefreshTime * 1000
@@ -1861,6 +1871,7 @@ export class SageEngine {
     if (f !== undefined && f & 0x100 && !(f & 0x400)) this.blinkList.push(el)
   }
   startBlink() {
+    clearInterval(this.blinkTimer)
     this.blinkTimer = setInterval(() => {
       this.blinkOn = !this.blinkOn
       this.blinkList.forEach((el) => el.setAttributeNS(null, 'opacity', this.blinkOn ? 1 : 0.25))
