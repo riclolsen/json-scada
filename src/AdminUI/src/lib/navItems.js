@@ -23,14 +23,6 @@ export const navGroups = [
       { id: 'alarms', titleKey: 'dashboard.alarmsViewer', route: '/alarms-viewer', page: '/#/alarms-viewer' },
       { id: 'tabular', titleKey: 'dashboard.tabularViewer', route: '/tabular-viewer', page: '/#/tabular-viewer' },
       { id: 'events', titleKey: 'dashboard.eventsViewer', route: '/events-viewer', page: '/#/events-viewer' },
-      { id: 'cimEms', titleKey: 'dashboard.cimEms', route: '/cim-ems', page: '/#/cim-ems' },
-      {
-        id: 'secEvents',
-        titleKey: 'dashboard.secEventsViewer',
-        route: '/sec-events-viewer',
-        page: '/#/sec-events-viewer',
-        right: 'viewSecEvents',
-      },
     ],
   },
   {
@@ -50,6 +42,14 @@ export const navGroups = [
     key: 'engineering',
     items: [
       { id: 'admin', titleKey: 'dashboard.admin', route: '/admin', page: '/#/admin', adminOnly: true },
+      { id: 'cimEms', titleKey: 'dashboard.cimEms', route: '/cim-ems', page: '/#/cim-ems' },
+      {
+        id: 'secEvents',
+        titleKey: 'dashboard.secEventsViewer',
+        route: '/sec-events-viewer',
+        page: '/#/sec-events-viewer',
+        right: 'viewSecEvents',
+      },
       {
         id: 'svgedit',
         titleKey: 'dashboard.svgedit',
