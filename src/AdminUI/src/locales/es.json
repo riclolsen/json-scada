@@ -390,9 +390,7 @@
       },
       "viewSecEvents": "Ver Eventos de Seguridad",
       "viewSecEventsHint": "Puede abrir el visor de Eventos de Seguridad (anomalías de conexión, certificado, identidad y comandos informadas por los drivers de protocolo).",
-
       "editDisplays": "Editar Pantallas",
-
       "editDisplaysHint": "Puede listar, abrir y guardar las pantallas SVG en el Editor SVG (los administradores siempre pueden). Con una lista de pantallas, solo esas pantallas."
     },
     "protocolDriverInstances": {
@@ -1346,5 +1344,18 @@
       "analytics": "Análisis",
       "engineering": "Ingeniería"
     }
+  },
+  "customDev": {
+    "subtitle": "Aplicaciones web construidas en src/custom-developments: paneles, faceplates y vistas especiales.",
+    "search": "Buscar aplicaciones",
+    "open": "Abrir",
+    "openNewWindow": "Abrir en una ventana nueva",
+    "back": "Volver a la lista",
+    "retry": "Reintentar",
+    "empty": "Aún no hay desarrollos personalizados",
+    "emptyHint": "Construya una aplicación en una carpeta de src/custom-developments (npm install && npm run build) y reinicie server_realtime_auth.",
+    "noMatch": "Ninguna aplicación coincide con la búsqueda.",
+    "noDescription": "Sin descripción",
+    "built": "Construido el {date}"
   }
 }

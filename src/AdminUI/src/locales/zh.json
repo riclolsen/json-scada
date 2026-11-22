@@ -390,9 +390,7 @@
       },
       "viewSecEvents": "查看安全事件",
       "viewSecEventsHint": "可以打开安全事件查看器（协议驱动报告的连接、证书、身份和命令异常）。",
-
       "editDisplays": "编辑显示画面",
-
       "editDisplaysHint": "可以在SVG编辑器中列出、打开和保存SVG显示画面（管理员始终可以）。设置了显示列表时仅限这些画面。"
     },
     "protocolDriverInstances": {
@@ -1346,5 +1344,18 @@
       "analytics": "分析",
       "engineering": "工程"
     }
+  },
+  "customDev": {
+    "subtitle": "在 src/custom-developments 中构建的 Web 应用：仪表板、面板和专用视图。",
+    "search": "搜索应用",
+    "open": "打开",
+    "openNewWindow": "在新窗口中打开",
+    "back": "返回列表",
+    "retry": "重试",
+    "empty": "还没有自定义开发",
+    "emptyHint": "在 src/custom-developments 的文件夹中构建应用（npm install && npm run build），然后重启 server_realtime_auth。",
+    "noMatch": "没有与搜索匹配的应用。",
+    "noDescription": "无描述",
+    "built": "构建于 {date}"
   }
 }

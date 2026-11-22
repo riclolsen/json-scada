@@ -229,6 +229,40 @@ module.exports = function (
     )
   }
 
+  // Title, description and build time of a routed custom development, read from
+  // the <title> and <meta name="description"> of its index.html (first 64 KB).
+  // The Astro template placeholder description is left out.
+  function customDevInfo(folder) {
+    const info = { folder, title: '', description: '', modified: null }
+    try {
+      const file = path.join(customDevContentPath(folder), 'index.html')
+      info.modified = fs.statSync(file).mtime.toISOString()
+      const fd = fs.openSync(file, 'r')
+      const buf = Buffer.alloc(65536)
+      const n = fs.readSync(fd, buf, 0, buf.length, 0)
+      fs.closeSync(fd)
+      const head = buf.toString('utf8', 0, n)
+      const unescape = (s) =>
+        s
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'")
+          .replace(/&amp;/g, '&')
+          .trim()
+          .slice(0, 300)
+      const t = head.match(/<title[^>]*>([^<]*)<\/title>/i)
+      if (t) info.title = unescape(t[1])
+      const d =
+        head.match(/<meta\s+name=["']description["']\s+content=["']([^"']*)["']/i) ||
+        head.match(/<meta\s+content=["']([^"']*)["']\s+name=["']description["']/i)
+      if (d && !/^astro description$/i.test(d[1].trim())) info.description = unescape(d[1])
+    } catch (err) {
+      Log.log(`Custom development '${folder}': ${err.message}`)
+    }
+    return info
+  }
+
   // Dynamically create routes for custom developments
   try {
     const folders = fs
@@ -276,61 +310,64 @@ module.exports = function (
         .filter((item) => item.isDirectory())
         .map((item) => item.name)
         .filter((folder) => customDevContentPath(folder) !== null)
+        .sort((a, b) => a.localeCompare(b))
+      const apps = folders.map(customDevInfo)
 
-      // Generate HTML response
-      const html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Custom Developments</title>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        max-width: 800px;
-                        margin: 0 auto;
-                        padding: 20px;
-                    }
-                    h1 {
-                        color: #333;
-                    }
-                    .folder-list {
-                        list-style: none;
-                        padding: 0;
-                    }
-                    .folder-list li {
-                        margin: 10px 0;
-                        padding: 10px;
-                        background-color: #f5f5f5;
-                        border-radius: 4px;
-                    }
-                    .folder-list li:hover {
-                        background-color: #e0e0e0;
-                    }
-                    a {
-                        color: #2196F3;
-                        text-decoration: none;
-                    }
-                    a:hover {
-                        text-decoration: underline;
-                    }
-                </style>
-            </head>
-            <body>
-                <h1>Custom Developments</h1>
-                <ul class="folder-list">
-                    ${folders
-                      .map(
-                        (folder) => `
-                        <li>
-                            <a href="/custom-developments/${encodeURIComponent(folder)}/">${escapeHtml(folder)}</a>
-                        </li>
-                    `
-                      )
-                      .join('')}
-                </ul>
-            </body>
-            </html>
-        `
+      // the AdminUI page (CustomDevelopmentsPage.vue) reads the list as JSON
+      if (req.query.format === 'json') {
+        res.set('Cache-Control', 'no-store')
+        return res.status(200).json({ apps })
+      }
+
+      // plain page for direct visits: follows ?theme=light|dark, else the
+      // browser's color scheme
+      const theme = req.query.theme === 'dark' || req.query.theme === 'light' ? req.query.theme : ''
+      const html = `<!DOCTYPE html>
+<html lang="en"${theme ? ` data-theme="${theme}"` : ''}>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Custom Developments | {json:scada}</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f6f7f9; --card: #fff; --fg: #1b1f24; --muted: #5f6b7a; --line: #dde1e6; --accent: #1f6feb; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #121417; --card: #1c1f24; --fg: #e6e8eb; --muted: #9aa4b2; --line: #2d323a; --accent: #6ea8fe; } }
+  :root[data-theme="dark"] { --bg: #121417; --card: #1c1f24; --fg: #e6e8eb; --muted: #9aa4b2; --line: #2d323a; --accent: #6ea8fe; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--fg); }
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  a.card { display: flex; flex-direction: column; gap: 6px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); color: inherit; text-decoration: none; transition: border-color .15s, transform .15s; }
+  a.card:hover, a.card:focus-visible { border-color: var(--accent); transform: translateY(-2px); outline: none; }
+  .title { font-weight: 600; }
+  .folder { font: 12px ui-monospace, Consolas, monospace; color: var(--accent); }
+  .desc { color: var(--muted); font-size: 14px; }
+  .empty { padding: 40px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Custom Developments</h1>
+  <p class="sub">Web apps served from src/custom-developments</p>
+  ${
+    apps.length
+      ? `<div class="grid">${apps
+          .map(
+            (a) => `
+    <a class="card" href="/custom-developments/${encodeURIComponent(a.folder)}/">
+      <span class="title">${escapeHtml(a.title || a.folder)}</span>
+      <span class="folder">${escapeHtml(a.folder)}</span>
+      ${a.description ? `<span class="desc">${escapeHtml(a.description)}</span>` : ''}
+    </a>`
+          )
+          .join('')}
+  </div>`
+      : `<div class="empty">No custom development is built yet: run 'npm install &amp;&amp; npm run build' in a folder of src/custom-developments and restart server_realtime_auth.</div>`
+  }
+</main>
+</body>
+</html>`
 
       res.send(html)
     } catch (error) {

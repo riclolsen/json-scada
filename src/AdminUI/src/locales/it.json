@@ -390,9 +390,7 @@
       },
       "viewSecEvents": "Visualizza eventi di sicurezza",
       "viewSecEventsHint": "Può aprire il visualizzatore degli eventi di sicurezza (anomalie di connessione, certificato, identità e comandi segnalate dai driver di protocollo).",
-
       "editDisplays": "Modifica visualizzazioni",
-
       "editDisplaysHint": "Può elencare, aprire e salvare le visualizzazioni SVG nell'editor SVG (gli amministratori sempre). Con un elenco di visualizzazioni, solo quelle."
     },
     "protocolDriverInstances": {
@@ -1346,5 +1344,18 @@
       "analytics": "Analisi",
       "engineering": "Ingegneria"
     }
+  },
+  "customDev": {
+    "subtitle": "App web create in src/custom-developments: dashboard, faceplate e viste speciali.",
+    "search": "Cerca app",
+    "open": "Apri",
+    "openNewWindow": "Apri in una nuova finestra",
+    "back": "Torna all'elenco",
+    "retry": "Riprova",
+    "empty": "Ancora nessuno sviluppo personalizzato",
+    "emptyHint": "Crea un'app in una cartella di src/custom-developments (npm install && npm run build) e riavvia server_realtime_auth.",
+    "noMatch": "Nessuna app corrisponde alla ricerca.",
+    "noDescription": "Nessuna descrizione",
+    "built": "Creato il {date}"
   }
 }

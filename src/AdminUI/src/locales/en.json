@@ -390,9 +390,7 @@
       },
       "viewSecEvents": "View Security Events",
       "viewSecEventsHint": "Can open the Security Events viewer (connection, certificate, identity and command anomalies reported by the protocol drivers).",
-
       "editDisplays": "Edit Displays",
-
       "editDisplaysHint": "Can list, open and save the SVG displays in the SVG Editor (admins always can). With a display list, only those displays."
     },
     "protocolDriverInstances": {
@@ -1346,5 +1344,18 @@
       "analytics": "Analytics",
       "engineering": "Engineering"
     }
+  },
+  "customDev": {
+    "subtitle": "Web apps built in src/custom-developments: dashboards, faceplates and special views.",
+    "search": "Search apps",
+    "open": "Open",
+    "openNewWindow": "Open in a new window",
+    "back": "Back to the list",
+    "retry": "Retry",
+    "empty": "No custom development yet",
+    "emptyHint": "Build an app in a folder of src/custom-developments (npm install && npm run build) and restart server_realtime_auth.",
+    "noMatch": "No app matches the search.",
+    "noDescription": "No description",
+    "built": "Built {date}"
   }
 }

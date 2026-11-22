@@ -390,9 +390,7 @@
       },
       "viewSecEvents": "Voir les événements de sécurité",
       "viewSecEventsHint": "Peut ouvrir la visionneuse des événements de sécurité (anomalies de connexion, de certificat, d'identité et de commandes signalées par les drivers de protocole).",
-
       "editDisplays": "Modifier les affichages",
-
       "editDisplaysHint": "Peut lister, ouvrir et enregistrer les affichages SVG dans l'éditeur SVG (les administrateurs toujours). Avec une liste d'affichages, seulement ceux-ci."
     },
     "protocolDriverInstances": {
@@ -1346,5 +1344,18 @@
       "analytics": "Analyse",
       "engineering": "Ingénierie"
     }
+  },
+  "customDev": {
+    "subtitle": "Applications web construites dans src/custom-developments : tableaux de bord, faceplates et vues spéciales.",
+    "search": "Rechercher des applications",
+    "open": "Ouvrir",
+    "openNewWindow": "Ouvrir dans une nouvelle fenêtre",
+    "back": "Retour à la liste",
+    "retry": "Réessayer",
+    "empty": "Aucun développement personnalisé pour l'instant",
+    "emptyHint": "Construisez une application dans un dossier de src/custom-developments (npm install && npm run build) et redémarrez server_realtime_auth.",
+    "noMatch": "Aucune application ne correspond à la recherche.",
+    "noDescription": "Pas de description",
+    "built": "Construit le {date}"
   }
 }

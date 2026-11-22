@@ -390,9 +390,7 @@
       },
       "viewSecEvents": "امنیتي پېښې کتل",
       "viewSecEventsHint": "کولی شي د امنیتي پېښو کتونکی پرانیزي (د پروتوکول ډرایورونو له خوا راپور شوي د اتصال، سند، هویت او امرونو بې نظمۍ).",
-
       "editDisplays": "د ښودنو سمول",
-
       "editDisplaysHint": "کولی شي د SVG مدیر کې د SVG ښودنې لیست کړي، پرانیزي او خوندي کړي (مدیران تل). د ښودنو له لیست سره، یوازې هغه ښودنې."
     },
     "protocolDriverInstances": {
@@ -1346,5 +1344,18 @@
       "analytics": "شننه",
       "engineering": "انجنیري"
     }
+  },
+  "customDev": {
+    "subtitle": "په src/custom-developments کې جوړ شوي وېب اپونه: ډشبورډونه، فیس‌پلېټونه او ځانګړي لیدونه.",
+    "search": "اپونه ولټوئ",
+    "open": "پرانیستل",
+    "openNewWindow": "په نوې کړکۍ کې پرانیستل",
+    "back": "لیست ته بېرته",
+    "retry": "بیا هڅه",
+    "empty": "تر اوسه کوم ځانګړی پرمختګ نشته",
+    "emptyHint": "د src/custom-developments په یوه فولډر کې اپ جوړ کړئ (npm install && npm run build) او server_realtime_auth بیا پیل کړئ.",
+    "noMatch": "هیڅ اپ له لټون سره سمون نه خوري.",
+    "noDescription": "هیڅ تشریح نشته",
+    "built": "جوړ شوی {date}"
   }
 }

@@ -390,9 +390,7 @@
       },
       "viewSecEvents": "セキュリティイベントの表示",
       "viewSecEventsHint": "セキュリティイベントビューアを開けます（プロトコルドライバーが報告する接続、証明書、識別情報、コマンドの異常）。",
-
       "editDisplays": "ディスプレイの編集",
-
       "editDisplaysHint": "SVGエディターでSVGディスプレイの一覧表示、開く、保存ができます（管理者は常に可能）。ディスプレイリストがある場合はそのディスプレイのみ。"
     },
     "protocolDriverInstances": {
@@ -1346,5 +1344,18 @@
       "analytics": "分析",
       "engineering": "エンジニアリング"
     }
+  },
+  "customDev": {
+    "subtitle": "src/custom-developments でビルドしたWebアプリ：ダッシュボード、フェースプレート、専用ビュー。",
+    "search": "アプリを検索",
+    "open": "開く",
+    "openNewWindow": "新しいウィンドウで開く",
+    "back": "一覧に戻る",
+    "retry": "再試行",
+    "empty": "カスタム開発はまだありません",
+    "emptyHint": "src/custom-developments のフォルダーでアプリをビルドし（npm install && npm run build）、server_realtime_auth を再起動してください。",
+    "noMatch": "検索に一致するアプリはありません。",
+    "noDescription": "説明なし",
+    "built": "ビルド日 {date}"
   }
 }

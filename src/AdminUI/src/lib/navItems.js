@@ -42,7 +42,7 @@ export const navGroups = [
         id: 'customDevelopments',
         titleKey: 'dashboard.customDevelopments',
         route: '/custom-developments',
-        page: '/custom-developments',
+        page: '/#/custom-developments',
       },
     ],
   },
