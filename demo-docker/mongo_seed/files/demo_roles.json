@@ -16,6 +16,7 @@
         "ackAlarms": true,
         "disableAlarms": true,
         "viewSecEvents": true,
+        "cimEngineering": true,
         "group1List": [],
         "displayList": [],
         "maxSessionDays": 3,

@@ -134,15 +134,19 @@ const currentPassword = ref('')
 const errorMessage = ref('')
 
 // admin-only and right-gated menu entries follow the signed-in user's
-// rights (cookie)
+// rights: the cookie written at sign-in, overridden by the current boolean
+// rights answered by the periodic session check (role changes made later)
+const liveRights = ref(null)
 const userRights = computed(() => {
   if (!loggedInUser.value) return {}
+  let rights
   try {
     const ck = parseCookie(document.cookie)
-    return JSON.parse(ck['json-scada-user'] || '{}')?.rights || {}
+    rights = JSON.parse(ck['json-scada-user'] || '{}')?.rights || {}
   } catch (e) {
-    return {}
+    rights = {}
   }
+  return liveRights.value ? { ...rights, ...liveRights.value } : rights
 })
 const isAdmin = computed(() => !!userRights.value.isAdmin)
 
@@ -175,6 +179,7 @@ const toggleTheme = () => {
 }
 
 const setLoggedInUser = (username) => {
+  liveRights.value = null // the new sign-in cookie is current
   loggedInUser.value = username
   let ck = parseCookie(document.cookie)
   if ('json-scada-user' in ck) {
@@ -184,6 +189,7 @@ const setLoggedInUser = (username) => {
 }
 
 const logout = () => {
+  liveRights.value = null
   loggedInUser.value = null
   fetch('/Invoke/auth/signout', {
     method: 'POST',
@@ -292,6 +298,9 @@ function checkLogin() {
       if ('ok' in data && data.ok) {
         if (loggedInUser.value !== ck.username)
           loggedInUser.value = ck.username
+        // current rights (older servers answer none: the cookie's are kept)
+        if (data.rights && typeof data.rights === 'object')
+          liveRights.value = data.rights
         // console.log('User is logged in')
       } else if (data.unavailable) {
         // server database briefly unavailable: keep the session, check again later
