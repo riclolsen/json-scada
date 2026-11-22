@@ -91,16 +91,23 @@ function pythonPath(venvDir) {
   return 'python3'
 }
 
-// nssm.exe resolution order: env override, platform-windows dir, bin dir, PATH.
-function nssmPath() {
-  if (process.env.JS_NSSM_PATH && process.env.JS_NSSM_PATH.trim() !== '')
-    return process.env.JS_NSSM_PATH.trim()
+// WinSW.exe resolution order: env override, platform-windows dir, bin dir. It is
+// never run directly: each service gets a hard link (or copy) named after it.
+function winswPath() {
+  if (process.env.JS_WINSW_PATH && process.env.JS_WINSW_PATH.trim() !== '')
+    return path.resolve(process.env.JS_WINSW_PATH.trim())
   const candidates = [
-    path.join(installRoot(), 'platform-windows', 'nssm.exe'),
-    path.join(binDir(), 'nssm.exe'),
+    path.join(installRoot(), 'platform-windows', 'WinSW.exe'),
+    path.join(binDir(), 'WinSW.exe'),
   ]
   for (const c of candidates) if (fs.existsSync(c)) return c
-  return 'nssm'
+  return candidates[0]
+}
+
+// Folder of the WinSW service files (<service>.xml + <service>.exe), shared with
+// platform-windows/winsw-services.ps1.
+function winswServicesDir() {
+  return path.join(installRoot(), 'platform-windows', 'services')
 }
 
 // Directory where the process manager writes supervisor program .ini files it owns.
@@ -132,7 +139,8 @@ module.exports = {
   confFile,
   nodePath,
   pythonPath,
-  nssmPath,
+  winswPath,
+  winswServicesDir,
   managedSupervisorDir,
   expandPlaceholders,
 }

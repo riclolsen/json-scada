@@ -1,0 +1,20 @@
+<service>
+  <!-- Optional local Node-RED runtime (install with install_nodered.bat first). -->
+  <id>JSON_SCADA_nodered_runtime</id>
+  <name>JSON_SCADA_nodered_runtime</name>
+  <description>JSON-SCADA nodered_runtime</description>
+  <executable>{root}\platform-windows\nodejs-runtime\node.exe</executable>
+  <arguments>"{root}\platform-windows\nodered-runtime\node_modules\node-red\red.js" -s "{root}\conf\node-red-settings.js"</arguments>
+  <workingdirectory>{root}\platform-windows\nodered-runtime</workingdirectory>
+  <startmode>Automatic</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>nodered_runtime</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

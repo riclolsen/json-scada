@@ -94,7 +94,7 @@
     },
     {
       "title": "Windows Installation",
-      "purpose": "Step-by-step guide for Windows installation using the NSIS installer, including service management with NSSM and embedded runtime components",
+      "purpose": "Step-by-step guide for Windows installation using the NSIS installer, including service management with WinSW and embedded runtime components",
       "parent": "Installation and Deployment",
       "page_notes": [
         {

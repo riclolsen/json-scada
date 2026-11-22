@@ -207,7 +207,7 @@ async function exitAfterFlush(code, graceful = false) {
 }
 
 // After an uncaught exception the process state is unknown: log it and exit, the
-// process manager (supervisor/nssm) restarts the server.
+// process manager (supervisor/WinSW) restarts the server.
 process.on('uncaughtException', (err) => {
   Log.log('Uncaught Exception:' + err.message + ' ' + err.stack)
   setTimeout(() => process.exit(1), 4000).unref()

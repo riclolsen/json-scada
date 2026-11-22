@@ -273,7 +273,6 @@ SetRegView 64
   
   SetOutPath $INSTDIR\bin
   File /a /r "..\bin\*.*"
-  File /a "..\platform-windows\nssm.exe"
 
   ; preserve previous start_services.bat (all scripts are also in $BACKUP_DIR on upgrades)
   ${If} ${FileExists} "$INSTDIR\platform-windows\start_services.bat"
@@ -284,7 +283,14 @@ SetRegView 64
   SetOutPath $INSTDIR\platform-windows
   File /a "..\platform-windows\*.bat"
   File /a "..\platform-windows\*.ps1"
-  File /a "..\platform-windows\nssm.exe"
+  ; WinSW runs every JSON_SCADA_* service (except PostgreSQL): winsw-services.ps1 installs the
+  ; service-templates as platform-windows\services\<svc>.xml + <svc>.exe (hard link to WinSW.exe).
+  ; The templates are installer-owned and replaced as a whole; the live services\ folder is never touched.
+  File /a "..\platform-windows\WinSW.exe"
+  RMDir /r "$INSTDIR\platform-windows\service-templates"
+  SetOutPath $INSTDIR\platform-windows\service-templates
+  File /a /r "..\platform-windows\service-templates\*.xml"
+  SetOutPath $INSTDIR\platform-windows
   File /a "..\platform-windows\ffmpeg.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\OpcWatch.exe"
@@ -719,16 +725,8 @@ SectionEnd
 ; running). Result in $R9: 0 = ok, 2 = warnings, other = failure.
 Function UpgradeServicesAndData
 
-  ; Point the PostgreSQL loader services to src\process_pg_sql (upgrades from the former
-  ; sql\process_pg_*.bat loaders)
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist Application "$INSTDIR\platform-windows\nodejs-runtime\node.exe"'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist AppParameters "$INSTDIR\src\process_pg_sql\index.js" hist 1'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist AppDirectory "$INSTDIR\src\process_pg_sql"'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist AppStdout "$INSTDIR\log\process_pg_hist.log"'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata Application "$INSTDIR\platform-windows\nodejs-runtime\node.exe"'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata AppParameters "$INSTDIR\src\process_pg_sql\index.js" rtdata 1'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata AppDirectory "$INSTDIR\src\process_pg_sql"'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata AppStdout "$INSTDIR\log\process_pg_rtdata.log"'
+  ; Former sql\process_pg_*.bat loaders: upgrade.ps1 (winsw-services.ps1 -Action Migrate) recreates
+  ; NSSM services that run a .bat or a missing program from their service template (src\process_pg_sql)
   Delete "$INSTDIR\sql\process_pg_hist.bat"
   Delete "$INSTDIR\sql\process_pg_rtdata.bat"
   Delete "$INSTDIR\sql\terminate_pg_hist.bat"

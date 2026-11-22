@@ -14,60 +14,11 @@ REM WMIC is deprecated; using Get-CimInstance + Invoke-CimMethod for termination
 powershell -NoProfile -ExecutionPolicy Bypass -Command "& '%~dp0kill_processes_by_pattern.ps1' \
 	-Patterns 'c:\\\\json-scada\\\\sql\\\\','c:\\\\json-scada\\\\platform-windows\\\\grafana-runtime\\\\bin\\\\','c:\\\\json-scada\\\\platform-windows\\\\nginx_php-runtime\\\\php\\\\','c:\\\\json-scada\\\\platform-windows\\\\nginx_php-runtime\\\\','c:\\\\json-scada\\\\platform-windows\\\\nodejs-runtime\\\\','c:\\\\json-scada\\\\platform-windows\\\\browser-runtime\\\\','c:\\\\json-scada\\\\platform-windows\\\\mongodb-runtime\\\\','c:\\\\json-scada\\\\platform-windows\\\\inkscape-runtime\\\\','c:\\\\json-scada\\\\platform-windows\\\\telegraf-runtime\\\\','..\\\\platform-windows\\\\','c:\\\\json-scada\\\\bin\\\\'"
 
-rem Remove service without confimation
+rem Remove every JSON_SCADA_* service without confirmation (WinSW, NSSM or pg_ctl registered),
+rem with the WinSW binaries and live XML files in platform-windows\services (logs are kept)
 
-sc delete JSON_SCADA_postgresql 
-nssm remove JSON_SCADA_grafana confirm
-nssm remove JSON_SCADA_metabase confirm
-nssm remove JSON_SCADA_mongodb confirm 
-nssm remove JSON_SCADA_cs_data_processor confirm
-nssm remove JSON_SCADA_cs_custom_processor confirm
-nssm remove JSON_SCADA_server_realtime_auth confirm
-nssm remove JSON_SCADA_calculations confirm
-nssm remove JSON_SCADA_process_rtdata confirm
-nssm remove JSON_SCADA_process_hist confirm
-nssm remove JSON_SCADA_alarm_beep confirm
-nssm remove JSON_SCADA_demo_simul confirm
-nssm remove JSON_SCADA_mongofw confirm
-nssm remove JSON_SCADA_mongowr confirm
-nssm remove JSON_SCADA_config_server_excel confirm
-
-nssm remove JSON_SCADA_nginx confirm
-nssm remove JSON_SCADA_php confirm
-
-nssm remove JSON_SCADA_iec104server confirm
-nssm remove JSON_SCADA_iec104client confirm
-nssm remove JSON_SCADA_iec101server confirm
-nssm remove JSON_SCADA_iec101client confirm
-nssm remove JSON_SCADA_iec103client confirm
-nssm remove JSON_SCADA_dnp3client confirm
-nssm remove JSON_SCADA_dnp3server confirm
-nssm remove JSON_SCADA_opcuaclient confirm
-nssm remove JSON_SCADA_opcdaclient confirm
-nssm remove JSON_SCADA_iec61850client confirm
-rem nssm remove JSON_SCADA_i104m confirm
-rem nssm remove JSON_SCADA_plctags confirm
-rem nssm remove JSON_SCADA_plc4xclient confirm
-nssm remove JSON_SCADA_plc4jclient confirm
-nssm remove JSON_SCADA_cim_ems confirm
-nssm remove JSON_SCADA_cim_ems_demo_field confirm
-nssm remove JSON_SCADA_telegraf_runtime confirm
-nssm remove JSON_SCADA_telegraf_listener confirm
-nssm remove JSON_SCADA_nodered_driver confirm
-nssm remove JSON_SCADA_nodered_runtime confirm
-nssm remove JSON_SCADA_n8nclient confirm
-nssm remove JSON_SCADA_mqttsparkplugclient confirm
-nssm remove JSON_SCADA_opcuaserver confirm
-nssm remove JSON_SCADA_modbusclient confirm
-nssm remove JSON_SCADA_modbusserver confirm
-nssm remove JSON_SCADA_log_io_file confirm
-nssm remove JSON_SCADA_log_io_server confirm
-nssm remove JSON_SCADA_onvif confirm
-nssm remove JSON_SCADA_mcp_server confirm
-nssm remove JSON_SCADA_iccp_server confirm
-nssm remove JSON_SCADA_iccp_client confirm
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0winsw-services.ps1" -Action Remove
 
 \json-scada\bin\OPC-DA_Server\OpcNetDaServer.exe -unregserver
 
 PowerShell -NoProfile -ExecutionPolicy Bypass -Command "& {Start-Process PowerShell -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File ""remove_jsonscada_services.ps1""' -Verb RunAs}"
-

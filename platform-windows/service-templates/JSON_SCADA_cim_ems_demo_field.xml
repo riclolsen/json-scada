@@ -1,0 +1,21 @@
+<service>
+  <!-- Svedala CIM-EMS demo field simulator (writes the SVEDALA_FIELD points, executes their breaker commands). -->
+  <!-- Demo only; start it together with JSON_SCADA_cim_ems. -->
+  <id>JSON_SCADA_cim_ems_demo_field</id>
+  <name>JSON_SCADA_cim_ems_demo_field</name>
+  <description>JSON-SCADA cim_ems_demo_field</description>
+  <executable>{root}\platform-windows\python-runtime\python.exe</executable>
+  <arguments>-m cim_ems.demo_field "{root}\conf\json-scada.json"</arguments>
+  <workingdirectory>{root}\src\cim-ems</workingdirectory>
+  <startmode>Manual</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>cim_ems_demo_field</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

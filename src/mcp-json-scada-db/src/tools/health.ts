@@ -23,7 +23,7 @@ import { z } from 'zod'
 import type { McpServer } from '@modelcontextprotocol/server'
 import { ConnectionManager } from '../jsonscada/connection-manager.js'
 import { aliveInfo, isFresh } from './status.js'
-import { listLogFiles, logDir, scanLog } from './logs.js'
+import { isRotatedLog, listLogFiles, logBaseName, logDir, logFileHint, scanLog } from './logs.js'
 import { errorResult, jsonResult, notConnectedResult, redactSensitive } from './util.js'
 
 // Service (and log file) base name of each managed driver, instance 1; other
@@ -81,13 +81,16 @@ async function logsFor(baseNames: string[], sinceMinutes: number, maxMatches: nu
     const since = new Date(Date.now() - sinceMinutes * 60000)
     const out = []
     for (const base of baseNames) {
-      const f = files.find((x) => x.file.toLowerCase() === `${base.toLowerCase()}.log`)
-      if (!f) {
-        out.push({ file: `${base}.log`, found: false })
+      // supervisor: <base>.log; WinSW: <base>.out.log and <base>.err.log
+      const found = files.filter((x) => !isRotatedLog(x.file) && logBaseName(x.file).toLowerCase() === base.toLowerCase())
+      if (!found.length) {
+        out.push({ file: logFileHint(base), found: false })
         continue
       }
-      const s = await scanLog(f.file, { level: 'warn', since, maxBytes: 2 << 20, maxMatches })
-      out.push({ file: f.file, found: true, modified: f.modified, ageSeconds: f.ageSeconds, recentWarnOrErrors: s.totalMatches, lastLines: s.lines })
+      for (const f of found) {
+        const s = await scanLog(f.file, { level: 'warn', since, maxBytes: 2 << 20, maxMatches })
+        out.push({ file: f.file, found: true, modified: f.modified, ageSeconds: f.ageSeconds, recentWarnOrErrors: s.totalMatches, lastLines: s.lines })
+      }
     }
     return out
   } catch (e) {
@@ -221,7 +224,7 @@ export function registerHealthTools(server: McpServer, mgr: ConnectionManager) {
         const processes = (await mgr.getProcessInstancesCollection().find().toArray()).map((p) => {
           const a = aliveInfo(p, now)
           if (p.enabled !== false && !a['alive'])
-            findings.push(`Process ${p.processName} #${p.processInstanceNumber} not alive (${since(p.activeNodeKeepAliveTimeTag, now)}): see read_log ${PROCESS_LOG[String(p.processName)] ?? String(p.processName).toLowerCase()}.log`)
+            findings.push(`Process ${p.processName} #${p.processInstanceNumber} not alive (${since(p.activeNodeKeepAliveTimeTag, now)}): see read_log ${logFileHint(PROCESS_LOG[String(p.processName)] ?? String(p.processName).toLowerCase())}`)
           return {
             processName: p.processName,
             instance: p.processInstanceNumber,
@@ -253,7 +256,7 @@ export function registerHealthTools(server: McpServer, mgr: ConnectionManager) {
           const a = aliveInfo(d, now, newest.get(`${d.protocolDriver}#${d.protocolDriverInstanceNumber}`) ?? null)
           const nConns = conns.filter((c) => c['protocolDriver'] === d.protocolDriver && c['protocolDriverInstanceNumber'] === d.protocolDriverInstanceNumber).length
           if (d.enabled !== false && !a['alive'])
-            findings.push(`Driver ${d.protocolDriver} #${d.protocolDriverInstanceNumber} enabled but not alive (process stopped, crashing or not able to reach MongoDB): see read_log ${serviceLogName(d.protocolDriver, Number(d.protocolDriverInstanceNumber))}.log`)
+            findings.push(`Driver ${d.protocolDriver} #${d.protocolDriverInstanceNumber} enabled but not alive (process stopped, crashing or not able to reach MongoDB): see read_log ${logFileHint(serviceLogName(d.protocolDriver, Number(d.protocolDriverInstanceNumber)))}`)
           if (d.enabled !== false && !nConns) findings.push(`Driver ${d.protocolDriver} #${d.protocolDriverInstanceNumber} has no connections`)
           return {
             protocolDriver: d.protocolDriver,
@@ -440,7 +443,7 @@ export function registerHealthTools(server: McpServer, mgr: ConnectionManager) {
           const name = String(conn.name || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
           if (name) {
             const since = new Date(now - logSinceMinutes * 60000)
-            for (const f of (await listLogFiles()).filter((f) => !f.rotated && f.modified >= since && !bases.includes(f.file.replace(/\.log$/i, '')))) {
+            for (const f of (await listLogFiles()).filter((f) => !f.rotated && f.modified >= since && !bases.includes(logBaseName(f.file)))) {
               const s = await scanLog(f.file, { pattern: new RegExp(name, 'i'), since, maxBytes: 1 << 20, maxMatches: 5 })
               if (s.totalMatches) mentions.push({ file: f.file, matches: s.totalMatches, lastLines: s.lines })
             }

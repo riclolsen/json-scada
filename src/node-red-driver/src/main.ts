@@ -161,7 +161,7 @@ async function main(): Promise<void> {
 }
 
 // Resolves (and validates) the single connection this instance owns. Exit codes match
-// telegraf-listener so NSSM/supervisord restart behavior is consistent.
+// telegraf-listener so WinSW/supervisord restart behavior is consistent.
 async function resolveConnection(
   db: Db,
   cfg: DriverConfig

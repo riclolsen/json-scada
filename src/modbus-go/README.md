@@ -233,10 +233,13 @@ No configuration changes are needed. To switch a node:
    - Windows (an existing installation; `platform-windows/create_services.bat` already defines
      the services this way):
 
-     ```bat
-     nssm set JSON_SCADA_modbusclient Application C:\json-scada\bin\modbus-client.exe
-     nssm set JSON_SCADA_modbusclient AppParameters 1 1 c:\json-scada\conf\json-scada.json
-     nssm set JSON_SCADA_modbusclient AppDirectory C:\json-scada\bin
+     edit `C:\json-scada\platform-windows\services\JSON_SCADA_modbusclient.xml` (WinSW, read at
+     each service start):
+
+     ```xml
+     <executable>C:\json-scada\bin\modbus-client.exe</executable>
+     <arguments>1 1 "C:\json-scada\conf\json-scada.json"</arguments>
+     <workingdirectory>C:\json-scada\bin</workingdirectory>
      ```
 
      and the same for `JSON_SCADA_modbusserver` with `modbus-server.exe`.

@@ -1,0 +1,21 @@
+<service>
+  <id>JSON_SCADA_log_io_file</id>
+  <name>JSON_SCADA_log_io_file</name>
+  <description>JSON-SCADA log_io_file</description>
+  <executable>{root}\platform-windows\nodejs-runtime\node.exe</executable>
+  <arguments>"{root}\src\log-io\inputs\file\lib\index.js"</arguments>
+  <workingdirectory>{root}\src\log-io</workingdirectory>
+  <env name="LOGIO_FILE_INPUT_CONFIG_PATH" value="{root}\conf\log.io-file.json"/>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <logpath>{root}\log</logpath>
+  <logname>log_io_file</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

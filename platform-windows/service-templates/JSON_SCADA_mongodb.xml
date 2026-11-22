@@ -1,0 +1,19 @@
+<service>
+  <id>JSON_SCADA_mongodb</id>
+  <name>JSON_SCADA_mongodb</name>
+  <description>JSON-SCADA mongodb</description>
+  <executable>{root}\platform-windows\mongodb-runtime\bin\mongod.exe</executable>
+  <arguments>--config "{root}\platform-windows\mongodb-conf\mongod.cfg"</arguments>
+  <workingdirectory>{root}\platform-windows\mongodb-runtime\bin</workingdirectory>
+  <startmode>Automatic</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>mongodb</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>120 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

@@ -1,0 +1,21 @@
+<service>
+  <!-- CIM-EMS driver (load flow, state estimation, contingency analysis; Python in -->
+  <!-- platform-windows\python-runtime, see src\cim-ems\install.bat). Set startmode Automatic to enable. -->
+  <id>JSON_SCADA_cim_ems</id>
+  <name>JSON_SCADA_cim_ems</name>
+  <description>JSON-SCADA cim_ems</description>
+  <executable>{root}\platform-windows\python-runtime\python.exe</executable>
+  <arguments>-m cim_ems 1 1 "{root}\conf\json-scada.json"</arguments>
+  <workingdirectory>{root}\src\cim-ems</workingdirectory>
+  <startmode>Manual</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>cim_ems</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

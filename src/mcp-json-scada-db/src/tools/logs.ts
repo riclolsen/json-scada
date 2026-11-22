@@ -15,9 +15,10 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-// Process log files: the installation log/ folder where supervisor (Linux) and
-// the Windows services write each process stdout/stderr (<name>.log, rotated
-// <name>.log.1 ...). Read-only; file names are confined to that folder.
+// Process log files: the installation log/ folder where supervisor (Linux) writes
+// each process stdout/stderr as <name>.log (rotated <name>.log.1 ...) and the
+// Windows services (WinSW) as <name>.out.log and <name>.err.log (rotated
+// <name>.0.out.log). Read-only; file names are confined to that folder.
 
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -70,6 +71,22 @@ export async function tailLines(file: string, maxBytes: number): Promise<{ lines
   }
 }
 
+// Process name of a log file: "iec104client" for iec104client.log, iec104client.out.log,
+// iec104client.err.log and their rotated files.
+export function logBaseName(file: string): string {
+  return file.replace(/(\.\d+)?\.(out|err)\.log$/i, '').replace(/\.log(\.\d+)?$/i, '')
+}
+
+// Rotated (no longer written) log file: <name>.log.1 (supervisor) or <name>.0.out.log (WinSW)
+export function isRotatedLog(file: string): boolean {
+  return /\.\d+$/.test(file) || /\.\d+\.(out|err)\.log$/i.test(file)
+}
+
+// Log file name to suggest for a process: WinSW on Windows writes <name>.out.log
+export function logFileHint(base: string): string {
+  return process.platform === 'win32' ? `${base}.out.log` : `${base}.log`
+}
+
 export interface LogFile {
   file: string
   sizeKB: number
@@ -91,7 +108,7 @@ export async function listLogFiles(): Promise<LogFile[]> {
       sizeKB: Math.round(st.size / 1024),
       modified: st.mtime,
       ageSeconds: Math.round((now - st.mtimeMs) / 1000),
-      rotated: /\.\d+$/.test(f),
+      rotated: isRotatedLog(f),
     })
   }
   return out.sort((a, b) => a.file.localeCompare(b.file))
@@ -140,7 +157,8 @@ export function registerLogTools(server: McpServer) {
       title: 'List Log Files',
       description:
         'List the process log files of the installation (log folder: one <process>.log per service written by ' +
-        'supervisor or the Windows services, rotated as .log.1, .log.2 ...) with size and last modification. A ' +
+        'supervisor, rotated as .log.1 ...; the Windows services write <process>.out.log and <process>.err.log, ' +
+        'rotated as .0.out.log) with size and last modification. A ' +
         'log not modified for long belongs to a stopped or quiet process. With scanErrors, also counts error-like ' +
         'lines in the recent tail of each current log.',
       inputSchema: z.object({

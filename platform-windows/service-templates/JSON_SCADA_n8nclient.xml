@@ -1,0 +1,19 @@
+<service>
+  <id>JSON_SCADA_n8nclient</id>
+  <name>JSON_SCADA_n8nclient</name>
+  <description>JSON-SCADA n8nclient</description>
+  <executable>{root}\platform-windows\nodejs-runtime\node.exe</executable>
+  <arguments>"{root}\src\n8n-client\index.js" 1 1 "{root}\conf\json-scada.json"</arguments>
+  <workingdirectory>{root}\src\n8n-client</workingdirectory>
+  <startmode>Manual</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>n8nclient</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

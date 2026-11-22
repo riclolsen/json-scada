@@ -458,8 +458,9 @@ first-class citizen, wire it into (grep for an existing name like `"N8N"` or
 4. **Demo/seed configs** — add disabled example instance + connection docs to
    `demo-docker/mongo_seed/files/demo_instances.json`, `demo_connections.json` and
    `demo_connections_linux.json` (unique `$oid`s and `protocolConnectionNumber`).
-5. **Windows services** — `platform-windows/create_services.bat` (nssm install block),
-   `remove_services.bat`, `start_protocols.bat` / `stop_protocols.bat` /
+5. **Windows services** — a WinSW service template `platform-windows/service-templates/JSON_SCADA_<name>.xml`
+   (copy a sibling driver's; `{root}` is the install folder, `<logname>` the log base name),
+   `start_protocols.bat` / `stop_protocols.bat` /
    `restart_protocols.bat`, and build steps in `platform-windows/build.bat` / `buildupd.bat`.
 6. **Linux** — build steps in `platform-linux/build.sh` and `[program:...]` sections in
    `platform-rhel/supervisord.conf`, `platform-ubuntu/supervisord.conf`

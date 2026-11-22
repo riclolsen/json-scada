@@ -1,0 +1,19 @@
+<service>
+  <id>JSON_SCADA_php</id>
+  <name>JSON_SCADA_php</name>
+  <description>JSON-SCADA php</description>
+  <executable>{root}\platform-windows\nginx_php-runtime\php\php-cgi.exe</executable>
+  <arguments>-b 127.0.0.1:9000 -c "{root}\conf\php.ini"</arguments>
+  <workingdirectory>{root}\platform-windows\nginx_php-runtime\php</workingdirectory>
+  <startmode>Manual</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>php</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

@@ -1,0 +1,39 @@
+<service>
+  <id>JSON_SCADA_grafana</id>
+  <name>JSON_SCADA_grafana</name>
+  <description>JSON-SCADA grafana</description>
+  <executable>{root}\platform-windows\grafana-runtime\bin\grafana.exe</executable>
+  <arguments>server</arguments>
+  <workingdirectory>{root}\platform-windows\grafana-runtime\bin</workingdirectory>
+  <env name="GF_SERVER_DOMAIN" value="127.0.0.1"/>
+  <env name="GF_SERVER_ROOT_URL" value="%(protocol)s://%(domain)s:80/grafana/"/>
+  <env name="GF_SERVER_SERVE_FROM_SUB_PATH" value="false"/>
+  <env name="GF_AUTH_PROXY_ENABLED" value="true"/>
+  <env name="GF_AUTH_PROXY_ENABLE_LOGIN_TOKEN" value="true"/>
+  <env name="GF_AUTH_DISABLE_SIGNOUT_MENU" value="true"/>
+  <env name="GF_AUTH_PROXY_WHITELIST" value="127.0.0.1"/>
+  <env name="GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION" value="true"/>
+  <env name="GF_SERVER_HTTP_ADDR" value="127.0.0.1"/>
+  <env name="GF_SERVER_ENFORCE_DOMAIN" value="true"/>
+  <env name="GF_SERVER_ENABLE_GZIP" value="true"/>
+  <env name="GF_ANALYTICS_REPORTING_ENABLED" value="false"/>
+  <env name="GF_ANALYTICS_CHECK_FOR_UPDATES" value="false"/>
+  <env name="GF_SECURITY_ALLOW_EMBEDDING" value="true"/>
+  <env name="GF_DATABASE_TYPE" value="postgres"/>
+  <env name="GF_DATABASE_NAME" value="grafanaappdb"/>
+  <env name="GF_DATABASE_HOST" value="127.0.0.1"/>
+  <env name="GF_DATABASE_USER" value="postgres"/>
+  <env name="GF_DATABASE_PASSWORD" value=""/>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <logpath>{root}\log</logpath>
+  <logname>grafana</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>60 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

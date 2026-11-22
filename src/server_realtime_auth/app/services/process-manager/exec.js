@@ -45,8 +45,8 @@ function run(cmd, args, opts = {}) {
     let stdout = ''
     let stderr = ''
     let timedOut = false
-    // nssm emits UTF-16LE on Windows; decode with 'latin1' would mangle it, so we
-    // collect raw buffers and decode as utf16le when on win32, utf8 otherwise.
+    // collect raw buffers and decode them once at the end (opts.utf16: UTF-16LE,
+    // else UTF-8), so multi-byte characters split across chunks stay intact.
     const chunksOut = []
     const chunksErr = []
 
@@ -78,7 +78,7 @@ function run(cmd, args, opts = {}) {
 }
 
 // An error of the service management meant for the admin (a driver that is
-// not manageable, a failed supervisorctl/nssm action with its output): its
+// not manageable, a failed supervisorctl/WinSW/sc action with its output): its
 // message is answered to the AdminUI, other errors only go to the log.
 class ProcessError extends Error {
   constructor(msg) {

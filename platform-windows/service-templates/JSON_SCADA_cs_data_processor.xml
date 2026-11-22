@@ -1,0 +1,22 @@
+<service>
+  <!-- Go alternative executable (lower latency, no Node.js): executable {root}\bin\cs_data_processor-go.exe, -->
+  <!-- arguments 1 1 "{root}\conf\json-scada.json", workingdirectory {root}\bin and -->
+  <!-- <env name="JS_CSDATAPROC_METRICS_PORT" value="8082"/>. Run EITHER this or the Node.js one per instance. -->
+  <id>JSON_SCADA_cs_data_processor</id>
+  <name>JSON_SCADA_cs_data_processor</name>
+  <description>JSON-SCADA cs_data_processor</description>
+  <executable>{root}\platform-windows\nodejs-runtime\node.exe</executable>
+  <arguments>"{root}\src\cs_data_processor\cs_data_processor.js" 1 1 "{root}\conf\json-scada.json"</arguments>
+  <workingdirectory>{root}\src\cs_data_processor</workingdirectory>
+  <startmode>Automatic</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>cs_data_processor</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

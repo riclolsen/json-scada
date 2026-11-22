@@ -1,0 +1,21 @@
+<service>
+  <!-- PLC4J client: Java alternative executable for the PLC4X driver (requires JRE 17+). -->
+  <!-- Enable EITHER plc4xclient OR plc4jclient for a given instance number, never both. -->
+  <id>JSON_SCADA_plc4jclient</id>
+  <name>JSON_SCADA_plc4jclient</name>
+  <description>JSON-SCADA plc4jclient</description>
+  <executable>{root}\platform-windows\jdk-runtime\bin\java.exe</executable>
+  <arguments>-Xms32m -Xmx512m -jar "{root}\bin\plc4j-client.jar" 1 1</arguments>
+  <workingdirectory>{root}\platform-windows\jdk-runtime\bin</workingdirectory>
+  <startmode>Manual</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>plc4jclient</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

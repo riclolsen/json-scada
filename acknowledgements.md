@@ -52,7 +52,7 @@
 ## Other tools
 
 -  NGINX - http://nginx.org
--  NSSM - The Non-Sucking Service Manager: http://nssm.cc
+-  WinSW - Windows Service Wrapper: https://github.com/winsw/winsw
 -  Docker - https://www.docker.com/
 
 ----

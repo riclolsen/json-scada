@@ -771,7 +771,7 @@ The build process depends on the language used:
 
 **Running the Driver:**
 
-Drivers are typically run as console applications from a terminal or via a process manager like `supervisord` (common on Linux) or NSSM (on Windows).
+Drivers are typically run as console applications from a terminal or via a process manager like `supervisord` (common on Linux) or WinSW (on Windows).
 
 The standard command-line arguments are:
 
@@ -804,9 +804,9 @@ node C:\path\to\json-scada\src\MyNodeDriver\index.js 1 1 ..\conf\json-scada.json
 For production environments, it's highly recommended to run drivers under a process manager:
 
 *   **Linux:** `supervisord` is a common choice. You would create a configuration file for your driver in `/etc/supervisor/conf.d/` specifying the command, user, auto-restart behavior, and log file locations.
-*   **Windows:** Tools like NSSM (Non-Sucking Service Manager) can be used to run console applications as Windows services, providing similar auto-restart and management capabilities. JSON SCADA's Windows build scripts often include examples or utilities for creating services.
+*   **Windows:** JSON SCADA runs console applications as Windows services with [WinSW](https://github.com/winsw/winsw), which restarts a process that exits with a non-zero code and rotates its stdout/stderr logs. Each service is an XML file in `platform-windows/service-templates/`, installed by `platform-windows/winsw-services.ps1` (called by `create_services.bat`).
 
-Refer to the JSON SCADA platform-specific setup guides (e.g., `platform-linux/build.sh`, `platform-windows/create_services.bat`) for examples of how existing drivers are managed.
+Refer to the JSON SCADA platform-specific setup guides (e.g., `platform-linux/build.sh`, `platform-windows/service-templates/`) for examples of how existing drivers are managed.
 
 ## Conclusion
 

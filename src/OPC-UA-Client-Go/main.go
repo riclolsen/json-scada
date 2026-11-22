@@ -77,7 +77,7 @@ func main() {
 	}
 
 	// The C# driver polls the console for Esc; a driver under supervisord
-	// or NSSM is stopped with a signal instead (deviation D10).
+	// or WinSW is stopped with a signal instead (deviation D10).
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 

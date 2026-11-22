@@ -1,0 +1,19 @@
+<service>
+  <id>JSON_SCADA_onvif</id>
+  <name>JSON_SCADA_onvif</name>
+  <description>JSON-SCADA onvif</description>
+  <executable>{root}\platform-windows\nodejs-runtime\node.exe</executable>
+  <arguments>"{root}\src\camera-onvif\index.js" 1 1 "{root}\conf\json-scada.json"</arguments>
+  <workingdirectory>{root}\src\camera-onvif</workingdirectory>
+  <startmode>Manual</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>onvif</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

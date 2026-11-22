@@ -1,0 +1,29 @@
+<service>
+  <!-- Metabase pro/enterprise only: <env name="MB_JWT_ENABLED" value="true"/> -->
+  <id>JSON_SCADA_metabase</id>
+  <name>JSON_SCADA_metabase</name>
+  <description>JSON-SCADA metabase</description>
+  <executable>{root}\platform-windows\jdk-runtime\bin\java</executable>
+  <arguments>-jar "{root}\platform-windows\metabase-runtime\metabase.jar"</arguments>
+  <workingdirectory>{root}\platform-windows\metabase-runtime</workingdirectory>
+  <env name="MB_JETTY_PORT" value="3001"/>
+  <env name="MB_DB_TYPE" value="postgres"/>
+  <env name="MB_DB_DBNAME" value="metabaseappdb"/>
+  <env name="MB_DB_PORT" value="5432"/>
+  <env name="MB_DB_USER" value="postgres"/>
+  <env name="MB_DB_PASS" value=""/>
+  <env name="MB_DB_HOST" value="localhost"/>
+  <env name="MB_CHECK_FOR_UPDATES" value="false"/>
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <logpath>{root}\log</logpath>
+  <logname>metabase</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>60 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

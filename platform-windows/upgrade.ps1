@@ -8,7 +8,7 @@
   -Phase PreInstall (before any file is replaced):
     * records which JSON_SCADA_* services are running, then stops all of them (applications,
       Grafana/Metabase, databases last) and ends leftover processes running from the install dir
-    * backs up conf\, the platform-windows batch scripts and mongod.cfg to -BackupDir
+    * backs up conf\, the platform-windows batch scripts, the WinSW service XML files and mongod.cfg to -BackupDir
     * keeps the current mongod.exe as mongod-prev.exe, so data with an old feature compatibility
       version can still be opened
     * when the PostgreSQL data major version differs from the bundled one, moves the current
@@ -16,8 +16,10 @@
 
   -Phase PostInstall (after the new files are in place):
     * points JSON_SCADA_postgresql at the runtime that matches its data
-    * registers the services listed in create_services.bat that do not exist yet
-      (existing services keep their settings)
+    * converts the services still run by NSSM to WinSW (winsw-services.ps1 -Action Migrate, settings kept)
+      and registers the services of platform-windows\service-templates that do not exist yet
+      (winsw-services.ps1 -Action Install, existing services keep their settings); log.io file paths of
+      the WinSW services are switched to their <logname>.out.log names
     * starts the databases, falls back to mongod-prev.exe when the new mongod cannot open the data,
       raises the MongoDB feature compatibility version (single member replica sets only),
       runs mongo_seed\b_create-db.js (new collections, indexes, validators) and
@@ -69,11 +71,35 @@ function Get-ServiceStartMode([string]$Name) {
     return $null
 }
 
-function Get-NssmExe {
-    foreach ($p in @((Join-Path $InstallDir 'bin\nssm.exe'), (Join-Path $PW 'nssm.exe'))) {
-        if (Test-Path $p) { return $p }
+$MongoXml = Join-Path $PW 'services\JSON_SCADA_mongodb.xml'
+
+# mongod.exe run by JSON_SCADA_mongodb: <executable> of its WinSW XML, else the Application of a
+# not yet migrated NSSM service
+function Get-MongodServiceExe {
+    if (Test-Path $MongoXml) {
+        try { return ([xml](Get-Content -Raw $MongoXml)).service.executable } catch {}
     }
-    return $null
+    return (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\JSON_SCADA_mongodb\Parameters' -Name Application -ErrorAction SilentlyContinue).Application
+}
+
+# Points the WinSW XML of JSON_SCADA_mongodb at another mongod.exe (WinSW reads it at each service start).
+function Set-MongodServiceExe([string]$Exe) {
+    try {
+        $x = [xml](Get-Content -Raw $MongoXml)
+        if ($x.service.executable -eq $Exe) { return }
+        $x.service.executable = $Exe
+        $x.Save($MongoXml)
+    } catch { Write-Warn "Could not set the mongod executable in ${MongoXml}: $($_.Exception.Message)" }
+}
+
+# Runs winsw-services.ps1 (service install/migration helper) and copies its output to the log.
+function Invoke-WinSWServices([string[]]$Arguments) {
+    $helper = Join-Path $PW 'winsw-services.ps1'
+    if (-not (Test-Path $helper)) { Write-Warn "$helper not found, services not updated"; return }
+    $out = & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $helper @Arguments -InstallDir $InstallDir 2>&1 | Out-String
+    $rc = $LASTEXITCODE
+    foreach ($l in ($out -split "`r?`n" | Where-Object { $_.Trim() })) { Write-Log "  $l" }
+    if ($rc -ne 0) { Write-Warn "winsw-services.ps1 $($Arguments -join ' ') reported errors (see above)" }
 }
 
 function Stop-ServiceGroup([string[]]$Names, [int]$TimeoutSec) {
@@ -211,6 +237,11 @@ function Invoke-PreInstall {
             $pwBak = Join-Path $BackupDir 'platform-windows'
             New-Item -ItemType Directory -Force -Path $pwBak | Out-Null
             Copy-Item -Path (Join-Path $PW '*.bat') -Destination $pwBak -Force -ErrorAction SilentlyContinue
+            $svcDir = Join-Path $PW 'services'
+            if (Test-Path $svcDir) {
+                New-Item -ItemType Directory -Force -Path (Join-Path $pwBak 'services') | Out-Null
+                Copy-Item -Path (Join-Path $svcDir '*.xml') -Destination (Join-Path $pwBak 'services') -Force -ErrorAction SilentlyContinue
+            }
             $mcfg = Join-Path $PW 'mongodb-conf'
             if (Test-Path $mcfg) { Copy-Item -Path $mcfg -Destination (Join-Path $pwBak 'mongodb-conf') -Recurse -Force -ErrorAction Stop }
             $uiConf = Join-Path $InstallDir 'src\AdminUI\public\conf'
@@ -226,7 +257,7 @@ function Invoke-PreInstall {
     $bin = Join-Path $PW 'mongodb-runtime\bin'
     $mongod = Join-Path $bin 'mongod.exe'
     $prev = Join-Path $bin 'mongod-prev.exe'
-    $app = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\JSON_SCADA_mongodb\Parameters' -Name Application -ErrorAction SilentlyContinue).Application
+    $app = Get-MongodServiceExe
     if ($app -and $app -like '*\mongod-prev.exe') {
         Write-Log 'JSON_SCADA_mongodb still runs mongod-prev.exe (earlier upgrade not completed); keeping that binary'
     } elseif (Test-Path $mongod) {
@@ -266,39 +297,32 @@ function Invoke-PreInstall {
 }
 
 # ------------------------------------------------------------------------------------------------
-function Register-MissingServices {
-    $bat = Join-Path $PW 'create_services.bat'
-    $nssm = Get-NssmExe
-    if (-not (Test-Path $bat) -or -not $nssm) { Write-Warn 'create_services.bat or nssm.exe not found, new services not registered'; return }
+# NSSM services of older releases become WinSW services (same settings), then the services of
+# platform-windows\service-templates that do not exist yet are registered (existing ones keep their settings).
+function Update-Services {
+    Invoke-WinSWServices @('-Action', 'Migrate')
+    Invoke-WinSWServices @('-Action', 'Install')
+    Update-LogViewerConfig
+}
 
-    $blocks = [ordered]@{}
-    foreach ($l in Get-Content $bat) {
-        if ($l -match '^\s*nssm\s+(install|set)\s+(JSON_SCADA_\w+)\s') {
-            $name = $Matches[2]
-            if (-not $blocks.Contains($name)) { $blocks[$name] = New-Object System.Collections.ArrayList }
-            [void]$blocks[$name].Add($l)
-        }
+# NSSM wrote <name>.log, WinSW writes <logname>.out.log and .err.log: repoint the log.io inputs of the
+# WinSW services (the installer never overwrites conf\, so the old paths would stay).
+function Update-LogViewerConfig {
+    $f = Join-Path $InstallDir 'conf\log.io-file.json'
+    $svcDir = Join-Path $PW 'services'
+    if (-not (Test-Path $f) -or -not (Test-Path $svcDir)) { return }
+    $names = @(Get-ChildItem -Path $svcDir -Filter '*.xml' -File | ForEach-Object {
+            try { ([xml](Get-Content -Raw $_.FullName)).service.logname } catch {}
+        } | Where-Object { $_ })
+    $text = [IO.File]::ReadAllText($f)
+    $new = $text
+    foreach ($n in $names) {
+        $new = [regex]::Replace($new, '(/log/)' + [regex]::Escape($n) + '\.log"', ('$1' + $n + '.out.log"'), 'IgnoreCase')
     }
-    $lines = New-Object System.Collections.ArrayList
-    foreach ($name in $blocks.Keys) {
-        $b = $blocks[$name]
-        if (-not ($b | Where-Object { $_ -match '^\s*nssm\s+install\s' })) { continue }
-        if (Get-JsService $name) { continue }
-        Write-Log "Registering new service $name"
-        foreach ($l in $b) { [void]$lines.Add($l) }
+    if ($new -ne $text) {
+        [IO.File]::WriteAllText($f, $new, (New-Object System.Text.UTF8Encoding($false)))
+        Write-Log "log.io inputs in $f now read the WinSW <logname>.out.log files"
     }
-    if ($lines.Count -eq 0) { Write-Log 'No new services to register'; return }
-
-    # same environment as create_services.bat: cwd \json-scada\bin (nssm), random JWT secret in %buffer%
-    $chars = [char[]]'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    $secret = -join (1..26 | ForEach-Object { $chars | Get-Random })
-    $tmp = Join-Path ([IO.Path]::GetTempPath()) ("jsscada_newsvc_{0}.bat" -f $PID)
-    $content = @('@echo off', "cd /d `"$(Split-Path $nssm)`"", "set buffer=$secret") + $lines
-    Set-Content -Path $tmp -Value $content -Encoding ASCII
-    try {
-        $out = & cmd.exe /d /c $tmp 2>&1 | Out-String
-        if ($out.Trim()) { Write-Log $out.Trim() }
-    } finally { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
 }
 
 function Set-PostgresRuntime {
@@ -375,8 +399,8 @@ function Set-MongoFcv([string]$Uri) {
     return $false
 }
 
-function Start-Mongo([string]$Exe, [string]$Nssm, [int]$Port) {
-    if ($Nssm) { & $Nssm set JSON_SCADA_mongodb Application $Exe | Out-Null }
+function Start-Mongo([string]$Exe, [bool]$SetExe, [int]$Port) {
+    if ($SetExe) { Set-MongodServiceExe $Exe }
     try { Start-Service 'JSON_SCADA_mongodb' -ErrorAction Stop } catch {}
     return (Wait-TcpPort '127.0.0.1' $Port 180)
 }
@@ -386,30 +410,29 @@ function Update-Mongo {
     if (-not $svc -or (Get-ServiceStartMode 'JSON_SCADA_mongodb') -eq 'Disabled') { Write-Log 'JSON_SCADA_mongodb not in use, skipping'; return }
     $cfg = Get-JsConfig
     $port = Get-MongoPort
-    $nssm = Get-NssmExe
     $bin = Join-Path $PW 'mongodb-runtime\bin'
     $mongod = Join-Path $bin 'mongod.exe'
     $prev = Join-Path $bin 'mongod-prev.exe'
-    $app = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\JSON_SCADA_mongodb\Parameters' -Name Application -ErrorAction SilentlyContinue).Application
-    $ours = $app -and ($app -like '*\mongodb-runtime\bin\mongod.exe' -or $app -like '*\mongodb-runtime\bin\mongod-prev.exe')
-    if (-not $ours) { $nssm = $null } # custom service binary: do not touch it
+    $app = Get-MongodServiceExe
+    # only switch binaries for a WinSW service running the bundled mongod (custom binaries stay untouched)
+    $ours = [bool]($app -and (Test-Path $MongoXml) -and ($app -like '*\mongodb-runtime\bin\mongod.exe' -or $app -like '*\mongodb-runtime\bin\mongod-prev.exe'))
 
     $newVer = Get-FileVersion $mongod
     $prevVer = Get-FileVersion $prev
     if (-not $newVer) { Write-Warn "$mongod not found"; return }
     Write-Log ("MongoDB binaries: new {0}, previous {1}" -f $newVer.Text, $(if ($prevVer) { $prevVer.Text } else { '-' }))
 
-    $ok = Start-Mongo $mongod $nssm $port
-    if (-not $ok -and $nssm -and $prevVer -and $prevVer.Text -ne $newVer.Text) {
+    $ok = Start-Mongo $mongod $ours $port
+    if (-not $ok -and $ours -and $prevVer -and $prevVer.Text -ne $newVer.Text) {
         Write-Log "MongoDB $($newVer.Text) did not open the data, trying the previous binary $($prevVer.Text)"
         Stop-ServiceGroup @('JSON_SCADA_mongodb') 60
-        if (Start-Mongo $prev $nssm $port) {
+        if (Start-Mongo $prev $ours $port) {
             if (Set-MongoFcv $cfg.Uri) {
                 Stop-ServiceGroup @('JSON_SCADA_mongodb') 120
-                $ok = Start-Mongo $mongod $nssm $port
+                $ok = Start-Mongo $mongod $ours $port
                 if (-not $ok) {
                     Stop-ServiceGroup @('JSON_SCADA_mongodb') 60
-                    [void](Start-Mongo $prev $nssm $port)
+                    [void](Start-Mongo $prev $ours $port)
                 }
             }
             if (-not $ok) {
@@ -475,7 +498,7 @@ function Restore-Services {
 function Invoke-PostInstall {
     Write-Log "===== Upgrade completion of $InstallDir ====="
     $pgSame = Set-PostgresRuntime
-    Register-MissingServices
+    Update-Services
     Update-Postgres $pgSame
     Update-Mongo
     Restore-Services

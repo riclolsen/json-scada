@@ -16,10 +16,18 @@ postgresql-runtime\bin\psql -U postgres -h localhost -f ..\sql\create_tables.sql
 postgresql-runtime\bin\psql -U postgres -h localhost -f ..\sql\metabaseappdb.sql metabaseappdb
 postgresql-runtime\bin\psql -U postgres -h localhost -f ..\sql\grafanaappdb.sql grafanaappdb
 
-call create_services.bat
-ping -n 10 127.0.0.1
-call mongodb-start.bat
-ping -n 15 127.0.0.1
+rem already elevated: am_admin runs the scripts synchronously (without it they relaunch
+rem themselves in a new window and return at once, before the services exist)
+call create_services.bat am_admin
+cd /d \json-scada\platform-windows\
+call mongodb-start.bat am_admin
+rem wait until MongoDB accepts connections (up to 180 s) before seeding
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$d=(Get-Date).AddSeconds(180); while((Get-Date) -lt $d){ $c=New-Object Net.Sockets.TcpClient; try{ $c.Connect('127.0.0.1',27017); exit 0 }catch{ Start-Sleep 2 }finally{ $c.Close() } }; Write-Host 'MongoDB is not accepting connections on 127.0.0.1:27017'; exit 1"
+if errorlevel 1 (
+  echo MongoDB did not start: check the JSON_SCADA_mongodb service and c:\json-scada\log\mongodb.err.log
+  sc query JSON_SCADA_mongodb
+)
+ping -n 3 127.0.0.1
 mongodb-runtime\bin\mongo json_scada < ..\mongo_seed\a_rs-init.js
 ping -n 5 127.0.0.1
 mongodb-runtime\bin\mongo json_scada < ..\mongo_seed\b_create-db.js

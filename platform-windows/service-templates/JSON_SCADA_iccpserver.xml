@@ -1,0 +1,19 @@
+<service>
+  <id>JSON_SCADA_iccpserver</id>
+  <name>JSON_SCADA_iccpserver</name>
+  <description>JSON-SCADA iccpserver</description>
+  <executable>{root}\bin\iccp-server.exe</executable>
+  <arguments>1 1</arguments>
+  <workingdirectory>{root}\bin</workingdirectory>
+  <startmode>Manual</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>iccpserver</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

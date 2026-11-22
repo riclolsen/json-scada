@@ -62,7 +62,7 @@ sudo supervisorctl start n8nclient
 
 Or manage it from the AdminUI process-management UI (driver `N8N`, service `n8nclient`).
 
-### Windows (NSSM)
+### Windows (WinSW)
 
 `create_services.bat` installs `JSON_SCADA_n8nclient` (demand-start). Start it:
 
@@ -117,7 +117,7 @@ n8n is **fair-code** licensed; JSON-SCADA does not bundle it. Install it on your
 - **npm (Linux)**: `sudo npm install -g n8n`; point it at the local PostgreSQL for
   persistence (`DB_TYPE=postgresdb`, `DB_POSTGRESDB_*`).
 - **npm (Windows)**: `npm install n8n --prefix c:\json-scada\n8n`; run
-  `node c:\json-scada\n8n\node_modules\n8n\bin\n8n` (optionally as an NSSM service).
+  `node c:\json-scada\n8n\node_modules\n8n\bin\n8n` (optionally as a WinSW service: copy a Node.js template of `platform-windows\service-templates` and install it with `winsw-services.ps1 -Action Install -TemplateDir <folder>`).
 
 Keep n8n's port (5678) firewalled; expose it via SSH tunnel or a reverse proxy.
 

@@ -124,7 +124,7 @@ process.on('unhandledRejection', (reason) =>
   }
 
   // graceful shutdown on termination signals: drop OPC-UA clients and close
-  // the Mongo client cleanly before the process exits (e.g. systemctl/nssm
+  // the Mongo client cleanly before the process exits (e.g. systemctl/WinSW
   // stop, docker stop, CTRL+C)
   let isShuttingDown = false
   const gracefulShutdown = async (signal) => {

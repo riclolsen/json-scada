@@ -150,7 +150,7 @@ role rights apply (commands, acknowledgements, property changes, station filters
 
 - Each folder with a built \`dist/index.html\` (or, for plain HTML apps, an \`index.html\` in the folder itself) gets a
   static route \`/custom-developments/<folder>\`. **Routes are created when \`server_realtime_auth\` starts**: after
-  adding a new app, restart it (Windows \`nssm restart JSON_SCADA_server_realtime_auth\`, Linux
+  adding a new app, restart it (Windows \`Restart-Service JSON_SCADA_server_realtime_auth\` in an admin PowerShell, Linux
   \`sudo supervisorctl restart server_realtime_auth\`). Rebuilding an app that is already routed needs only a
   browser reload.
 - A folder without built content is not routed and not listed; opening it answers 404 with a build hint.

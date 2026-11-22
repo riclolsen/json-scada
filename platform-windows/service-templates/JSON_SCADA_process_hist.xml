@@ -1,0 +1,21 @@
+<service>
+  <!-- Loader of the SQL files queued by cs_data_processor in {root}\sql into PostgreSQL (src\process_pg_sql). -->
+  <!-- PostgreSQL historian (write) connection: <env name="PGHOST" value="127.0.0.1"/> and PGPORT, PGDATABASE, PGUSER, PGPASSWORD -->
+  <id>JSON_SCADA_process_hist</id>
+  <name>JSON_SCADA_process_hist</name>
+  <description>JSON-SCADA process_hist</description>
+  <executable>{root}\platform-windows\nodejs-runtime\node.exe</executable>
+  <arguments>"{root}\src\process_pg_sql\index.js" hist 1</arguments>
+  <workingdirectory>{root}\src\process_pg_sql</workingdirectory>
+  <startmode>Automatic</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>process_pg_hist</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

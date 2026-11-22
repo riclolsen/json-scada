@@ -111,7 +111,7 @@ Displays:
 
 ### Configuration and Process Management Tools
 
-These tools are registered only when `JS_MCPJSDB_ADMIN_USERNAME` and `JS_MCPJSDB_ADMIN_PASSWORD` are set. They call the AdminUI backend API (`server_realtime_auth`, `/Invoke/auth/*`) as that user instead of writing MongoDB directly, so they get the same validation, protocol defaults, automatic driver restarts, OS service handling (NSSM on Windows, supervisord on Linux) and audit trail as the AdminUI. `server_realtime_auth` must be running and reachable at `JS_MCPJSDB_ADMIN_URL`.
+These tools are registered only when `JS_MCPJSDB_ADMIN_USERNAME` and `JS_MCPJSDB_ADMIN_PASSWORD` are set. They call the AdminUI backend API (`server_realtime_auth`, `/Invoke/auth/*`) as that user instead of writing MongoDB directly, so they get the same validation, protocol defaults, automatic driver restarts, OS service handling (WinSW on Windows, supervisord on Linux) and audit trail as the AdminUI. `server_realtime_auth` must be running and reachable at `JS_MCPJSDB_ADMIN_URL`.
 
 Use a dedicated admin account, since these tools can stop data acquisition and change the system configuration. Tools that delete, stop or restart are marked `destructiveHint` so MCP clients can ask for confirmation. Every change is recorded in `userActions` under that account.
 
@@ -129,10 +129,14 @@ Non-driver processes (`cs_data_processor`, `calculations`, the realtime server, 
 
 Updates change only the given fields. Fields maintained by running drivers (redundancy keep-alive, `stats`) are never sent back, so an update cannot trigger a redundancy failover.
 
-Example (Windows service):
+Example (Windows service): set the variables in `C:\json-scada\platform-windows\services\JSON_SCADA_mcp_server.xml` and restart the service:
 
-```
-nssm set JSON_SCADA_mcp_server AppEnvironmentExtra JS_MCPJSDB_TRANSPORT=http JS_MCPJSDB_IP_BIND=127.0.0.1 JS_MCPJSDB_HTTP_PORT=6001 JS_MCPJSDB_ADMIN_USERNAME=mcp-admin JS_MCPJSDB_ADMIN_PASSWORD=<password>
+```xml
+<env name="JS_MCPJSDB_TRANSPORT" value="http"/>
+<env name="JS_MCPJSDB_IP_BIND" value="127.0.0.1"/>
+<env name="JS_MCPJSDB_HTTP_PORT" value="6001"/>
+<env name="JS_MCPJSDB_ADMIN_USERNAME" value="mcp-admin"/>
+<env name="JS_MCPJSDB_ADMIN_PASSWORD" value="PASSWORD"/>
 ```
 
 ### System Tags Tools

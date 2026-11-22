@@ -220,7 +220,7 @@ If certificates are configured for PostgreSQL connections to the server, it must
 
 * Inkscape SAGE or SCADAvis.io SVG Editor for synoptic display creation - https://www.microsoft.com/en-us/p/scadavisio-synoptic-editor/9p9905hmkz7x . Available only for Windows.
 * OpenSSL 3.x (for Windows) - https://slproweb.com/products/Win32OpenSSL.html.
-* NSSM (for Windows) - https://nssm.cc/
+* WinSW 2.x (for Windows, WinSW-x64.exe saved as WinSW.exe) - https://github.com/winsw/winsw
 * Visual Studio Community (for Windows) - https://visualstudio.microsoft.com/vs/community/
 * Supervisor (for Linux) - http://supervisord.org/installing.html
 * Visual Studio Code - https://code.visualstudio.com/
@@ -266,7 +266,7 @@ Processes can be distributed on distinct servers, each server must have a differ
 
 Multiple JSON-SCADA systems can run on the same server; each one must have distinct MongoDB and PostgreSQL databases, a separate folder structure and distinct HTTP listen ports.
 
-It is recommended to run JSON-SCADA processes as services or daemons. On Linux, use the _Supervisor_ tool to manage processes. On Windows, convert processes into Windows services with the NSSM tool.
+It is recommended to run JSON-SCADA processes as services or daemons. On Linux, use the _Supervisor_ tool to manage processes. On Windows, run processes as Windows services with the WinSW tool.
 
 ### Supervisor Configuration (Linux)
 
@@ -308,27 +308,29 @@ Use the manager tool to start, stop and monitor the system:
         tail -f cs_data_processor
         help
 
-### NSSM Configuration on Windows (not necessary if used the Windows installer)
+### WinSW Configuration on Windows (not necessary if used the Windows installer)
 
-Install the NSSM tool. It can be installed in "c:\json-scada\platform-windows\".
+Save the WinSW 2.x executable (WinSW-x64.exe from https://github.com/winsw/winsw/releases) as "c:\json-scada\platform-windows\WinSW.exe".
 
-Use the tool to create necessary services. See "C:\json-scada\platform-windows\create_services.bat".
+Each service is defined by an XML file in "c:\json-scada\platform-windows\service-templates\" (executable, arguments, working directory, environment, start mode, log file). Create the services from an administrator command prompt (existing services are kept as they are):
 
-    cd c:\json-scada\bin
-    nssm install JSON_SCADA_calculations "C:\json-scada\bin\calculations.exe"
-    nssm install JSON_SCADA_iec104server "C:\json-scada\bin\iec104server.exe"
-    nssm install JSON_SCADA_iec104client "C:\json-scada\bin\iec104client.exe"
-    nssm install JSON_SCADA_cs_data_processor <PATH_TO_NODEJSEXE>\node "C:\json-scada\src\cs_data_processor\cs_data_processor.js"
-    nssm install JSON_SCADA_server_realtime_auth <PATH_TO_NODEJSEXE>\node "C:\json-scada\src\server_realtime_auth\index.js"
+    c:\json-scada\platform-windows\create_services.bat
 
-    ... and so on ...
+or, for some services only:
 
-To manage services use
+    powershell -ExecutionPolicy Bypass -File c:\json-scada\platform-windows\winsw-services.ps1 -Action Install -Name calculations,iec104client
 
-    nssm start service_name
-    nssm stop service_name
-    nssm restart service_name
-    nssm status service_name
-    nssm remove service_name
+Each installed service has its live configuration "c:\json-scada\platform-windows\services\JSON_SCADA_<name>.xml" next to its service binary "JSON_SCADA_<name>.exe" (a hard link to, or copy of, WinSW.exe). Edit the XML and restart the service to change it (start mode and failure actions are set when the service is installed: use `sc config`, or `winsw-services.ps1 -Action Install -Force -Name <name>` to re-create it from its template). The output goes to "c:\json-scada\log\<name>.out.log" and "<name>.err.log", rolled at 10 MB with one rolled file kept. WinSW restarts a process that exits with a non-zero code after 2 seconds; a process that exits with code 0 stops its service.
+
+To manage services use (admin PowerShell)
+
+    Start-Service JSON_SCADA_<name>
+    Stop-Service JSON_SCADA_<name>
+    Restart-Service JSON_SCADA_<name>
+    Get-Service JSON_SCADA_*
+    powershell -ExecutionPolicy Bypass -File c:\json-scada\platform-windows\winsw-services.ps1 -Action Status
+    powershell -ExecutionPolicy Bypass -File c:\json-scada\platform-windows\winsw-services.ps1 -Action Remove -Name <name>
+
+Services created by NSSM in older installations are converted with the same settings by `winsw-services.ps1 -Action Migrate` (the installer does it on upgrade).
 
     
