@@ -24,7 +24,12 @@ const db = require('../models')
 const SystemSetting = db.systemSetting
 
 // retention limits, same as cs_data_processor retention.js / retention.go
-const RETENTION_FIELDS = ['soeRetentionDays', 'alarmsRetentionDays', 'histRetentionDays']
+const RETENTION_FIELDS = [
+  'soeRetentionDays',
+  'alarmsRetentionDays',
+  'histRetentionDays',
+  'secEventsRetentionDays',
+]
 const MIN_RETENTION_DAYS = 1
 const MAX_RETENTION_DAYS = 36500
 
@@ -34,6 +39,7 @@ const DEFAULTS = {
   soeRetentionDays: 60,
   alarmsRetentionDays: 60,
   histRetentionDays: 60,
+  secEventsRetentionDays: 60,
 }
 
 // a retention in whole days, or undefined when invalid

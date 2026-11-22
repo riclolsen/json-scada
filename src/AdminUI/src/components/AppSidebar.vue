@@ -223,6 +223,7 @@ const props = defineProps({
   loggedInUser: { type: String, default: '' },
   isLDAPUser: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
+  rights: { type: Object, default: () => ({}) },
   theme: { type: String, default: 'dark' },
   locale: { type: String, default: 'en' },
   availableLocales: { type: Array, default: () => [] },
@@ -264,7 +265,7 @@ function closeIfMobile() {
 // flat list: home, then each group (header + items)
 const menu = computed(() => {
   const out = [{ key: 'home', item: homeItem }]
-  for (const g of visibleGroups(props.isAdmin)) {
+  for (const g of visibleGroups(props.isAdmin, props.rights)) {
     out.push({ key: 'g-' + g.key, group: g.key })
     for (const it of g.items) out.push({ key: it.id, item: it })
   }

@@ -42,7 +42,8 @@
     "customDevelopments": "カスタム開発",
     "open": "開ける",
     "cimEms": "CIM-EMS",
-    "svgedit": "SVGエディター"
+    "svgedit": "SVGエディター",
+    "secEventsViewer": "セキュリティイベント"
   },
   "tabularViewer": {
     "station": "駅",
@@ -207,6 +208,42 @@
       "limited": "最初の {n} 件のみ表示：期間またはフィルターを絞ってください。"
     }
   },
+  "secEvents": {
+    "title": "セキュリティイベント",
+    "from": "開始",
+    "to": "終了",
+    "now": "現在",
+    "minSeverity": "最小重大度",
+    "category": "カテゴリ",
+    "filterHint": "種類、相手、オブジェクト、詳細",
+    "find": "検索",
+    "autoRefresh": "自動更新",
+    "exportCsv": "CSV エクスポート",
+    "showFrom": "{s} 以上を表示",
+    "events": "件",
+    "limited": "最新の {n} 件のみ表示しています。期間またはフィルターを絞り込んでください。",
+    "noData": "セキュリティイベントはありません",
+    "noRight": "ロールに「セキュリティイベントの表示」権限がありません。",
+    "unavailable": "データベースを利用できません",
+    "severities": {
+      "info": "情報",
+      "notice": "通知",
+      "warning": "警告",
+      "alert": "アラート",
+      "critical": "重大"
+    },
+    "columns": {
+      "time": "時刻",
+      "severity": "重大度",
+      "kind": "イベント",
+      "connection": "接続",
+      "peer": "相手",
+      "object": "オブジェクト",
+      "action": "処置",
+      "detail": "詳細",
+      "source": "検出元"
+    }
+  },
   "login": {
     "title": "ログイン",
     "username": "ユーザー名",
@@ -350,7 +387,9 @@
         "total": "役割",
         "admin": "管理者の役割",
         "unused": "未割り当て"
-      }
+      },
+      "viewSecEvents": "セキュリティイベントの表示",
+      "viewSecEventsHint": "セキュリティイベントビューアを開けます（プロトコルドライバーが報告する接続、証明書、識別情報、コマンドの異常）。"
     },
     "protocolDriverInstances": {
       "title": "プロトコル ドライバー インスタンス",
@@ -837,7 +876,9 @@
         "total": "接続",
         "tags": "タグ",
         "invalidTags": "無効なタグ"
-      }
+      },
+      "peerIdentification": "相手を識別（セキュリティイベント）：",
+      "peerIdentificationHint": "接続のたびに相手の識別情報（ベンダー、モデル、ファームウェア、MAC アドレス、証明書）を接続統計に記録し、その変化をセキュリティイベントとして報告します。"
     },
     "userActions": {
       "title": "ユーザーアクション",
@@ -1065,7 +1106,8 @@
       "retentionAlarms": "アラーム",
       "retentionHist": "履歴データ",
       "retentionDays": "日",
-      "retentionRule": "{min} から {max} までの整数の日数"
+      "retentionRule": "{min} から {max} までの整数の日数",
+      "retentionSecEvents": "セキュリティイベント"
     },
     "cimEms": {
       "readOnly": "閲覧のみ：モデルのアップロードと有効化、バインディングの承認、ダウンロードには CIM-EMS エンジニアリング権限を持つロールが必要です。",

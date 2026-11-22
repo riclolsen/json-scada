@@ -9,6 +9,7 @@
  *             opens in a new window)
  *   page      URL opened in a new window
  *   adminOnly shown only to users whose roles grant isAdmin
+ *   right     shown only to users whose roles grant this right
  *
  * {json:scada} - Copyright 2020-2026 - Ricardo L. Olsen
  */
@@ -22,6 +23,13 @@ export const navGroups = [
       { id: 'tabular', titleKey: 'dashboard.tabularViewer', route: '/tabular-viewer', page: '/#/tabular-viewer' },
       { id: 'events', titleKey: 'dashboard.eventsViewer', route: '/events-viewer', page: '/#/events-viewer' },
       { id: 'cimEms', titleKey: 'dashboard.cimEms', route: '/cim-ems', page: '/#/cim-ems' },
+      {
+        id: 'secEvents',
+        titleKey: 'dashboard.secEventsViewer',
+        route: '/sec-events-viewer',
+        page: '/#/sec-events-viewer',
+        right: 'viewSecEvents',
+      },
     ],
   },
   {
@@ -55,8 +63,9 @@ export const aboutItem = { id: 'about', titleKey: 'dashboard.about', route: '/ab
 export const homeItem = { id: 'home', titleKey: 'nav.home', route: '/dashboard', page: '/#/dashboard' }
 
 // Groups with the items this user may see (empty groups dropped).
-export function visibleGroups(isAdmin) {
+export function visibleGroups(isAdmin, rights = {}) {
+  const allowed = (it) => (isAdmin || !it.adminOnly) && (!it.right || !!rights?.[it.right])
   return navGroups
-    .map((g) => ({ ...g, items: g.items.filter((it) => isAdmin || !it.adminOnly) }))
+    .map((g) => ({ ...g, items: g.items.filter(allowed) }))
     .filter((g) => g.items.length)
 }

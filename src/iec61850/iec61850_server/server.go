@@ -34,6 +34,7 @@ import (
 
 	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/dscsystems/go-iec61850/model"
+	"github.com/dscsystems/go-iec61850/secevent"
 	"github.com/dscsystems/go-iec61850/server"
 )
 
@@ -111,7 +112,10 @@ func NewGateway(conn *ServerConnection, built *BuiltModel) (*Gateway, error) {
 		if err != nil {
 			return nil, err
 		}
-		g.useTLS, g.tlsCfg = true, cfg
+		g.useTLS, g.tlsCfg = true, sec.withCertEvents(cfg)
+	}
+	if sec != nil {
+		opts = append(opts, server.WithCyberEventSink(sec.disp))
 	}
 	if lg := libLogger(); lg != nil {
 		opts = append(opts, server.WithLogger(lg))
@@ -183,12 +187,17 @@ func (g *Gateway) onConnection(ev server.ConnectionEvent) {
 		jslog.Log(jslog.LevelBasic, "IEC61850 client connected: %s", ev.Peer)
 		if !g.peerAllowed(ev.Peer) {
 			jslog.Log(jslog.LevelBasic, "Client %s not in allow-list, aborting connection.", ev.Peer)
+			sec.emit(ev.Conn, secevent.Event{Kind: secevent.KindConnUnexpected, Action: secevent.Disconnected,
+				Detail: "client address not in the connection's ipAddresses list"})
 			if ev.Conn != nil {
 				_ = ev.Conn.Close()
 			}
+			return
 		}
+		sec.opened(ev.Conn, ev.Peer)
 	case server.ConnectionClosed:
 		g.openConns.Store(int32(ev.Open))
+		sec.closed(ev.Peer)
 		jslog.Log(jslog.LevelBasic, "IEC61850 client disconnected: %s", ev.Peer)
 	case server.ConnectionRefused:
 		jslog.Log(jslog.LevelBasic, "Client %s refused: %d connection(s) already open.", ev.Peer, ev.Open)

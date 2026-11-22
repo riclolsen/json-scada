@@ -8,13 +8,14 @@ The JSON-SCADA MongoDB database is comprised of the following collections.
 * _commandsQueue_ - Queue for commands.
 * _soeData_ - Sequence of Events data. Normal collection; events older than the SOE retention are removed once a day. See [_soeData_ collection](#soedata-collection).
 * _alarmsData_ - Alarm list: one document per alarm occurrence, acknowledged by the operators. See [_alarmsData_ collection](#alarmsdata-collection).
+* _secEvents_ - Cyber-security events reported by the protocol drivers. See [_secEvents_ collection](#secevents-collection).
 * _processInstances_ - Configuration and information about JSON-SCADA instances of processes.
 * _hist_ - MongoDB time series historian (secondary to the PostgreSQL historian). See [_hist_ collection](#hist-collection).
 * _users_ - User accounts. See [_users_ collection](#users-collection).
 * _roles_ - RBAC roles (rights and group filters). See [_roles_ collection](#roles-collection).
 * _userActions_ - Audit log of user actions. See [_userActions_ collection](#useractions-collection).
 * _cimModels_, _cimMeasurementBindings_, _cimRuns_, _cimContingencyLists_, _cimStudyRequests_ and the GridFS bucket _cimArtifacts_ - CIM-EMS network model revisions, binding revisions, study runs, contingency lists, Admin UI study requests and stored packages/results. Written by the _CIM-EMS_ driver; see the [CIM-EMS README](../src/cim-ems/README.md). Model packages and study results are confidential: _cimArtifacts_ is not served by `/GetFile`. Contingency result files (`kind: "contingency-result"`) are deleted by the driver after the _cimRuns_ retention (7 days); element catalogs (`kind: "element-catalog"`, binding review) are kept for the 5 newest per model; the state estimation residual report (`kind: "se-residuals"`) keeps only the latest one per connection.
-* _systemSettings_ - Single document (`key: "global"`) with runtime toggles (`autoManageServices`, `autoRestartOnConnectionChange`) and the data retentions in days (`soeRetentionDays`, `alarmsRetentionDays`, `histRetentionDays`; whole numbers 1 to 36500, 60 when absent; edited in the Admin UI, Admin / System), created on demand by _server_realtime_auth_; not created by the seed script. See [Data retention](#data-retention).
+* _systemSettings_ - Single document (`key: "global"`) with runtime toggles (`autoManageServices`, `autoRestartOnConnectionChange`) and the data retentions in days (`soeRetentionDays`, `alarmsRetentionDays`, `secEventsRetentionDays`, `histRetentionDays`; whole numbers 1 to 36500, 60 when absent; edited in the Admin UI, Admin / System), created on demand by _server_realtime_auth_; not created by the seed script. See [Data retention](#data-retention).
 
 Collections, validation and indexes are created by [mongo_seed/b_create-db.js](../mongo_seed/b_create-db.js), which is the authoritative definition when this document and the script differ:
 
@@ -27,6 +28,7 @@ Collections, validation and indexes are created by [mongo_seed/b_create-db.js](.
 | commandsQueue | normal, no automatic expiry | none | none (watched by change streams) |
 | soeData | normal, `soeRetentionDays` (60) | none | `timeTag`; `timeTagAtSource`; `group1`; `ack` |
 | alarmsData | normal, `alarmsRetentionDays` (60), acknowledged and inactive alarms only | none | `timeTag` (`alarmsTimeTagIndex`); `pointKey + active` (`alarmsPointActiveIndex`); `ack + timeTag` (`alarmsAckIndex`); `active + timeTag` (`alarmsActiveIndex`); `group1` (`alarmsGroup1Index`) |
+| secEvents | normal, `secEventsRetentionDays` (60) | none | `timeTag` (`secEventsTimeTagIndex`); `severityLevel + timeTag` (`secEventsSeverityIndex`); `kind + timeTag` (`secEventsKindIndex`); `protocolConnectionNumber + timeTag` (`secEventsConnectionIndex`) |
 | hist | time series (`timeField: timeTag`, `metaField: tag`, 1 h buckets), `expireAfterSeconds` = `histRetentionDays` (60) | none | none created by the seed |
 | users | normal | none (mongoose model in _server_realtime_auth_) | `username` (unique, `userNameIndex`) |
 | roles | normal | none (mongoose model) | `name` (unique, `roleNameIndex`) |
@@ -473,15 +475,71 @@ The alarm list. _cs_data_processor_ (and _cs_data_processor-go_) insert one docu
 * _**_timeTagNormal_**_ [Date] - Time the alarm became inactive (null while active).
 * _**_alarmRange_**_ [Double] - Analog only: the violated range, as in _realtimeData_ `alarmRange`.
 
+## _secEvents_ collection
+
+Cyber-security events: unexpected or suspicious conditions seen by the protocol drivers (the IEC 61850 client and server drivers, through `src/go-common/jssecevents`). One document per event; repeats of an event within a second may be folded into one with a `count`. The events come from the protocol library (`source: "library"`, go-iec61850's `secevent` channel: connections, TLS handshakes, associations, malformed PDUs) and from the drivers' own checks (`source: "driver"`). The Security Events viewer (Admin UI `/sec-events-viewer`, `POST /Invoke/auth/listSecEvents`) lists them for users whose roles grant _viewSecEvents_. _cs_data_processor_ removes them after `secEventsRetentionDays` (see [Data retention](#data-retention)); nothing else changes them.
+
+    {
+        "_id": { "$oid": "6740c1f05afe8a451246eb4f" },
+        "timeTag": { "$date": "2026-11-21T17:31:03.702Z" },
+        "kind": "peer.mac_changed",
+        "category": "peer",
+        "severity": "alert",
+        "severityLevel": 3,
+        "action": "observed",
+        "source": "driver",
+        "protocol": "mms",
+        "role": "server",
+        "protocolDriver": "IEC61850_SERVER",
+        "protocolDriverInstanceNumber": 1,
+        "protocolConnectionNumber": 8001,
+        "connectionName": "IEC61850SRV",
+        "nodeName": "mainNode",
+        "sessionId": 12,
+        "peerAddress": "192.168.1.20:50211",
+        "peerIp": "192.168.1.20",
+        "peerMac": "00:1a:2b:3c:4d:5f",
+        "value": "00:1a:2b:3c:4d:5f",
+        "detail": "MAC address was 00:1a:2b:3c:4d:5e",
+        "count": 1,
+        "technique": "T0830",
+        "std62351": "x-go-iec61850.peer.mac_changed"
+    }
+
+* _**_timeTag_**_ [Date] - Time of the event (of the last repeat when `count` > 1).
+* _**_kind_**_ [String] - Stable event identifier, `<category>.<name>`: the go-iec61850 `secevent` kinds (`conn.unexpected`, `tls.cert_rejected`, `peer.identity_changed`, `access.object_nonexistent`, `cmd.rejected`, `flood.controls`, `proto.*`, ...) and the drivers' own (`cmd.unnecessary`, `cmd.object_unknown`, `access.tag_unknown`, `report.sequence`, `report.unexpected`, `peer.identified`, `meta.events_dropped`).
+* _**_category_**_ [String] - connection, tls, peer, association, protocol, access, control, configuration, unsolicited, flood, resource, file, meta.
+* _**_severity_**_ [String], _**_severityLevel_**_ [Int32] - info (0), notice (1), warning (2), alert (3), critical (4).
+* _**_action_**_ [String] - What was done: observed, ignored, rejected, throttled, disconnected, blocked.
+* _**_source_**_ [String] - `library` (detected by the protocol library) or `driver` (by the driver's code).
+* _**_protocol_**_, _**_role_**_ [String] - e.g. `mms` / `tls`; `client` or `server`.
+* _**_protocolDriver_**_, _**_protocolDriverInstanceNumber_**_, _**_protocolConnectionNumber_**_, _**_connectionName_**_, _**_nodeName_**_ - The connection and node that reported it.
+* _**_sessionId_**_ [Int64] - Correlates the events of one connection or association.
+* _**_peerAddress_**_, _**_peerIp_**_, _**_peerMac_**_, _**_localAddress_**_ [String] - The peer; the MAC address is the operating system neighbour (ARP) table's, absent when unknown (a peer behind a router shows the router's).
+* _**_peer_**_ [Object] - What is known of the peer's identity: `tls` (`subject`, `issuer`, `serial`, `sha256`, `notAfter`, `verified`, `version`), `acse` (`callingApTitle`, `callingAeQualifier`, `calledApTitle`, `passwordPresented`), `macSource`.
+* _**_objectRef_**_, _**_fc_**_ [String] - The protocol object concerned (IEC 61850 reference and functional constraint).
+* _**_value_**_, _**_detail_**_, _**_error_**_ [String] - New value (of a changed identity, MAC, ...), one-line explanation and error text.
+* _**_fields_**_ [Object] - Protocol fields some events carry: `addCause`, `ctlNum`, `test`, `orCat`, `orIdent`, `accessError`, `service`, `invokeId`, `sqNum`, `stage`, `session` (summary of an ended connection), `raw` (hex of the offending PDU, truncated).
+* _**_count_**_ [Int32], _**_firstSeen_**_ [Date] - Repeats folded into the event and the start of their window.
+* _**_technique_**_ [String] - MITRE ATT&CK for ICS technique, a routing hint. _**_std62351_**_ [String] - IEC 62351-14 event identifier, or an extension one (`x-go-iec61850.*`, `x-json-scada.*`).
+
+### Peer identification
+
+The IEC61850 and IEC61850_SERVER connections have `peerIdentification` [Boolean] (default true). On every (re)established association the driver records the peer's identity in `protocolConnections.stats.peerIdentity` and reports changes of it (`peer.identity_changed`, `peer.mac_changed`, `tls.cert_changed`) as security events, comparing with the identity stored there, so a change across a driver restart is seen too:
+
+* Client: `vendor`, `model`, `revision` (MMS Identify), `devices` (per logical device the `phyNam` nameplate of `LPHD1.PhyNam` and the `namPlt` of `LLN0.NamPlt`), `ip`, `mac`, `tls` (the IED certificate), `address`, `collectedAt`, `keys` (the compared values).
+* Server: `clients` (the open associations: `address`, `ip`, `mac`, `acseIdentity`, `tls`, `passwordPresented`, `sessionId`, `connectedAt`) and `known` (the last identity of up to 64 client addresses: `ip`, `mac`, `acseIdentity`, `tlsSha256`, `lastSeen`).
+
 ## Data retention
 
-Instance 1 of _cs_data_processor_ (or _cs_data_processor-go_), on the active node, runs the retention once a day (first run 1 minute after start, then it checks every hour whether 24 h have passed since the last successful run). The retentions are whole days read from the _systemSettings_ document `{ "key": "global" }` (`soeRetentionDays`, `alarmsRetentionDays`, `histRetentionDays`; 60 when absent or invalid, at most 36500):
+Instance 1 of _cs_data_processor_ (or _cs_data_processor-go_), on the active node, runs the retention once a day (first run 1 minute after start, then it checks every hour whether 24 h have passed since the last successful run). The retentions are whole days read from the _systemSettings_ document `{ "key": "global" }` (`soeRetentionDays`, `alarmsRetentionDays`, `secEventsRetentionDays`, `histRetentionDays`; 60 when absent or invalid, at most 36500):
 
 * _soeData_ - events with `timeTag` older than the retention are deleted.
 * _alarmsData_ - acknowledged, inactive alarms with `timeTag` older than the retention are deleted; unacknowledged or active alarms are kept.
+* _secEvents_ - security events with `timeTag` older than the retention are deleted.
 * _hist_ - the time series `expireAfterSeconds` is set to the retention (MongoDB expires the buckets).
 
-The same run creates the _alarmsData_ indexes and converts a capped _soeData_ into a normal collection.
+The same run creates the _alarmsData_ and _secEvents_ indexes and converts a capped _soeData_ into a normal collection.
 
 ## _processInstances_ collection
 
@@ -617,6 +675,7 @@ RBAC roles (model `app/models/role.model.js`); seed in `mongo_seed/roles.json`. 
 * _**_group1CommandList_**_ [Array of String] - _group1_ values the role can command. Empty = all the stations the user can see: a user restricted by _group1List_ can only command those stations (when both lists are given, a station must be in both). Special `$$` commands (no point) are allowed to a user restricted by either list only when _group1CommandList_ contains `$$`.
 * _**_displayList_**_ [Array of String] - Display files (e.g. `kaw2.svg`) the role can open; enforced for the `.svg` files under `/svg`. Empty = all; admins open any display.
 * _**_cimEngineering_**_ [Boolean] - CIM-EMS engineering: upload and activate network models, approve binding revisions, download CIM-EMS artifacts. Checked in addition to _isAdmin_. Default false.
+* _**_viewSecEvents_**_ [Boolean] - May open the Security Events viewer (_secEvents_). Not implied by _isAdmin_. Default false; the seeded `admin` and `security` roles grant it.
 * _**_maxSessionDays_**_ [Double] - Session (JWT) lifetime in days. Default 3.
 
 ## _userActions_ collection

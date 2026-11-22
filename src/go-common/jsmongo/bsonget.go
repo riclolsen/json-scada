@@ -291,3 +291,19 @@ func AddrMatch(v int) bson.M {
 func FormatID(id float64) string {
 	return strconv.FormatFloat(id, 'f', -1, 64)
 }
+
+// GetDoc reads a sub-document, nil when absent. A nested document decoded
+// into a bson.M arrives as a bson.D, so both forms are accepted.
+func GetDoc(doc bson.M, key string) bson.M {
+	switch d := doc[key].(type) {
+	case bson.M:
+		return d
+	case bson.D:
+		m := make(bson.M, len(d))
+		for _, e := range d {
+			m[e.Key] = e.Value
+		}
+		return m
+	}
+	return nil
+}

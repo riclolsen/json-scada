@@ -132,7 +132,7 @@
         </v-card-text>
       </v-card>
 
-      <!-- data retention: soeData, alarmsData and hist, cleaned once a day by cs_data_processor -->
+      <!-- data retention: soeData, alarmsData, secEvents and hist, cleaned once a day by cs_data_processor -->
       <v-card variant="outlined" class="sys-card">
         <v-card-item prepend-icon="mdi-database-clock-outline">
           <v-card-title>{{ $t('admin.systemSettings.retentionTitle') }}</v-card-title>
@@ -408,13 +408,23 @@
   }
 
   // ---- data retention (days) ----
-  const RETENTION_FIELDS = ['soeRetentionDays', 'alarmsRetentionDays', 'histRetentionDays']
-  const retention = ref({ soeRetentionDays: 60, alarmsRetentionDays: 60, histRetentionDays: 60 })
+  const RETENTION_FIELDS = ['soeRetentionDays', 'alarmsRetentionDays', 'secEventsRetentionDays', 'histRetentionDays']
+  const retention = ref({
+    soeRetentionDays: 60,
+    alarmsRetentionDays: 60,
+    secEventsRetentionDays: 60,
+    histRetentionDays: 60,
+  })
   const retentionLimits = ref({ min: 1, max: 36500 })
   const savingRetention = ref(false)
   const retentionFieldList = computed(() => [
     { key: 'soeRetentionDays', icon: 'mdi-format-list-bulleted', label: t('admin.systemSettings.retentionSoe') },
     { key: 'alarmsRetentionDays', icon: 'mdi-bell-outline', label: t('admin.systemSettings.retentionAlarms') },
+    {
+      key: 'secEventsRetentionDays',
+      icon: 'mdi-shield-alert-outline',
+      label: t('admin.systemSettings.retentionSecEvents'),
+    },
     { key: 'histRetentionDays', icon: 'mdi-chart-line', label: t('admin.systemSettings.retentionHist') },
   ])
   const retentionOk = (v) =>

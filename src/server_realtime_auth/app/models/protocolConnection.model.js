@@ -66,6 +66,10 @@ const ProtocolConnection = mongoose.model(
     // OPC-UA, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850, PLC4X, OPC-DA, ICCP, DNP3_SERVER, DNP3, IEC61850_SERVER, ICCP, IEC60870-5-104_SERVER, IEC60870-5-104, IEC60870-5-101_SERVER, IEC60870-5-101, MODBUS
     autoCreateTags: { type: Boolean, default: true },
 
+    // IEC61850, IEC61850_SERVER: identify the peer on every association
+    // (stats.peerIdentity) and report identity changes as security events
+    peerIdentification: { type: Boolean, default: true },
+
     // OPC-UA, OPC-DA, OPC-DA_SERVER, ICCP
     autoCreateTagPublishingInterval: { type: Double, min: 0, default: 5.0 },
 

@@ -1,0 +1,19 @@
+1
+00:00:00,000 --> 00:00:07,500
+JSON-SCADA: live substation displays bring measurements and equipment status together.
+
+2
+00:00:07,500 --> 00:00:23,500
+The alarms viewer lists active conditions with station, status, and timestamps.
+
+3
+00:00:23,500 --> 00:00:29,000
+The tabular viewer filters points by station, bay, and status.
+
+4
+00:00:29,000 --> 00:00:35,000
+The events viewer presents a time-ordered sequence of system events.
+
+5
+00:00:35,000 --> 00:00:42,900
+CIM-EMS shows the active Svedala network model and its engineering workspace.

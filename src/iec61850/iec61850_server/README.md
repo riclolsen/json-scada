@@ -86,6 +86,7 @@ iec61850_server selftest [port [bulkPoints]]
 | `maxQueueSize` | buffered-report depth, in **reports** per buffered control block |
 | `useSecurity` + `localCertFilePath` / `privateKeyFilePath` / `rootCertFilePath` / `peerCertFilesPaths` / `chainValidation` / `allowOnlySpecificCertificates` / `allowTLSv1x` / `cipherList` | IEC 62351-3 TLS; `allowOnlySpecificCertificates` needs at least one certificate in `peerCertFilesPaths` |
 | `password` | passphrase of an encrypted `privateKeyFilePath` (PKCS#8 or legacy PEM encryption), as in the C# driver |
+| `peerIdentification` | identify every client association (default `true`), see [Security events](#security-events) |
 
 Example:
 
@@ -106,6 +107,37 @@ Example:
   "useSecurity": false
 }
 ```
+
+## Security events
+
+The driver writes cyber-security events into the `secEvents` collection, shown by the Admin UI
+Security Events viewer (`/sec-events-viewer`, for roles with the `viewSecEvents` right) and removed
+after `secEventsRetentionDays` (Admin / System, default 60 days). Fields in
+[docs/schema.md](../../../docs/schema.md#secevents-collection).
+
+- **From go-iec61850** (`source: "library"`): connections refused over the limit, failed or timed
+  out TLS handshakes, associations that failed or never came, aborted or idle ones, malformed PDUs.
+  The informational ones (connection accepted, association established, closed) are not stored.
+- **From the driver** (`source: "driver"`):
+  - `conn.unexpected`: a client not in `ipAddresses`, disconnected.
+  - `tls.cert_rejected`: a client certificate refused by pinning or chain validation, with the
+    client's address and the certificate's subject and fingerprint.
+  - `cmd.rejected`: a control refused (commands disabled, a test control, a value of the wrong type).
+  - `flood.controls`: more than 10 controls from one client IP within 10 s.
+  - `cmd.unnecessary`: a digital control whose supervised point already is in the commanded state
+    (closing a closed breaker); the command is still forwarded.
+  - With `peerIdentification`: `peer.identified` (first association from an address),
+    `peer.mac_changed`, `peer.identity_changed` (ACSE calling AP title / AE qualifier) and
+    `tls.cert_changed` for the same IP address.
+
+Peer identification records each open association (address, MAC address from the operating
+system's neighbour table, ACSE identity, TLS certificate) in `stats.peerIdentity.clients`, and the
+last identity of each client address in `stats.peerIdentity.known`, which is where change detection
+restarts after a driver restart.
+
+Not detected, because the library gives the driver no hook for them: reads or writes of objects that
+do not exist (refused by the library), select/operate sequence errors, and file services (no file
+store is configured, so they are refused).
 
 ## Model sizing
 

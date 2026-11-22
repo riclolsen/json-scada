@@ -1,19 +1,20 @@
 'use strict'
 
 /*
- * Data retention: once a day removes the soeData and alarmsData documents
- * older than their retention and keeps the expiry of the hist time series
+ * Data retention: once a day removes the soeData, alarmsData and secEvents
+ * documents older than their retention and keeps the expiry of the hist time series
  * collection equal to its retention.
  * {json:scada} - Copyright (c) 2020-2026 - Ricardo L. Olsen
  *
  * Port of ../cs_data_processor-go/retention.go: change both together and
  * keep retention.test.js and retention_test.go with the same expected
  * values. The retentions (days) are the soeRetentionDays,
- * alarmsRetentionDays and histRetentionDays fields of the systemSettings
+ * alarmsRetentionDays, secEventsRetentionDays and histRetentionDays fields of the systemSettings
  * document { key: 'global' }, edited in the AdminUI (Admin / System) through
  * server_realtime_auth. Contract in docs/schema.md (systemSettings).
  *
- * Instance 1 on the active node only. Also creates the alarmsData indexes
+ * Instance 1 on the active node only. Also creates the alarmsData and
+ * secEvents indexes
  * and turns an old capped soeData into a normal collection.
  */
 
@@ -34,6 +35,14 @@ const AlarmsIndexes = [
   [{ ack: 1, timeTag: -1 }, { name: 'alarmsAckIndex' }],
   [{ active: 1, timeTag: -1 }, { name: 'alarmsActiveIndex' }],
   [{ group1: 1 }, { name: 'alarmsGroup1Index' }],
+]
+const SEC_EVENTS_COLLECTION = 'secEvents'
+// secEvents indexes (also in mongo_seed/b_create-db.js)
+const SecEventsIndexes = [
+  [{ timeTag: -1 }, { name: 'secEventsTimeTagIndex' }],
+  [{ severityLevel: 1, timeTag: -1 }, { name: 'secEventsSeverityIndex' }],
+  [{ kind: 1, timeTag: -1 }, { name: 'secEventsKindIndex' }],
+  [{ protocolConnectionNumber: 1, timeTag: -1 }, { name: 'secEventsConnectionIndex' }],
 ]
 // soeData indexes (also in mongo_seed/b_create-db.js)
 const SoeIndexes = [
@@ -56,6 +65,7 @@ function retentionSettings(doc) {
     soe: retentionDays(doc?.soeRetentionDays),
     alarms: retentionDays(doc?.alarmsRetentionDays),
     hist: retentionDays(doc?.histRetentionDays),
+    secEvents: retentionDays(doc?.secEventsRetentionDays),
   }
 }
 
@@ -124,6 +134,7 @@ async function cycle(db, jsConfig, now) {
   )
   const soeCut = cutoff(now, settings.soe)
   await createIndexes(db, jsConfig.AlarmsDataCollectionName, AlarmsIndexes)
+  await createIndexes(db, SEC_EVENTS_COLLECTION, SecEventsIndexes)
   await uncapSoe(db, jsConfig.SoeDataCollectionName, soeCut)
 
   const soe = await db
@@ -132,10 +143,14 @@ async function cycle(db, jsConfig, now) {
   const alm = await db
     .collection(jsConfig.AlarmsDataCollectionName)
     .deleteMany(alarmsCleanupFilter(cutoff(now, settings.alarms)))
+  const sec = await db
+    .collection(SEC_EVENTS_COLLECTION)
+    .deleteMany({ timeTag: { $lt: cutoff(now, settings.secEvents) } })
   await histExpiry(db, jsConfig.HistCollectionName, settings.hist)
   Log.log(
     'Retention - removed ' + soe.deletedCount + ' events (' + settings.soe +
       ' days), ' + alm.deletedCount + ' alarms (' + settings.alarms +
+      ' days), ' + sec.deletedCount + ' security events (' + settings.secEvents +
       ' days); hist ' + settings.hist + ' days'
   )
 }

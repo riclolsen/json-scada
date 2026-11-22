@@ -95,7 +95,7 @@ func runConnection(ctx context.Context, conn *Iec61850Connection) error {
 		if err != nil {
 			return fmt.Errorf("%s TLS configuration error: %w", conn.Name, err)
 		}
-		opts = append(opts, client.WithTLS(tlsCfg))
+		opts = append(opts, client.WithTLS(conn.withCertEvents(tlsCfg)))
 	}
 	if conn.Password != "" {
 		opts = append(opts, client.WithPassword(conn.Password))
@@ -106,6 +106,7 @@ func runConnection(ctx context.Context, conn *Iec61850Connection) error {
 
 	addr := splitHostPort(conn.IPAddresses[0])
 	jslog.Log(jslog.LevelBasic, "%s Connecting to %s", conn.Name, addr)
+	conn.secNewAssociation(addr)
 
 	dialCtx, cancelDial := context.WithTimeout(ctx, conn.requestTimeout())
 	cli, err := client.Dial(dialCtx, addr, opts...)
@@ -124,6 +125,9 @@ func runConnection(ctx context.Context, conn *Iec61850Connection) error {
 		jslog.Log(jslog.LevelBasic, "Revision: %s", revision)
 	} else {
 		jslog.Log(jslog.LevelDetailed, "%s Identify not supported: %v", conn.Name, err)
+	}
+	if conn.PeerIdentification {
+		identifyPeer(ctx, conn, cli, vendor, modelName, revision, err)
 	}
 
 	conn.Datasets = nil
@@ -265,6 +269,7 @@ func pollSweep(ctx context.Context, conn *Iec61850Connection) error {
 				return fmt.Errorf("%s Connection error detected! %v", conn.Name, err)
 			}
 			jslog.Log(jslog.LevelBasic, "%s READ  %s %s\n    Read error: %v", conn.Name, p.entry.Path, tag, err)
+			conn.secReadError(p.entry, err)
 			continue
 		}
 		var log strings.Builder

@@ -548,6 +548,9 @@ var protocolConnectionsValidator = {
       autoCreateTags: {
         bsonType: ['bool', 'null'],
       },
+      peerIdentification: {
+        bsonType: ['bool', 'null'],
+      },
       autoCreateTagPublishingInterval: {
         bsonType: ['double', 'long', 'int', 'null'],
       },
@@ -712,6 +715,14 @@ db.alarmsData.createIndex({ pointKey: 1, active: 1 }, { name: 'alarmsPointActive
 db.alarmsData.createIndex({ ack: 1, timeTag: -1 }, { name: 'alarmsAckIndex' })
 db.alarmsData.createIndex({ active: 1, timeTag: -1 }, { name: 'alarmsActiveIndex' })
 db.alarmsData.createIndex({ group1: 1 }, { name: 'alarmsGroup1Index' })
+
+// secEvents (security events written by the protocol drivers); removed after
+// systemSettings secEventsRetentionDays by cs_data_processor (indexes also in retention.go/.js)
+db.createCollection('secEvents')
+db.secEvents.createIndex({ timeTag: -1 }, { name: 'secEventsTimeTagIndex' })
+db.secEvents.createIndex({ severityLevel: 1, timeTag: -1 }, { name: 'secEventsSeverityIndex' })
+db.secEvents.createIndex({ kind: 1, timeTag: -1 }, { name: 'secEventsKindIndex' })
+db.secEvents.createIndex({ protocolConnectionNumber: 1, timeTag: -1 }, { name: 'secEventsConnectionIndex' })
 
 db.createCollection('roles')
 db.roles.createIndex({ name: 1 }, { name: 'roleNameIndex', unique: true })

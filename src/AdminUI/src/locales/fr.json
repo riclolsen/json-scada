@@ -42,7 +42,8 @@
     "customDevelopments": "Développements personnalisés",
     "open": "Ouvrir",
     "cimEms": "CIM-EMS",
-    "svgedit": "Éditeur SVG"
+    "svgedit": "Éditeur SVG",
+    "secEventsViewer": "Événements de sécurité"
   },
   "tabularViewer": {
     "station": "Gare",
@@ -207,6 +208,42 @@
       "limited": "Seules les {n} premières alarmes sont affichées : réduisez la période ou le filtre."
     }
   },
+  "secEvents": {
+    "title": "Événements de sécurité",
+    "from": "Du",
+    "to": "Au",
+    "now": "maintenant",
+    "minSeverity": "Gravité minimale",
+    "category": "Catégorie",
+    "filterHint": "type, pair, objet, détail",
+    "find": "Rechercher",
+    "autoRefresh": "Actualiser",
+    "exportCsv": "Exporter CSV",
+    "showFrom": "Afficher à partir de {s}",
+    "events": "événements",
+    "limited": "Seuls les {n} événements les plus récents sont affichés : réduisez la période ou le filtre.",
+    "noData": "Aucun événement de sécurité",
+    "noRight": "Vos rôles n'accordent pas le droit Voir les événements de sécurité.",
+    "unavailable": "Base de données indisponible",
+    "severities": {
+      "info": "Info",
+      "notice": "Avis",
+      "warning": "Avertissement",
+      "alert": "Alerte",
+      "critical": "Critique"
+    },
+    "columns": {
+      "time": "Heure",
+      "severity": "Gravité",
+      "kind": "Événement",
+      "connection": "Connexion",
+      "peer": "Pair",
+      "object": "Objet",
+      "action": "Action",
+      "detail": "Détail",
+      "source": "Source"
+    }
+  },
   "login": {
     "title": "Se connecter",
     "username": "Nom d'utilisateur",
@@ -350,7 +387,9 @@
         "total": "Rôles",
         "admin": "Rôles administrateur",
         "unused": "Non attribués"
-      }
+      },
+      "viewSecEvents": "Voir les événements de sécurité",
+      "viewSecEventsHint": "Peut ouvrir la visionneuse des événements de sécurité (anomalies de connexion, de certificat, d'identité et de commandes signalées par les drivers de protocole)."
     },
     "protocolDriverInstances": {
       "title": "Instances de pilote de protocole",
@@ -837,7 +876,9 @@
         "total": "Connexions",
         "tags": "Tags",
         "invalidTags": "Tags invalides"
-      }
+      },
+      "peerIdentification": "Identifier le pair (événements de sécurité) : ",
+      "peerIdentificationHint": "Lit l'identité du pair (fabricant, modèle, firmware, adresse MAC, certificat) à chaque connexion dans les statistiques de la connexion et signale ses changements comme événements de sécurité."
     },
     "userActions": {
       "title": "Actions de l'utilisateur",
@@ -1065,7 +1106,8 @@
       "retentionAlarms": "Alarmes",
       "retentionHist": "Données historiques",
       "retentionDays": "jours",
-      "retentionRule": "Un nombre entier de jours de {min} à {max}"
+      "retentionRule": "Un nombre entier de jours de {min} à {max}",
+      "retentionSecEvents": "Événements de sécurité"
     },
     "cimEms": {
       "readOnly": "Lecture seule : l'envoi et l'activation des modèles, l'approbation des liaisons et les téléchargements exigent un rôle avec le droit d'ingénierie CIM-EMS.",

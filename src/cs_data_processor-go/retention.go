@@ -1,17 +1,18 @@
 package main
 
-// Data retention: once a day removes the soeData and alarmsData documents
-// older than their retention and keeps the expiry of the hist time series
+// Data retention: once a day removes the soeData, alarmsData and secEvents
+// documents older than their retention and keeps the expiry of the hist time series
 // collection equal to its retention.
 //
 // Port of ../cs_data_processor/retention.js: change both together and keep
 // retention_test.go and retention.test.js with the same expected values.
-// The retentions (days) are the soeRetentionDays, alarmsRetentionDays and
-// histRetentionDays fields of the systemSettings document { key: 'global' },
+// The retentions (days) are the soeRetentionDays, alarmsRetentionDays,
+// secEventsRetentionDays and histRetentionDays fields of the systemSettings document { key: 'global' },
 // edited in the AdminUI (Admin / System) through server_realtime_auth.
 // Contract in docs/schema.md (systemSettings).
 //
-// Instance 1 on the active node only. Also creates the alarmsData indexes
+// Instance 1 on the active node only. Also creates the alarmsData and
+// secEvents indexes
 // and turns an old capped soeData into a normal collection.
 
 import (
@@ -50,6 +51,14 @@ var alarmsIndexes = []indexSpec{
 	{bson.D{{Key: "group1", Value: 1}}, "alarmsGroup1Index"},
 }
 
+// secEvents indexes (also in mongo_seed/b_create-db.js)
+var secEventsIndexes = []indexSpec{
+	{bson.D{{Key: "timeTag", Value: -1}}, "secEventsTimeTagIndex"},
+	{bson.D{{Key: "severityLevel", Value: 1}, {Key: "timeTag", Value: -1}}, "secEventsSeverityIndex"},
+	{bson.D{{Key: "kind", Value: 1}, {Key: "timeTag", Value: -1}}, "secEventsKindIndex"},
+	{bson.D{{Key: "protocolConnectionNumber", Value: 1}, {Key: "timeTag", Value: -1}}, "secEventsConnectionIndex"},
+}
+
 // soeData indexes (also in mongo_seed/b_create-db.js)
 var soeIndexes = []indexSpec{
 	{bson.D{{Key: "timeTag", Value: 1}}, ""},
@@ -67,7 +76,7 @@ func retentionDays(v float64, ok bool) int {
 	return int(math.Min(math.Trunc(v), maxRetentionDays))
 }
 
-type retentionConfig struct{ soe, alarms, hist int }
+type retentionConfig struct{ soe, alarms, hist, secEvents int }
 
 // retentionSettings are the retentions of the systemSettings document
 // (invalid when absent).
@@ -79,9 +88,10 @@ func retentionSettings(d rawDoc) retentionConfig {
 		return retentionDays(d.num(k))
 	}
 	return retentionConfig{
-		soe:    get("soeRetentionDays"),
-		alarms: get("alarmsRetentionDays"),
-		hist:   get("histRetentionDays"),
+		soe:       get("soeRetentionDays"),
+		alarms:    get("alarmsRetentionDays"),
+		hist:      get("histRetentionDays"),
+		secEvents: get("secEventsRetentionDays"),
 	}
 }
 
@@ -255,6 +265,7 @@ func retentionCycle(ctx context.Context, db *mongo.Database, now time.Time) erro
 	soeCut := retentionCutoff(now, settings.soe)
 
 	createIndexes(ctx, db, AlarmsDataCollectionName, alarmsIndexes)
+	createIndexes(ctx, db, SecEventsCollectionName, secEventsIndexes)
 	if err := uncapSoe(ctx, db, soeCut); err != nil {
 		return err
 	}
@@ -268,10 +279,15 @@ func retentionCycle(ctx context.Context, db *mongo.Database, now time.Time) erro
 	if err != nil {
 		return err
 	}
+	sec, err := db.Collection(SecEventsCollectionName).DeleteMany(ctx,
+		bson.D{{Key: "timeTag", Value: bson.D{{Key: "$lt", Value: retentionCutoff(now, settings.secEvents)}}}})
+	if err != nil {
+		return err
+	}
 	if err := histExpiry(ctx, db, settings.hist); err != nil {
 		return err
 	}
-	Log(LogLevelMin, "Retention - removed %d events (%d days), %d alarms (%d days); hist %d days",
-		soe.DeletedCount, settings.soe, alm.DeletedCount, settings.alarms, settings.hist)
+	Log(LogLevelMin, "Retention - removed %d events (%d days), %d alarms (%d days), %d security events (%d days); hist %d days",
+		soe.DeletedCount, settings.soe, alm.DeletedCount, settings.alarms, sec.DeletedCount, settings.secEvents, settings.hist)
 	return nil
 }

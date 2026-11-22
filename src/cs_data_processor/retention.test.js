@@ -30,10 +30,15 @@ test('retentionDays', () => {
 })
 
 test('retentionSettings', () => {
-  assert.deepStrictEqual(retentionSettings(null), { soe: 60, alarms: 60, hist: 60 })
+  assert.deepStrictEqual(retentionSettings(null), { soe: 60, alarms: 60, hist: 60, secEvents: 60 })
   assert.deepStrictEqual(
-    retentionSettings({ soeRetentionDays: 10, alarmsRetentionDays: 400, histRetentionDays: 2 }),
-    { soe: 10, alarms: 400, hist: 2 }
+    retentionSettings({
+      soeRetentionDays: 10,
+      alarmsRetentionDays: 400,
+      histRetentionDays: 2,
+      secEventsRetentionDays: 90,
+    }),
+    { soe: 10, alarms: 400, hist: 2, secEvents: 90 }
   )
 })
 

@@ -521,6 +521,8 @@ const typeDefs = `#graphql
     ackEvents: Boolean
     ackAlarms: Boolean
     disableAlarms: Boolean
+    cimEngineering: Boolean
+    viewSecEvents: Boolean
     group1List: [String]
     group1CommandList: [String]
     displayList: [String]
@@ -743,6 +745,8 @@ const typeDefs = `#graphql
     ackEvents: Boolean
     ackAlarms: Boolean
     disableAlarms: Boolean
+    cimEngineering: Boolean
+    viewSecEvents: Boolean
     group1List: [String]
     group1CommandList: [String]
     displayList: [String]

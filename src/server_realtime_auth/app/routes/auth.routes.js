@@ -3,6 +3,7 @@ const controller = require('../controllers/auth.controller')
 const processController = require('../controllers/processManagement.controller')
 const cimEmsController = require('../controllers/cimEms.controller')
 const alarmsController = require('../controllers/alarms.controller')
+const secEventsController = require('../controllers/secEvents.controller')
 
 module.exports = function (app, accessPoint) {
   app.use(function (req, res, next) {
@@ -122,6 +123,12 @@ module.exports = function (app, accessPoint) {
     accessPoint + 'auth/listAlarms',
     [authJwt.verifyToken],
     alarmsController.listAlarms
+  )
+  // security events (secEvents); a role with viewSecEvents
+  app.post(
+    accessPoint + 'auth/listSecEvents',
+    [authJwt.isSecEventsViewer],
+    secEventsController.listSecEvents
   )
   app.use(
     accessPoint + 'auth/listDisplays',

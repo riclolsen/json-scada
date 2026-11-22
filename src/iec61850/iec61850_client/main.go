@@ -35,6 +35,7 @@ import (
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmodel"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -69,6 +70,9 @@ func main() {
 	go redundancy.Run(ctx)
 	go mongoUpdateLoop(ctx, cfg, conns)
 	go commandsLoop(ctx, cfg, conns)
+	secNodeName = cfg.NodeName
+	secWriter = jssecevents.NewWriter(0)
+	go secWriter.Run(ctx, cfg)
 
 	var loops sync.WaitGroup
 	for _, conn := range conns {
@@ -98,6 +102,10 @@ func main() {
 				for _, conn := range conns {
 					closeConnection(conn)
 				}
+			}
+			select { // the security events still queued are stored
+			case <-secWriter.Done():
+			case <-time.After(3 * time.Second):
 			}
 			jslog.Flush()
 			os.Exit(0)

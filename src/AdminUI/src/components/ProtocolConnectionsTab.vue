@@ -308,6 +308,19 @@
         "
         ></v-switch>
 
+        <v-switch
+          class="mt-n6"
+          :model-value="editedConnection.peerIdentification !== false"
+          @update:model-value="(v) => (editedConnection.peerIdentification = !!v)"
+          inset
+          color="primary"
+          :label="`${$t('admin.protocolConnections.peerIdentification')}${
+            editedConnection.peerIdentification !== false ? $t('common.true') : $t('common.false')
+          }`"
+          :title="$t('admin.protocolConnections.peerIdentificationHint')"
+          v-if="['IEC61850', 'IEC61850_SERVER'].includes(editedConnection.protocolDriver)"
+        ></v-switch>
+
         <v-card class="mt-n4" tile variant="outlined">
           <v-card-title>
             <span class="text-headline-small">

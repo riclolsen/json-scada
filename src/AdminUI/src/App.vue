@@ -5,6 +5,7 @@
       :logged-in-user="loggedInUser || ''"
       :isLDAPUser="isLDAPUser"
       :is-admin="isAdmin"
+      :rights="userRights"
       :theme="theme"
       :locale="currentLocale"
       :available-locales="availableLocales"
@@ -132,16 +133,18 @@ const confirmNewPassword = ref('')
 const currentPassword = ref('')
 const errorMessage = ref('')
 
-// admin-only menu entries follow the signed-in user's rights (cookie)
-const isAdmin = computed(() => {
-  if (!loggedInUser.value) return false
+// admin-only and right-gated menu entries follow the signed-in user's
+// rights (cookie)
+const userRights = computed(() => {
+  if (!loggedInUser.value) return {}
   try {
     const ck = parseCookie(document.cookie)
-    return !!JSON.parse(ck['json-scada-user'] || '{}')?.rights?.isAdmin
+    return JSON.parse(ck['json-scada-user'] || '{}')?.rights || {}
   } catch (e) {
-    return false
+    return {}
   }
 })
+const isAdmin = computed(() => !!userRights.value.isAdmin)
 
 const availableLocales = [
   { title: 'English', value: 'en' },

@@ -42,7 +42,8 @@
     "customDevelopments": "Kundenspezifische Entwicklungen",
     "open": "Offen",
     "cimEms": "CIM-EMS",
-    "svgedit": "SVG-Editor"
+    "svgedit": "SVG-Editor",
+    "secEventsViewer": "Sicherheitsereignisse"
   },
   "tabularViewer": {
     "station": "Station",
@@ -207,6 +208,42 @@
       "limited": "Nur die ersten {n} Alarme werden angezeigt: Zeitraum oder Filter eingrenzen."
     }
   },
+  "secEvents": {
+    "title": "Sicherheitsereignisse",
+    "from": "Von",
+    "to": "Bis",
+    "now": "jetzt",
+    "minSeverity": "Mindestschwere",
+    "category": "Kategorie",
+    "filterHint": "Art, Gegenstelle, Objekt, Detail",
+    "find": "Suchen",
+    "autoRefresh": "Aktualisieren",
+    "exportCsv": "CSV exportieren",
+    "showFrom": "Ab {s} anzeigen",
+    "events": "Ereignisse",
+    "limited": "Nur die {n} neuesten Ereignisse werden angezeigt: Zeitraum oder Filter einschränken.",
+    "noData": "Keine Sicherheitsereignisse",
+    "noRight": "Ihre Rollen gewähren das Recht Sicherheitsereignisse anzeigen nicht.",
+    "unavailable": "Datenbank nicht verfügbar",
+    "severities": {
+      "info": "Info",
+      "notice": "Hinweis",
+      "warning": "Warnung",
+      "alert": "Alarm",
+      "critical": "Kritisch"
+    },
+    "columns": {
+      "time": "Zeit",
+      "severity": "Schwere",
+      "kind": "Ereignis",
+      "connection": "Verbindung",
+      "peer": "Gegenstelle",
+      "object": "Objekt",
+      "action": "Aktion",
+      "detail": "Detail",
+      "source": "Quelle"
+    }
+  },
   "login": {
     "title": "Login",
     "username": "Benutzername",
@@ -350,7 +387,9 @@
         "total": "Rollen",
         "admin": "Admin-Rollen",
         "unused": "Nicht zugewiesen"
-      }
+      },
+      "viewSecEvents": "Sicherheitsereignisse anzeigen",
+      "viewSecEventsHint": "Darf den Viewer für Sicherheitsereignisse öffnen (Verbindungs-, Zertifikats-, Identitäts- und Befehlsanomalien, gemeldet von den Protokolltreibern)."
     },
     "protocolDriverInstances": {
       "title": "Protokolltreiberinstanzen",
@@ -837,7 +876,9 @@
         "total": "Verbindungen",
         "tags": "Tags",
         "invalidTags": "Ungültige Tags"
-      }
+      },
+      "peerIdentification": "Gegenstelle identifizieren (Sicherheitsereignisse): ",
+      "peerIdentificationHint": "Liest bei jeder Verbindung die Identität der Gegenstelle (Hersteller, Modell, Firmware, MAC-Adresse, Zertifikat) in die Verbindungsstatistik und meldet Änderungen als Sicherheitsereignisse."
     },
     "userActions": {
       "title": "Benutzeraktionen",
@@ -1065,7 +1106,8 @@
       "retentionAlarms": "Alarme",
       "retentionHist": "Historische Daten",
       "retentionDays": "Tage",
-      "retentionRule": "Eine ganze Zahl von Tagen von {min} bis {max}"
+      "retentionRule": "Eine ganze Zahl von Tagen von {min} bis {max}",
+      "retentionSecEvents": "Sicherheitsereignisse"
     },
     "cimEms": {
       "readOnly": "Nur Lesen: Hochladen und Aktivieren von Modellen, Freigabe von Zuordnungen und Downloads erfordern eine Rolle mit dem CIM-EMS-Engineering-Recht.",

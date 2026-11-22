@@ -35,7 +35,7 @@ func TestRetentionDays(t *testing.T) {
 }
 
 func TestRetentionSettings(t *testing.T) {
-	if got := retentionSettings(rawDoc{}); got != (retentionConfig{60, 60, 60}) {
+	if got := retentionSettings(rawDoc{}); got != (retentionConfig{60, 60, 60, 60}) {
 		t.Errorf("no document: %+v", got)
 	}
 	raw, _ := bson.Marshal(bson.D{
@@ -43,8 +43,9 @@ func TestRetentionSettings(t *testing.T) {
 		{Key: "soeRetentionDays", Value: int32(10)},
 		{Key: "alarmsRetentionDays", Value: 400.0},
 		{Key: "histRetentionDays", Value: int64(2)},
+		{Key: "secEventsRetentionDays", Value: 90.0},
 	})
-	if got := retentionSettings(rawDoc{raw: raw}); got != (retentionConfig{10, 400, 2}) {
+	if got := retentionSettings(rawDoc{raw: raw}); got != (retentionConfig{10, 400, 2, 90}) {
 		t.Errorf("settings: %+v", got)
 	}
 	raw, _ = bson.Marshal(bson.D{{Key: "soeRetentionDays", Value: "30"}})

@@ -7,6 +7,7 @@ import DisplayViewerPage from '../components/DisplayViewerPage.vue'
 import TabularViewerPage from '../components/TabularViewerPage.vue'
 import EventsViewerPage from '../components/EventsViewerPage.vue'
 import AlarmsViewerPage from '../components/AlarmsViewerPage.vue'
+import SecEventsViewerPage from '../components/SecEventsViewerPage.vue'
 import TrendViewerPage from '../components/TrendViewerPage.vue'
 import GrafanaPage from '../components/GrafanaPage.vue'
 import ApolloPage from '../components/ApolloPage.vue'
@@ -26,6 +27,7 @@ const routes = [
   { path: '/tabular-viewer', component: TabularViewerPage },
   { path: '/alarms-viewer', component: AlarmsViewerPage },
   { path: '/events-viewer', component: EventsViewerPage },
+  { path: '/sec-events-viewer', component: SecEventsViewerPage },
   { path: '/trend-viewer', component: TrendViewerPage },
   // former paths of the native viewers (kept for bookmarks and saved links)
   { path: '/display-viewer-new', redirect: (to) => ({ path: '/display-viewer', query: to.query }) },

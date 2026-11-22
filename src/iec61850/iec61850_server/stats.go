@@ -99,18 +99,23 @@ func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg
 	if g == nil {
 		return
 	}
-	jsstats.Writer{
+	w := jsstats.Writer{
 		NodeName: cfg.NodeName,
 		OnError: func(_ jsstats.Entry, err error) {
 			jslog.Log(jslog.LevelDetailed, "Stats - connection stats update: %v", err)
 		},
-	}.Write(ctx, collConns, []jsstats.Entry{{
+	}
+	st := bson.M{
+		"isRunning":       g.Serving(),
+		"openConnections": g.OpenConnections(),
+		"pointsExposed":   len(g.built.ByTag),
+	}
+	if pid := sec.statsDoc(); pid != nil {
+		st["peerIdentity"] = pid
+	}
+	w.Write(ctx, collConns, []jsstats.Entry{{
 		ConnectionNumber: g.conn.ProtocolConnectionNumber,
 		IsConnected:      jsstats.Bool(g.OpenConnections() > 0),
-		Stats: bson.M{
-			"isRunning":       g.Serving(),
-			"openConnections": g.OpenConnections(),
-			"pointsExposed":   len(g.built.ByTag),
-		},
+		Stats:            st,
 	}})
 }

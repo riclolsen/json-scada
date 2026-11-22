@@ -42,7 +42,8 @@
     "customDevelopments": "Custom Developments",
     "open": "Open",
     "cimEms": "CIM-EMS",
-    "svgedit": "SVG Editor"
+    "svgedit": "SVG Editor",
+    "secEventsViewer": "Security Events"
   },
   "tabularViewer": {
     "station": "Station",
@@ -207,6 +208,42 @@
       "limited": "Showing the first {n} alarms only: narrow the period or the filter."
     }
   },
+  "secEvents": {
+    "title": "Security Events",
+    "from": "From",
+    "to": "To",
+    "now": "now",
+    "minSeverity": "Minimum severity",
+    "category": "Category",
+    "filterHint": "kind, peer, object, detail",
+    "find": "Find",
+    "autoRefresh": "Auto refresh",
+    "exportCsv": "Export CSV",
+    "showFrom": "Show from {s} up",
+    "events": "events",
+    "limited": "Showing the newest {n} events only: narrow the period or the filter.",
+    "noData": "No security events",
+    "noRight": "Your roles do not grant the View Security Events right.",
+    "unavailable": "Database unavailable",
+    "severities": {
+      "info": "Info",
+      "notice": "Notice",
+      "warning": "Warning",
+      "alert": "Alert",
+      "critical": "Critical"
+    },
+    "columns": {
+      "time": "Time",
+      "severity": "Severity",
+      "kind": "Event",
+      "connection": "Connection",
+      "peer": "Peer",
+      "object": "Object",
+      "action": "Action",
+      "detail": "Detail",
+      "source": "Source"
+    }
+  },
   "login": {
     "title": "Login",
     "username": "Username",
@@ -350,7 +387,9 @@
         "total": "Roles",
         "admin": "Admin roles",
         "unused": "Unassigned"
-      }
+      },
+      "viewSecEvents": "View Security Events",
+      "viewSecEventsHint": "Can open the Security Events viewer (connection, certificate, identity and command anomalies reported by the protocol drivers)."
     },
     "protocolDriverInstances": {
       "title": "Protocol Driver Instances",
@@ -837,7 +876,9 @@
         "total": "Connections",
         "tags": "Tags",
         "invalidTags": "Invalid tags"
-      }
+      },
+      "peerIdentification": "Identify peer (security events): ",
+      "peerIdentificationHint": "Read the identity of the peer (vendor, model, firmware, MAC address, certificate) on every connection into the connection statistics, and report changes of it as security events."
     },
     "userActions": {
       "title": "User Actions",
@@ -1065,7 +1106,8 @@
       "retentionAlarms": "Alarms",
       "retentionHist": "Historical data",
       "retentionDays": "days",
-      "retentionRule": "A whole number of days from {min} to {max}"
+      "retentionRule": "A whole number of days from {min} to {max}",
+      "retentionSecEvents": "Security events"
     },
     "cimEms": {
       "readOnly": "Read-only view: model upload, activation, binding approval and downloads need a role with the CIM-EMS engineering right.",

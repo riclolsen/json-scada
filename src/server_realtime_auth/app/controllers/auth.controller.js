@@ -108,6 +108,7 @@ const ROLE_UPDATE_FIELDS = [
   'ackAlarms',
   'disableAlarms',
   'cimEngineering',
+  'viewSecEvents',
   'group1List',
   'group1CommandList',
   'displayList',

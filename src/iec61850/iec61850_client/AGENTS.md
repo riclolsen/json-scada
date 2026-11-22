@@ -15,7 +15,7 @@ MongoDB semantics, no native library dependency.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_client`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.7.2 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.8.0 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1
 - **Binary:** `iec61850_client(.exe)` in `bin/`, as `platform-windows/build.bat` and
   `platform-linux/build.sh` build it
@@ -33,9 +33,12 @@ MongoDB semantics, no native library dependency.
   - `mongo_commands.go` — command change stream and dispatch (← `MongoCommands.cs`)
   - `redundancy.go` — active/standby arbitration (← `Redundancy.cs`)
   - `tlsconf.go` — TLS configuration
+  - `secevents.go` — security events and IED identification (driver-side detections, `stats.peerIdentity`)
+  - `secevents_map.go` — go-iec61850 `secevent.Event` → `secEvents` document; identical in `../iec61850_server`, change both together
 - **Build:** `go build -ldflags="-s -w" -o ../../../bin/iec61850_client`
 - **Config:** `conf/json-scada.json` plus MongoDB documents; CLI `<instance> <logLevel> <configFile>`
-- **Connection stats:** `updateConnectionStats` (`redundancy.go`) writes `stats.isConnected` = association `mms.StateConnected`; a connection without a client gets `isConnected: false` only, leaving the stored `lastReportIds` untouched
+- **Connection stats:** `updateConnectionStats` (`redundancy.go`) writes `stats.isConnected` = association `mms.StateConnected`; a connection without a client gets `isConnected: false` (and the last `peerIdentity`) only, leaving the stored `lastReportIds` untouched. Every update replaces the whole `stats` field, so `stats.peerIdentity` is written in both cases
+- **Security events:** written to `secEvents` through `go-common/jssecevents` (`secWriter`, started in `main`, drained on shutdown); kinds and fields in `README.md` (Security events) and `docs/schema.md`. go-iec61850 has no client-side event channel yet, so every client event is detected in `secevents.go`. `peerIdentification` (default true) runs `identifyPeer` after Identify on every association: nameplates `LPHD1.PhyNam` / `LLN0.NamPlt` (FC DC, attribute names from `GetVariableAccessAttributes`), MAC from the OS neighbour table, IED certificate captured in `tls.Config.VerifyConnection`; change detection starts from the stored `stats.peerIdentity.keys`
 
 ## Work Guidance
 
@@ -57,7 +60,10 @@ MongoDB semantics, no native library dependency.
 - A composite data object (WYE/DEL/SEQ, `isComposite`) is one entry with `Parts`, one per member; `emitValues` splits its value. Never register the members as entries of their own as well, or they are read twice.
 - All numbers written to MongoDB must be Go `float64` so they land as BSON doubles.
 - Report callbacks run on the association's reader goroutine: never block them, only enqueue, and
-  never let them panic — a panic there takes the whole driver down.
+  never let them panic — a panic there takes the whole driver down. The security checks there
+  (`secReportSequence`, `secUnmatchedReport`) only queue an event.
+- One-off security events (read refusals, unmatched reports) go through `secOnce`, keyed per
+  association; never emit one per poll sweep or per report.
 - Connection fields come from a document decoded into `bson.M`, where sub-documents arrive as
   `bson.D`: read them through the `jsmongo` helpers, and test new fields through a real BSON round
   trip (`config_test.go`), not a hand-built `bson.M`.
@@ -98,7 +104,7 @@ MongoDB semantics, no native library dependency.
 
 ## Verification
 
-- `go test ./...` — conversions, value/quality extraction and composite objects
+- `go test ./...` — security events and identification against the loopback IED (`secevents_test.go`), conversions, value/quality extraction and composite objects
   (`review_fixes_test.go`), tag documents, connection documents decoded from BSON, report block
   recovery (stale EntryID, block held by another client), and a loopback run against an
   in-process IEC 61850 server from `testdata/simpleIO_direct_control.cid` (no MongoDB or device

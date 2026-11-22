@@ -8,11 +8,13 @@ const SystemSetting = mongoose.model(
     key: { type: String, default: 'global', unique: true },
     autoManageServices: { type: Boolean, default: true },
     autoRestartOnConnectionChange: { type: Boolean, default: true },
-    // retention (days) of soeData, alarmsData and the hist time series; the
-    // data processor (instance 1) applies them once a day (defaults in code)
+    // retention (days) of soeData, alarmsData, secEvents and the hist time
+    // series; the data processor (instance 1) applies them once a day
+    // (defaults in code)
     soeRetentionDays: { type: Number },
     alarmsRetentionDays: { type: Number },
     histRetentionDays: { type: Number },
+    secEventsRetentionDays: { type: Number },
   }),
   'systemSettings'
 )

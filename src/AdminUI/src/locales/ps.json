@@ -42,7 +42,8 @@
     "customDevelopments": "دودیز پرمختګونه",
     "open": "خلاص",
     "cimEms": "CIM-EMS",
-    "svgedit": "د SVG مدیر"
+    "svgedit": "د SVG مدیر",
+    "secEventsViewer": "امنیتي پېښې"
   },
   "tabularViewer": {
     "station": "سټیشن",
@@ -207,6 +208,42 @@
       "limited": "یوازې لومړۍ {n} خبرتیاوې ښودل کېږي: موده یا فلټر محدود کړئ."
     }
   },
+  "secEvents": {
+    "title": "امنیتي پېښې",
+    "from": "له",
+    "to": "تر",
+    "now": "اوس",
+    "minSeverity": "لږ تر لږه جدیت",
+    "category": "کټګوري",
+    "filterHint": "ډول، مقابل لوری، شی، جزئیات",
+    "find": "لټون",
+    "autoRefresh": "اتومات تازه کول",
+    "exportCsv": "CSV صادرول",
+    "showFrom": "له {s} پورته ښودل",
+    "events": "پېښې",
+    "limited": "یوازې {n} وروستۍ پېښې ښودل کېږي: موده یا فلټر محدود کړئ.",
+    "noData": "امنیتي پېښې نشته",
+    "noRight": "ستاسو رولونه د امنیتي پېښو د کتلو حق نه ورکوي.",
+    "unavailable": "ډیټابیس نشته",
+    "severities": {
+      "info": "معلومات",
+      "notice": "خبرتیا",
+      "warning": "اخطار",
+      "alert": "زنګ",
+      "critical": "جدي"
+    },
+    "columns": {
+      "time": "وخت",
+      "severity": "جدیت",
+      "kind": "پېښه",
+      "connection": "اتصال",
+      "peer": "مقابل لوری",
+      "object": "شی",
+      "action": "کړنه",
+      "detail": "جزئیات",
+      "source": "سرچینه"
+    }
+  },
   "login": {
     "title": "ننوتل",
     "username": "کارن نوم",
@@ -350,7 +387,9 @@
         "total": "رولونه",
         "admin": "د مدیر رولونه",
         "unused": "نه دي ورکړل شوي"
-      }
+      },
+      "viewSecEvents": "امنیتي پېښې کتل",
+      "viewSecEventsHint": "کولی شي د امنیتي پېښو کتونکی پرانیزي (د پروتوکول ډرایورونو له خوا راپور شوي د اتصال، سند، هویت او امرونو بې نظمۍ)."
     },
     "protocolDriverInstances": {
       "title": "د پروتوکول چلوونکي مثالونه",
@@ -837,7 +876,9 @@
         "total": "اړیکې",
         "tags": "ټګونه",
         "invalidTags": "ناباوري ټګونه"
-      }
+      },
+      "peerIdentification": "مقابل لوری پېژندل (امنیتي پېښې): ",
+      "peerIdentificationHint": "په هر اتصال کې د مقابل لوري هویت (جوړونکی، ماډل، فرم‌وېر، MAC پته، سند) د اتصال احصایې ته لولي او بدلونونه یې د امنیتي پېښو په توګه راپور کوي."
     },
     "userActions": {
       "title": "د کارونکي کړنې",
@@ -1065,7 +1106,8 @@
       "retentionAlarms": "خبرتیاوې",
       "retentionHist": "تاریخي معلومات",
       "retentionDays": "ورځې",
-      "retentionRule": "له {min} څخه تر {max} پورې د ورځو بشپړ شمېر"
+      "retentionRule": "له {min} څخه تر {max} پورې د ورځو بشپړ شمېر",
+      "retentionSecEvents": "امنیتي پېښې"
     },
     "cimEms": {
       "readOnly": "یوازې لیدل: د ماډلونو پورته کول او فعالول، د تړاوونو تصویب او ښکته کول د CIM-EMS انجینري حق لرونکي رول ته اړتیا لري.",

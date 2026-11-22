@@ -17,6 +17,8 @@ const Role = mongoose.model(
     ackAlarms: { type: Boolean, default: false },
     disableAlarms: { type: Boolean, default: false },
     cimEngineering: { type: Boolean, default: false },
+    // may read the security events (secEvents)
+    viewSecEvents: { type: Boolean, default: false },
     group1List: { type: [String], default: [] },
     group1CommandList: { type: [String], default: [] },
     displayList: { type: [String], default: [] },

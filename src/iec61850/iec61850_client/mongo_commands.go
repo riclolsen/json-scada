@@ -38,6 +38,7 @@ import (
 	"github.com/dscsystems/go-iec61850/client"
 	"github.com/dscsystems/go-iec61850/mms"
 	"github.com/dscsystems/go-iec61850/model"
+	"github.com/dscsystems/go-iec61850/secevent"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -203,9 +204,17 @@ func handleCommand(ctx context.Context, collCmds *mongo.Collection, conns []*Iec
 			reason = "not connected"
 		}
 		jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s OA %s value %v %s", conn.Name, objAddr, value, capitalizeReason(reason))
+		switch reason {
+		case "commands disabled":
+			conn.secCommandRefused(secevent.KindCmdRejected, objAddr, nil, "command refused: commands are disabled")
+		case "command not found!":
+			conn.secCommandRefused(kindAccessNonexist, objAddr, nil,
+				"command for an object this connection does not have (tag "+jsmongo.GetString(doc, "tag", "")+")")
+		}
 		cancelCommand(ctx, collCmds, id, reason)
 		return
 	}
+	conn.secCommand(ctx, collCmds.Database().Collection(jsmongo.RealtimeDataCollectionName), entry, doc, value)
 
 	jslog.Log(jslog.LevelNoLog, "%s Control %s Value %v", conn.Name, entry.Path, value)
 
@@ -266,6 +275,7 @@ func writeValueCommand(ctx context.Context, conn *Iec61850Connection, entry *Iec
 	if err != nil {
 		jslog.Log(jslog.LevelNoLog, "%s Writable object not found! %s", conn.Name, entry.Path)
 		jslog.Log(jslog.LevelNoLog, "%v", err)
+		conn.secCommandRefused(kindCmdNonexistent, entry.Path, err, "writable object not found in the IED")
 		return false, true
 	}
 
@@ -307,6 +317,7 @@ func writeValueCommand(ctx context.Context, conn *Iec61850Connection, entry *Iec
 
 	if err := cli.Write(ctx, ref, entry.FC, out); err != nil {
 		jslog.Log(jslog.LevelNoLog, "%s Write failed! %s - %v", conn.Name, entry.Path, err)
+		conn.secCommandRefused(secevent.KindCmdRejected, entry.Path, err, "write refused by the IED")
 		return false, false
 	}
 	return true, false
@@ -331,6 +342,7 @@ func controlCommand(ctx context.Context, conn *Iec61850Connection, entry *Iec618
 	co, err := cli.ControlFor(ctx, ref)
 	if err != nil || co == nil {
 		jslog.Log(jslog.LevelNoLog, "%s Control object not found! %s", conn.Name, entry.Path)
+		conn.secCommandRefused(kindCmdNonexistent, entry.Path, err, "control object not found in the IED")
 		if err != nil {
 			jslog.Log(jslog.LevelDetailed, "%s Control object exception! %s - %v", conn.Name, entry.Path, err)
 		}
@@ -373,6 +385,7 @@ func controlCommand(ctx context.Context, conn *Iec61850Connection, entry *Iec618
 		if err := co.SelectWithValue(ctx, ctlVal, opts...); err != nil {
 			jslog.Log(jslog.LevelNoLog, "%s Select with value failed!", conn.Name)
 			logControlError(conn, err)
+			conn.secCommandRefused(secevent.KindCmdRejected, entry.Path, err, "select refused by the IED")
 			return false, false
 		}
 		jslog.Log(jslog.LevelNoLog, "%s Selected successfully!", conn.Name)
@@ -387,6 +400,7 @@ func controlCommand(ctx context.Context, conn *Iec61850Connection, entry *Iec618
 	if err := co.Operate(ctx, ctlVal, opts...); err != nil {
 		jslog.Log(jslog.LevelNoLog, "%s Operate failed!", conn.Name)
 		logControlError(conn, err)
+		conn.secCommandRefused(secevent.KindCmdRejected, entry.Path, err, "control refused by the IED")
 		return false, false
 	}
 	jslog.Log(jslog.LevelNoLog, "%s Operated successfully!", conn.Name)
