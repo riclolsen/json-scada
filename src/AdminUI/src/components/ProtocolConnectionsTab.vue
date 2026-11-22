@@ -328,6 +328,8 @@
               'IEC60870-5-104_SERVER',
               'IEC60870-5-101',
               'IEC60870-5-103',
+              'ICCP',
+              'ICCP_SERVER',
             ].includes(editedConnection.protocolDriver)
           "
         ></v-switch>

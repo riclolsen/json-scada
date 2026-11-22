@@ -32,6 +32,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
+
+	"github.com/riclolsen/tase2/secevent"
 	"github.com/riclolsen/tase2/tase2"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -251,6 +255,15 @@ func main() {
 			model := buildModel(allTags, connections, datasetChunkSize)
 			populateRtDataCache(allTags, model.tagByKey)
 
+			// Security events go to the secEvents collection; each listening
+			// connection has its own state (library policy, identities,
+			// detectors).
+			secNodeName = cfg.NodeName
+			jslog.SetLevel(currentLogLevel())
+			secWriter = jssecevents.NewWriter(0)
+			go runSecWriter(db.Collection(jssecevents.CollectionName))
+			secs := make(map[int]*srvSec, len(connections))
+
 			// Start servers for each connection
 			registry := newServerRegistry()
 			var listening []protocolConnection
@@ -292,6 +305,12 @@ func main() {
 
 				endpoint := tase2.NewEndpoint(tase2.EndpointPassive)
 				endpoint.SetLocalAPTitle(localAPTitle, localAEQual)
+				// Report-only security policy, shared by the accepted
+				// associations; set before Listen.
+				sec := newSrvSec(conn, collectionRtData)
+				if err := endpoint.SetSecurityPolicy(sec.policy(conn.IPAddresses)); err != nil {
+					LogMsg(LogLevelMin, "ICCP - Connection %q: security events disabled: %v", conn.Name, err)
+				}
 				endpoint.SetMaxTPDUSizeParam(maxTPDUSizeParam)
 				// Library messages for this listener's associations are
 				// attributed to the connection; accepted endpoints inherit it.
@@ -328,18 +347,19 @@ func main() {
 				// association ends; the post-disconnect hook keeps the registry
 				// in sync for statistics and redundancy.
 				listening = append(listening, conn)
-				go func(ep *tase2.Endpoint, conn protocolConnection, srvCfg tase2.ServerConfig) {
-					err := ep.ServeClients(serveClientCallbacks(registry, model.dataModel, srvCfg, conn, model.datasetDefs, collectionCommands))
+				secs[conn.ProtocolConnectionNumber] = sec
+				go func(ep *tase2.Endpoint, conn protocolConnection, srvCfg tase2.ServerConfig, sec *srvSec) {
+					err := ep.ServeClients(serveClientCallbacks(registry, model.dataModel, srvCfg, conn, model.datasetDefs, collectionCommands, sec))
 					if errors.Is(err, net.ErrClosed) {
 						LogMsg(LogLevelNormal, "ICCP - Listener closed for %s", conn.Name)
 					} else if err != nil {
 						LogMsg(LogLevelMin, "ICCP - Serve loop ended for %s: %v", conn.Name, err)
 					}
-				}(endpoint, conn, srvCfg)
+				}(endpoint, conn, srvCfg, sec)
 			}
 
 			// Publish per-connection association statistics
-			go publishConnectionStats(collectionConnections, registry, listening, cfg.NodeName)
+			go publishConnectionStats(collectionConnections, registry, listening, cfg.NodeName, secs)
 
 			// Start the MongoDB change stream watcher
 			go watchRealtimeDataChanges(collectionRtData, model, ownConnections(connections), topicList)
@@ -513,7 +533,14 @@ func buildModel(allTags []rtData, connections []protocolConnection, datasetChunk
 			if tag.ProtocolSourceCommandUseSBO {
 				deviceClass = tase2.DeviceClassSBO
 			}
-			cp := domain.AddControlPoint(pointName, tase2.ControlTypeCommand, deviceClass)
+			// A digital tag is a Control_Command (Integer16 0/1); an analog
+			// (or string) one is a setpoint typed by its value, so a real
+			// setpoint is a Float32 and keeps its fraction.
+			controlType := tase2.ControlTypeSetpoint
+			if tag.Type == "digital" {
+				controlType = tase2.ControlTypeCommand
+			}
+			cp := domain.AddControlPoint(pointName, controlType, deviceClass)
 			cp.CurrentValue = convertToDataValue(tag)
 			m.cpRefByTag[tag.Tag] = tase2.ObjectRef{Domain: domainName, Item: pointName}
 			continue
@@ -605,6 +632,7 @@ func buildServer(
 	conn protocolConnection,
 	datasetDefs []datasetDef,
 	cmdCollection *mongo.Collection,
+	sec *srvSec,
 ) *tase2.Server {
 	srv := tase2.NewServerWithConfig(dataModel, ce, cfg)
 
@@ -657,17 +685,21 @@ func buildServer(
 	// disabled must refuse explicitly. The operate handler is the one the
 	// library calls; the write-data handler is its fallback.
 	operate := func(domain, item string, value *tase2.DataValue) tase2.HandlerResult {
-		tag, ok := commandTarget(conn, "Operate", domain, item)
+		received := time.Now() // the unnecessary-command check compares with the state before this
+		tag, kind, why, ok := checkCommandTarget(conn, "Operate", domain, item)
 		if !ok {
+			sec.controlRefused(ce.PeerInfo(), kind, "operate", domain, item, tag, dataValueText(value), why)
 			return tase2.ResultFailure
 		}
-		LogMsg(LogLevelNormal, "ICCP - Operate %s/%s = %v", domain, item, value.String())
-		return forwardCommand(cmdCollection, conn, tag, value)
+		LogMsg(LogLevelNormal, "ICCP - Operate %s/%s = %v", domain, item, dataValueText(value))
+		return forwardCommand(cmdCollection, conn, tag, value, commandOrigin{sec: sec, peer: ce.PeerInfo(),
+			domain: domain, item: item, received: received})
 	}
 	srv.SetOperateHandler(operate)
 	srv.SetWriteDataHandler(operate)
 	srv.SetSelectHandler(func(domain, item string, value *tase2.DataValue) tase2.HandlerResult {
-		if _, ok := commandTarget(conn, "Select", domain, item); !ok {
+		if tag, kind, why, ok := checkCommandTarget(conn, "Select", domain, item); !ok {
+			sec.controlRefused(ce.PeerInfo(), kind, "select", domain, item, tag, "", why)
 			return tase2.ResultFailure
 		}
 		LogMsg(LogLevelNormal, "ICCP - Select %s/%s", domain, item)
@@ -680,43 +712,127 @@ func buildServer(
 // commandTarget checks that a connection may operate a control point and
 // returns the JSON-SCADA command tag it maps to.
 func commandTarget(conn protocolConnection, service, domain, item string) (string, bool) {
-	refuse := func(reason string) (string, bool) {
-		LogMsg(LogLevelMin, "ICCP - %s %s/%s refused for %s: %s", service, domain, item, conn.Name, reason)
-		return "", false
+	tag, _, _, ok := checkCommandTarget(conn, service, domain, item)
+	return tag, ok
+}
+
+// checkCommandTarget is commandTarget with the refusal: the security event
+// kind and the reason (and the tag, when the object maps to one).
+func checkCommandTarget(conn protocolConnection, service, domain, item string) (tag string, kind secevent.Kind, reason string, ok bool) {
+	refuse := func(k secevent.Kind, why string) (string, secevent.Kind, string, bool) {
+		LogMsg(LogLevelMin, "ICCP - %s %s/%s refused for %s: %s", service, domain, item, conn.Name, why)
+		return tag, k, why, false
 	}
 	if !conn.CommandsEnabled {
-		return refuse("commands disabled")
+		return refuse(secevent.KindCmdRejected, "commands disabled")
 	}
 	if !protocolRunning() {
-		return refuse("node inactive")
+		return refuse(secevent.KindCmdRejected, "node inactive")
 	}
 	if !topicAllowsDomain(conn.Topics, domain) {
-		return refuse("domain not in the connection topics")
+		return refuse(kindCmdObjectUnknown, "domain not in the connection topics")
 	}
-	tag := findTagByDomainItem(domain, item)
+	tag = findTagByDomainItem(domain, item)
 	if tag == "" {
-		return refuse("no command tag")
+		return refuse(kindCmdObjectUnknown, "no command tag")
 	}
 	rtDoc := findRtDataForTag(tag)
 	if rtDoc.Origin != "command" {
-		return refuse("not a command tag")
+		return refuse(kindCmdObjectUnknown, "not a command tag")
 	}
 	if rtDoc.CommandBlocked {
-		return refuse("command blocked")
+		return refuse(secevent.KindCmdRejected, "command blocked")
 	}
-	return tag, true
+	return tag, "", "", true
 }
+
+// commandOrigin is the association a command came from, for its security
+// events (zero in tests: nothing is reported).
+type commandOrigin struct {
+	sec          *srvSec
+	peer         secevent.PeerInfo
+	domain, item string
+	received     time.Time // when the handler got the control (zero: now)
+}
+
+// dataValueText renders a command value for logs and events.
+func dataValueText(v *tase2.DataValue) string {
+	if v == nil {
+		return ""
+	}
+	return v.String()
+}
+
+// numericCommand reports whether a command value is a finite number (or a
+// boolean, or a string holding one), as the analog and digital tags require.
+func numericCommand(dv *tase2.DataValue) bool {
+	_, _, ok := commandNumber(dv)
+	return ok
+}
+
+// commandNumber is the number a command value holds and its text; ok is
+// false for a value that is not a finite number (a text, a structure, NaN,
+// an infinity). A numeric string may have surrounding spaces.
+func commandNumber(dv *tase2.DataValue) (v float64, text string, ok bool) {
+	if dv == nil {
+		return 0, "", false
+	}
+	switch {
+	case dv.BoolVal != nil:
+		if *dv.BoolVal {
+			return 1, "true", true
+		}
+		return 0, "false", true
+	case dv.IntVal != nil:
+		return float64(*dv.IntVal), strconv.FormatInt(*dv.IntVal, 10), true
+	case dv.UnsignedVal != nil:
+		return float64(*dv.UnsignedVal), strconv.FormatUint(*dv.UnsignedVal, 10), true
+	case dv.FloatVal != nil:
+		v, text = *dv.FloatVal, fmt.Sprintf("%f", *dv.FloatVal)
+	case dv.VisibleStringVal != "":
+		text = strings.TrimSpace(dv.VisibleStringVal)
+		var err error
+		if v, err = strconv.ParseFloat(text, 64); err != nil {
+			return 0, dv.VisibleStringVal, false
+		}
+	default:
+		return 0, dv.String(), false
+	}
+	return v, text, !math.IsNaN(v) && !math.IsInf(v, 0)
+}
+
+// queueCommand inserts a command into commandsQueue (replaced in tests).
+var queueCommand = insertCommand
 
 // forwardCommand inserts the command for a JSON-SCADA command tag into the
 // commandsQueue collection.
-func forwardCommand(cmdCollection *mongo.Collection, conn protocolConnection, tag string, value *tase2.DataValue) tase2.HandlerResult {
+func forwardCommand(cmdCollection *mongo.Collection, conn protocolConnection, tag string, value *tase2.DataValue, from commandOrigin) tase2.HandlerResult {
 	rtDoc := findRtDataForTag(tag)
 	if rtDoc.ID == 0 {
 		LogMsg(LogLevelMin, "ICCP - Cannot find realtimeData for tag %s", tag)
+		from.sec.controlRefused(from.peer, kindCmdObjectUnknown, "operate", from.domain, from.item, tag,
+			dataValueText(value), "command tag not found")
 		return tase2.ResultFailure
 	}
 
-	cmdValue, cmdValueStr := extractCommandValue(value)
+	// Analog and digital tags take numbers: a value that is not one (a
+	// text, a structure) is refused rather than forwarded as 0.
+	cmdValue, cmdValueStr, isNumber := commandNumber(value)
+	if (rtDoc.Type == "digital" || rtDoc.Type == "analog") && !isNumber {
+		LogMsg(LogLevelMin, "ICCP - Command %s refused: value %s is not a number", tag, dataValueText(value))
+		from.sec.controlRefused(from.peer, kindCmdWrongType, "operate", from.domain, from.item, tag,
+			dataValueText(value), "command value is not a finite number as the "+rtDoc.Type+" tag requires")
+		return tase2.ResultFailure
+	}
+	if !isNumber { // a string tag takes the text as is
+		cmdValue, cmdValueStr = extractCommandValue(value)
+	}
+	if rtDoc.Type == "digital" && cmdValue != 0 && cmdValue != 1 {
+		// Forwarded as 1 (any non-zero value), as always; reported.
+		from.sec.emit(from.peer, secevent.Event{Kind: kindCmdWrongType, Service: "operate", Domain: from.domain,
+			Item: from.item, Value: cmdValueStr,
+			Detail: "digital command value is not 0 or 1 (tag " + tag + "); forwarded as 1"})
+	}
 
 	// Apply the tag's conversion factors to the value received from the client.
 	if convValue := applyCommandConversion(cmdValue, rtDoc); convValue != cmdValue {
@@ -727,10 +843,17 @@ func forwardCommand(cmdCollection *mongo.Collection, conn protocolConnection, ta
 		cmdValue = convValue
 	}
 
-	if err := insertCommand(cmdCollection, conn, tag, cmdValue, cmdValueStr, rtDoc); err != nil {
+	originatorIP := ""
+	if from.peer.RemoteAddr.IsValid() {
+		originatorIP = from.peer.RemoteAddr.Addr().Unmap().String()
+	}
+	if err := queueCommand(cmdCollection, conn, tag, cmdValue, cmdValueStr, rtDoc, originatorIP); err != nil {
 		LogMsg(LogLevelMin, "ICCP - Failed to insert command: %v", err)
+		from.sec.controlRefused(from.peer, secevent.KindCmdRejected, "operate", from.domain, from.item, tag,
+			dataValueText(value), "command could not be queued: "+err.Error())
 		return tase2.ResultFailure
 	}
+	from.sec.controlReceived(from.peer, rtDoc, from.domain, from.item, cmdValue, from.received)
 
 	LogMsg(LogLevelNormal, "ICCP - Command forwarded: %s = %s (%f)", tag, cmdValueStr, cmdValue)
 	return tase2.ResultSuccess
@@ -1084,7 +1207,10 @@ func extractCommandValue(dv *tase2.DataValue) (float64, string) {
 	case dv.FloatVal != nil:
 		return *dv.FloatVal, fmt.Sprintf("%f", *dv.FloatVal)
 	case dv.VisibleStringVal != "":
-		v, _ := strconv.ParseFloat(dv.VisibleStringVal, 64)
+		v, err := strconv.ParseFloat(strings.TrimSpace(dv.VisibleStringVal), 64)
+		if err != nil || math.IsNaN(v) || math.IsInf(v, 0) {
+			v = 0
+		}
 		return v, dv.VisibleStringVal
 	default:
 		return 0, dv.String()

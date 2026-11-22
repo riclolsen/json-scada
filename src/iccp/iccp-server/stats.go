@@ -154,16 +154,20 @@ func statsDocument(nodeName string, now time.Time, s *connStats, clients []clien
 // publishConnectionStats periodically writes the statistics of every
 // listening connection to protocolConnections. It returns when its MongoDB
 // client has been disconnected (the main loop reconnects and starts anew).
-func publishConnectionStats(coll *mongo.Collection, registry *serverRegistry, conns []protocolConnection, nodeName string) {
+func publishConnectionStats(coll *mongo.Collection, registry *serverRegistry, conns []protocolConnection, nodeName string, secs map[int]*srvSec) {
 	ticker := time.NewTicker(statsPublishInterval)
 	defer ticker.Stop()
 	for range ticker.C {
 		for _, conn := range conns {
 			s, clients := registry.connectionStats(conn.ProtocolConnectionNumber)
+			doc := statsDocument(nodeName, time.Now(), s, clients)
+			if id := secs[conn.ProtocolConnectionNumber].statsDoc(); id != nil {
+				doc["peerIdentity"] = id
+			}
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			_, err := coll.UpdateOne(ctx,
 				bson.M{"protocolConnectionNumber": conn.ProtocolConnectionNumber},
-				bson.M{"$set": bson.M{"stats": statsDocument(nodeName, time.Now(), s, clients)}})
+				bson.M{"$set": bson.M{"stats": doc}})
 			cancel()
 			if errors.Is(err, mongo.ErrClientDisconnected) {
 				return
@@ -178,7 +182,8 @@ func publishConnectionStats(coll *mongo.Collection, registry *serverRegistry, co
 // serveClientCallbacks returns the ServeClients build callback and
 // post-disconnect hook for one listening connection: each association gets
 // its own server, is tracked in the registry for statistics and redundancy,
-// and has its server events observed.
+// and has its server events observed and its client identified (sec; nil
+// reports nothing).
 func serveClientCallbacks(
 	registry *serverRegistry,
 	dataModel *tase2.DataModel,
@@ -186,6 +191,7 @@ func serveClientCallbacks(
 	conn protocolConnection,
 	datasetDefs []datasetDef,
 	cmdCollection *mongo.Collection,
+	sec *srvSec,
 ) (func(ce *tase2.Endpoint) *tase2.Server, tase2.PostDisconnectHook) {
 	build := func(ce *tase2.Endpoint) *tase2.Server {
 		// Off the active node (unless keepProtocolRunningWhileInactive)
@@ -196,13 +202,14 @@ func serveClientCallbacks(
 		}
 		// IP filtering is done at the ICCP bilateral-table level; IP-based
 		// access control can be added in a future version.
-		srv := buildServer(dataModel, ce, cfg, conn, datasetDefs, cmdCollection)
+		srv := buildServer(dataModel, ce, cfg, conn, datasetDefs, cmdCollection, sec)
 		// Registered before the association is served, so the first event
 		// finds the entry.
 		n := registry.add(srv, ce, conn)
 		srv.SetOnEvent(func(ev tase2.ServerEvent) {
 			if ev.Kind == tase2.EventAssociationAccepted {
 				registry.setPeer(srv, ev.Peer)
+				sec.opened(srv, ce.PeerInfo())
 			}
 			logServerEvent(conn.Name, ev)
 		})
@@ -214,6 +221,7 @@ func serveClientCallbacks(
 			LogMsg(LogLevelNormal, "ICCP - Server error for %s: %v", conn.Name, serveErr)
 		}
 		n := registry.remove(srv)
+		sec.closed(srv)
 		LogMsg(LogLevelNormal, "ICCP - Client disconnected from %s (%d active client(s))", conn.Name, n)
 	}
 	return build, hook
@@ -253,4 +261,13 @@ func logServerEvent(connName string, ev tase2.ServerEvent) {
 		msg += ": " + ev.Err.Error()
 	}
 	LogMsg(level, "%s", msg)
+}
+
+// runSecWriter delivers the security events, resuming after a failed
+// insert (the writer keeps the events it could not store).
+func runSecWriter(coll *mongo.Collection) {
+	for {
+		secWriter.RunWith(context.Background(), coll)
+		time.Sleep(3 * time.Second)
+	}
 }

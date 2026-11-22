@@ -65,47 +65,61 @@ type protocolDriverInstance struct {
 
 // protocolConnection mirrors the protocolConnections collection document.
 type protocolConnection struct {
-	ID                           bson.ObjectID          `bson:"_id"`
-	ProtocolDriver               string                 `bson:"protocolDriver"`
-	ProtocolDriverInstanceNumber int                    `bson:"protocolDriverInstanceNumber"`
-	ProtocolConnectionNumber     int                    `bson:"protocolConnectionNumber"`
-	Name                         string                 `bson:"name"`
-	Description                  string                 `bson:"description"`
-	Enabled                      bool                   `bson:"enabled"`
-	CommandsEnabled              bool                   `bson:"commandsEnabled"`
-	EndpointURLs                 []string               `bson:"endpointURLs"`
-	Topics                       []string               `bson:"topics"`
-	TimeoutMs                    float64                `bson:"timeoutMs"`
-	GiInterval                   float64                `bson:"giInterval"`
-	LocalApTitle                 string                 `bson:"localApTitle"`
-	LocalAeQualifier             int                    `bson:"localAeQualifier"`
-	RemoteApTitle                string                 `bson:"remoteApTitle"`
-	RemoteAeQualifier            int                    `bson:"remoteAeQualifier"`
-	Password                     string                 `bson:"password"`
-	HoursShift                   float64                `bson:"hoursShift"`
-	UseSecurity                  bool                   `bson:"useSecurity"`
-	LocalCertFilePath            string                 `bson:"localCertFilePath"`
-	PrivateKeyFilePath           string                 `bson:"privateKeyFilePath"`
-	PeerCertFilePath             string                 `bson:"peerCertFilePath"`
-	RootCertFilePath             string                 `bson:"rootCertFilePath"`
-	ChainValidation              bool                   `bson:"chainValidation"`
-	AutoAcceptUntrusted          bool                   `bson:"autoAcceptUntrustedCertificates"`
-	Stats                        map[string]interface{} `bson:"stats"`
+	ID                           bson.ObjectID `bson:"_id"`
+	ProtocolDriver               string        `bson:"protocolDriver"`
+	ProtocolDriverInstanceNumber int           `bson:"protocolDriverInstanceNumber"`
+	ProtocolConnectionNumber     int           `bson:"protocolConnectionNumber"`
+	Name                         string        `bson:"name"`
+	Description                  string        `bson:"description"`
+	Enabled                      bool          `bson:"enabled"`
+	CommandsEnabled              bool          `bson:"commandsEnabled"`
+	EndpointURLs                 []string      `bson:"endpointURLs"`
+	Topics                       []string      `bson:"topics"`
+	TimeoutMs                    float64       `bson:"timeoutMs"`
+	GiInterval                   float64       `bson:"giInterval"`
+	LocalApTitle                 string        `bson:"localApTitle"`
+	LocalAeQualifier             int           `bson:"localAeQualifier"`
+	RemoteApTitle                string        `bson:"remoteApTitle"`
+	RemoteAeQualifier            int           `bson:"remoteAeQualifier"`
+	Password                     string        `bson:"password"`
+	HoursShift                   float64       `bson:"hoursShift"`
+	UseSecurity                  bool          `bson:"useSecurity"`
+	LocalCertFilePath            string        `bson:"localCertFilePath"`
+	PrivateKeyFilePath           string        `bson:"privateKeyFilePath"`
+	PeerCertFilePath             string        `bson:"peerCertFilePath"`
+	RootCertFilePath             string        `bson:"rootCertFilePath"`
+	ChainValidation              bool          `bson:"chainValidation"`
+	AutoAcceptUntrusted          bool          `bson:"autoAcceptUntrustedCertificates"`
+	PeerIdentification           *bool         `bson:"peerIdentification"`
+	Stats                        storedStats   `bson:"stats"`
+}
+
+// storedStats is the part of protocolConnections.stats read back at
+// startup: the peer identity the change detection starts from (decoded
+// leniently by connSec.seed).
+type storedStats struct {
+	PeerIdentity bson.Raw `bson:"peerIdentity,omitempty"`
+}
+
+// peerIdentificationOn reports whether the server is to be identified on
+// every association (peerIdentification, default true).
+func (c protocolConnection) peerIdentificationOn() bool {
+	return c.PeerIdentification == nil || *c.PeerIdentification
 }
 
 // rtData holds a subset of realtimeData fields used by the client driver.
 type rtData struct {
-	ID                             bson.ObjectID `bson:"_id"`
-	Tag                            string        `bson:"tag"`
-	Type                           string        `bson:"type"`
-	Origin                         string        `bson:"origin"`
-	ProtocolSourceConnectionNumber float64       `bson:"protocolSourceConnectionNumber"`
-	ProtocolSourceObjectAddress    interface{}   `bson:"protocolSourceObjectAddress"`
-	ProtocolSourceASDU             interface{}   `bson:"protocolSourceASDU"`
-	ProtocolSourceCommonAddress    interface{}   `bson:"protocolSourceCommonAddress"`
-	ProtocolSourceCommandDuration  float64       `bson:"protocolSourceCommandDuration"`
-	ProtocolSourceCommandUseSBO    bool          `bson:"protocolSourceCommandUseSBO"`
-	SourceDataUpdate               *sourceData   `bson:"sourceDataUpdate"`
+	ID                             float64     `bson:"_id"` // realtimeData keys are numbers
+	Tag                            string      `bson:"tag"`
+	Type                           string      `bson:"type"`
+	Origin                         string      `bson:"origin"`
+	ProtocolSourceConnectionNumber float64     `bson:"protocolSourceConnectionNumber"`
+	ProtocolSourceObjectAddress    interface{} `bson:"protocolSourceObjectAddress"`
+	ProtocolSourceASDU             interface{} `bson:"protocolSourceASDU"`
+	ProtocolSourceCommonAddress    interface{} `bson:"protocolSourceCommonAddress"`
+	ProtocolSourceCommandDuration  float64     `bson:"protocolSourceCommandDuration"`
+	ProtocolSourceCommandUseSBO    bool        `bson:"protocolSourceCommandUseSBO"`
+	SourceDataUpdate               *sourceData `bson:"sourceDataUpdate"`
 }
 
 // sourceData is the part of realtimeData.sourceDataUpdate the client reads

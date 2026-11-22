@@ -78,7 +78,7 @@ func TestServerLoopback(t *testing.T) {
 
 	// Serve exactly as main() does: registry bookkeeping, the event observer
 	// and statistics come from the same callbacks.
-	go srvEP.ServeClients(serveClientCallbacks(registry, model.dataModel, cfg, conn, model.datasetDefs, nil))
+	go srvEP.ServeClients(serveClientCallbacks(registry, model.dataModel, cfg, conn, model.datasetDefs, nil, nil))
 
 	// ---- Client (peer identity matching the BLT) ----
 	cliEP := tase2.NewEndpoint(tase2.EndpointActive)

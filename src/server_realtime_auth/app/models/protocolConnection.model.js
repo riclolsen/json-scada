@@ -67,7 +67,7 @@ const ProtocolConnection = mongoose.model(
     autoCreateTags: { type: Boolean, default: true },
 
     // IEC61850, IEC61850_SERVER, MODBUS, MODBUS_SERVER, IEC60870-5-104, IEC60870-5-104_SERVER,
-    // IEC60870-5-101, IEC60870-5-103: identify the peer on every connection
+    // IEC60870-5-101, IEC60870-5-103, ICCP, ICCP_SERVER: identify the peer on every connection
     // (stats.peerIdentity) and report identity changes as security events
     peerIdentification: { type: Boolean, default: true },
 

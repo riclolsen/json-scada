@@ -20,6 +20,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -29,7 +30,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
+
 	"github.com/riclolsen/tase2/mms"
+	"github.com/riclolsen/tase2/secevent"
 	"github.com/riclolsen/tase2/tase2"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -143,15 +148,26 @@ func main() {
 		os.Exit(2)
 	}
 
+	// Security events go to the secEvents collection; each connection has
+	// its own security state (library policy, identity, detectors).
+	secNodeName = cfg.NodeName
+	jslog.SetLevel(currentLogLevel())
+	secWriter = jssecevents.NewWriter(0)
+	go runSecWriter(db.Collection(jssecevents.CollectionName))
+	secs := make(map[int]*connSec, len(connections))
+	for _, conn := range connections {
+		secs[conn.ProtocolConnectionNumber] = newConnSec(conn)
+	}
+
 	// Start MongoDB writer goroutine
 	go mongoWriter(collectionRtData, dataChan)
 
 	// Start command change stream watcher
-	go commandWatcher(collectionCommands, collectionRtData, connections)
+	go commandWatcher(collectionCommands, collectionRtData, connections, secs)
 
 	// Start per-connection ICCP client goroutines
 	for _, conn := range connections {
-		go runICCPConnection(conn, collectionRtData, collectionConnections, cfg, dataChan, maxTPDUSizeParam)
+		go runICCPConnection(conn, secs[conn.ProtocolConnectionNumber], collectionRtData, collectionConnections, cfg, dataChan, maxTPDUSizeParam)
 	}
 
 	// Start redundancy keepalive loop
@@ -175,6 +191,15 @@ func main() {
 	}
 }
 
+// runSecWriter delivers the security events, resuming after a failed
+// insert (the writer keeps the events it could not store).
+func runSecWriter(coll *mongo.Collection) {
+	for {
+		secWriter.RunWith(context.Background(), coll)
+		time.Sleep(3 * time.Second)
+	}
+}
+
 // connRuntime is the per-connection state that outlives one association: it
 // publishes updates to the MongoDB writer and remembers the last update of
 // each address, so tags can be invalidated (keeping their value) when data
@@ -182,6 +207,7 @@ func main() {
 type connRuntime struct {
 	conn     protocolConnection
 	dataChan chan<- dataUpdate
+	sec      *connSec // security events; nil reports nothing
 
 	mu   sync.Mutex
 	last map[string]dataUpdate // by protocolSourceObjectAddress
@@ -267,9 +293,10 @@ func (r *connRuntime) invalidate(addrs []string) int {
 }
 
 // runICCPConnection manages an ICCP connection lifecycle: connect, poll, subscribe, reconnect.
-func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collection, collectionConnections *mongo.Collection, cfg configData, dataChan chan<- dataUpdate, maxTPDUSizeParam int) {
+func runICCPConnection(conn protocolConnection, sec *connSec, collectionRtData *mongo.Collection, collectionConnections *mongo.Collection, cfg configData, dataChan chan<- dataUpdate, maxTPDUSizeParam int) {
 	connNumber := conn.ProtocolConnectionNumber
 	rt := newConnRuntime(conn, dataChan)
+	rt.sec = sec
 	endpointIdx := 0
 
 	for {
@@ -346,6 +373,10 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 			LogMsg(LogLevelNormal, "ICCP %s - TLS enabled (chain validation: %v)", conn.Name, conn.ChainValidation && !conn.AutoAcceptUntrusted)
 		}
 
+		// Security events: the connection's state is shared by its
+		// successive associations (set before Connect, which reports).
+		sec.attach(ep)
+
 		client := tase2.NewClient(ep)
 		if conn.TimeoutMs > 0 {
 			client.MMSClient.SetResponseTimeout(time.Duration(conn.TimeoutMs) * time.Millisecond)
@@ -363,7 +394,7 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 		LogMsg(LogLevelNormal, "ICCP %s - Connecting to %s:%d (AP: %s)", conn.Name, host, port, remoteAP)
 		if err := ep.Connect(host, port); err != nil {
 			LogMsg(LogLevelMin, "ICCP %s - Connect failed: %v", conn.Name, err)
-			updateConnectionStats(collectionConnections, conn, cfg, false)
+			updateConnectionStats(collectionConnections, conn, sec, cfg, false)
 			if n := rt.invalidate(nil); n > 0 {
 				LogMsg(LogLevelNormal, "ICCP %s - Invalidated %d tag(s)", conn.Name, n)
 			}
@@ -379,13 +410,7 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 			connName: conn.Name,
 		}
 		setActiveClient(connNumber, ac)
-
-		// Read peer identity
-		if vendor, model, rev, err := client.ReadPeerIdentity(); err == nil {
-			LogMsg(LogLevelNormal, "ICCP %s - Peer: vendor=%q model=%q revision=%q", conn.Name, vendor, model, rev)
-		} else {
-			LogMsg(LogLevelDetailed, "ICCP %s - Peer identity not available: %v", conn.Name, err)
-		}
+		sec.connected(true)
 
 		// Discover domains
 		domains, err := client.ListDomains()
@@ -398,6 +423,12 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 			continue
 		}
 		LogMsg(LogLevelNormal, "ICCP %s - Discovered %d domain(s): %v", conn.Name, len(domains), domains)
+
+		// Identify the server (MMS Identify and the TASE.2 system variables);
+		// with peerIdentification off nothing is asked.
+		if sec != nil && sec.ident {
+			sec.identify(client, ep, net.JoinHostPort(host, strconv.Itoa(port)), mappedDomains(domains, mappings))
+		}
 
 		// Build a domain→item lookup from our mappings for DSTS value handling
 		mappingByRef := make(map[string]*tagMapping)
@@ -424,7 +455,7 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 		redundancyTicker := time.NewTicker(2 * time.Second)
 
 		// Stats update ticker (published once now, so the link shows up at once)
-		updateConnectionStats(collectionConnections, conn, cfg, true)
+		updateConnectionStats(collectionConnections, conn, sec, cfg, true)
 		statsTicker := time.NewTicker(30 * time.Second)
 
 		// Main poll loop
@@ -453,7 +484,7 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 				performPoll(client, rt, mappings, covered)
 
 			case <-statsTicker.C:
-				updateConnectionStats(collectionConnections, conn, cfg, true)
+				updateConnectionStats(collectionConnections, conn, sec, cfg, true)
 			}
 		}
 
@@ -472,13 +503,28 @@ func runICCPConnection(conn protocolConnection, collectionRtData *mongo.Collecti
 			}
 		}
 		client.Close()
-		updateConnectionStats(collectionConnections, conn, cfg, false)
+		updateConnectionStats(collectionConnections, conn, sec, cfg, false)
 		if n := rt.invalidate(nil); n > 0 {
 			LogMsg(LogLevelNormal, "ICCP %s - Invalidated %d tag(s)", conn.Name, n)
 		}
 		LogMsg(LogLevelNormal, "ICCP %s - Disconnected, reconnecting in 10s...", conn.Name)
 		time.Sleep(10 * time.Second)
 	}
+}
+
+// mappedDomains returns the server's domains that hold mapped points.
+func mappedDomains(domains []string, mappings []tagMapping) []string {
+	used := make(map[string]bool)
+	for _, m := range mappings {
+		used[m.ref.Domain] = true
+	}
+	var out []string
+	for _, d := range domains {
+		if used[d] {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 // buildTagMappings converts MongoDB tags to ICCP ObjectRefs.
@@ -540,7 +586,7 @@ func performPoll(client *tase2.Client, rt *connRuntime, mappings []tagMapping, s
 			refs[i] = m.ref
 		}
 
-		vals, err := client.ReadMultiple(refs)
+		res, err := client.ReadMultipleResults(refs)
 		if err != nil {
 			LogMsg(LogLevelMin, "ICCP %s - Poll ReadMultiple error: %v", rt.conn.Name, err)
 			return
@@ -549,11 +595,14 @@ func performPoll(client *tase2.Client, rt *connRuntime, mappings []tagMapping, s
 		now := time.Now()
 		var failedAddrs []string
 		for i, m := range chunk {
-			if i >= len(vals) || vals[i] == nil {
+			if i >= len(res) || res[i].Value == nil {
 				failedAddrs = append(failedAddrs, objAddrToString(m.tag.ProtocolSourceObjectAddress))
+				if i < len(res) {
+					rt.sec.readRefused(m, res[i].Err)
+				}
 				continue
 			}
-			if rt.publish(dataValueToUpdate(vals[i], m, now, rt.conn.HoursShift)) {
+			if rt.publish(dataValueToUpdate(res[i].Value, m, now, rt.conn.HoursShift)) {
 				count++
 			} else {
 				dropped++
@@ -885,18 +934,24 @@ func iccpTimeStampToTime(t time.Time, hoursShift float64) time.Time {
 	return t.Add(time.Duration(hoursShift * float64(time.Hour)))
 }
 
-// updateConnectionStats updates the stats field on the protocol connection document.
-func updateConnectionStats(collectionConnections *mongo.Collection, conn protocolConnection, cfg configData, isConnected bool) {
+// updateConnectionStats updates the stats field on the protocol connection
+// document; stats.peerIdentity is the server's last identity (kept while
+// disconnected).
+func updateConnectionStats(collectionConnections *mongo.Collection, conn protocolConnection, sec *connSec, cfg configData, isConnected bool) {
 	filter := bson.D{
 		{Key: "protocolConnectionNumber", Value: conn.ProtocolConnectionNumber},
 	}
+	stats := bson.D{
+		{Key: "nodeName", Value: cfg.NodeName},
+		{Key: "timeTag", Value: time.Now()},
+		{Key: "isConnected", Value: isConnected},
+	}
+	if id := sec.PeerIdentityDoc(); id != nil {
+		stats = append(stats, bson.E{Key: "peerIdentity", Value: id})
+	}
 	update := bson.D{
 		{Key: "$set", Value: bson.D{
-			{Key: "stats", Value: bson.D{
-				{Key: "nodeName", Value: cfg.NodeName},
-				{Key: "timeTag", Value: time.Now()},
-				{Key: "isConnected", Value: isConnected},
-			}},
+			{Key: "stats", Value: stats},
 		}},
 	}
 	_, err := collectionConnections.UpdateOne(context.TODO(), filter, update)
@@ -994,7 +1049,7 @@ func flushBatch(collectionRtData *mongo.Collection, batch []mongo.WriteModel) {
 }
 
 // commandWatcher monitors the commandsQueue collection and forwards commands to ICCP servers.
-func commandWatcher(collectionCommands *mongo.Collection, collectionRtData *mongo.Collection, connections []protocolConnection) {
+func commandWatcher(collectionCommands *mongo.Collection, collectionRtData *mongo.Collection, connections []protocolConnection, secs map[int]*connSec) {
 	connMap := make(map[int]*protocolConnection)
 	for i := range connections {
 		conn := connections[i]
@@ -1038,14 +1093,16 @@ func commandWatcher(collectionCommands *mongo.Collection, collectionRtData *mong
 				LogMsg(LogLevelDetailed, "Commands CS - Connection %d not handled by this driver, ignoring command", connNumber)
 				continue
 			}
+			sec := secs[connNumber]
 			if !conn.CommandsEnabled {
 				LogMsg(LogLevelMin, "Commands CS - Commands disabled for %s: %s", conn.Name, cmd.Tag)
 				cancelCommand(collectionCommands, cmd.ID, "commands disabled")
+				sec.commandRefused(secevent.KindCmdRejected, cmd, "", "", nil, "commands are disabled on the connection")
 				continue
 			}
 
 			// Check for expired command
-			if time.Since(cmd.TimeTag) > 10*time.Second {
+			if time.Since(cmd.TimeTag) > commandExpiry {
 				LogMsg(LogLevelMin, "Commands CS - Command expired for %s: %s", conn.Name, cmd.Tag)
 				cancelCommand(collectionCommands, cmd.ID, "expired")
 				continue
@@ -1062,6 +1119,9 @@ func commandWatcher(collectionCommands *mongo.Collection, collectionRtData *mong
 			if err != nil {
 				LogMsg(LogLevelMin, "Commands CS - Cannot find command tag %s: %v", cmd.Tag, err)
 				cancelCommand(collectionCommands, cmd.ID, "tag not found")
+				if errors.Is(err, mongo.ErrNoDocuments) {
+					sec.commandRefused(kindAccessTagUnknown, cmd, "", "", nil, "no command tag of the connection")
+				}
 				continue
 			}
 
@@ -1075,23 +1135,15 @@ func commandWatcher(collectionCommands *mongo.Collection, collectionRtData *mong
 			}
 			domain, item := parts[0], parts[1]
 
-			if cmdTag.ProtocolSourceCommandUseSBO {
-				LogMsg(LogLevelMin, "Commands CS - SBO requested for %s but select-before-operate is not supported; sending direct operate", cmd.Tag)
-			}
-
-			// Convert command value to TASE2 DataValue
-			dv := commandToDataValue(cmd)
-
 			// Try to use the active client for this connection
 			ac := getActiveClient(connNumber)
 			if ac != nil {
 				ac.mu.Lock()
 				if ac.client != nil {
-					dv = adaptCommandValue(ac.client, domain, item, dv)
-					err := ac.client.WriteDataValue(domain, item, dv)
+					dv, err := sendCommand(ac.client, sec, collectionRtData, cmd, cmdTag, domain, item)
 					ac.mu.Unlock()
 					if err != nil {
-						LogMsg(LogLevelMin, "Commands CS - Write failed for %s/%s: %v", domain, item, err)
+						LogMsg(LogLevelMin, "Commands CS - Command failed for %s/%s: %v", domain, item, err)
 						cancelCommand(collectionCommands, cmd.ID, err.Error())
 					} else {
 						LogMsg(LogLevelNormal, "Commands CS - Command delivered via %s: %s/%s = %v",
@@ -1115,6 +1167,37 @@ func commandWatcher(collectionCommands *mongo.Collection, collectionRtData *mong
 		cs.Close(context.TODO())
 		time.Sleep(5 * time.Second)
 	}
+}
+
+// commandExpiry is how old a queued command may be when it is sent.
+const commandExpiry = 10 * time.Second
+
+// sendCommand sends a command on the association of cl: with
+// protocolSourceCommandUseSBO it first selects the control point (Select
+// must succeed, and the command must still be fresh after it), then writes
+// the value. A refusal is reported as a security event; the error is the
+// reason to cancel the command with.
+func sendCommand(cl *tase2.Client, sec *connSec, rt *mongo.Collection, cmd commandQueueEntry, cmdTag rtData, domain, item string) (*tase2.DataValue, error) {
+	dv := adaptCommandValue(cl, sec, cmd, domain, item, commandToDataValue(cmd))
+	sec.commandSent(rt, cmd, cmdTag, domain, item)
+	refused := func(stage string, err error) error {
+		if kind, detail, ok := classifyCommandError(err); ok {
+			sec.commandRefused(kind, cmd, domain, item, err, stage+": "+detail)
+		}
+		return fmt.Errorf("%s: %w", stage, err)
+	}
+	if cmdTag.ProtocolSourceCommandUseSBO {
+		if err := selectControl(cl, domain, item); err != nil {
+			return nil, refused("select", err)
+		}
+		if time.Since(cmd.TimeTag) > commandExpiry {
+			return nil, errors.New("expired after select")
+		}
+	}
+	if err := writeCommand(cl, domain, item, dv); err != nil {
+		return nil, refused("operate", err)
+	}
+	return dv, nil
 }
 
 // commandToDataValue converts a command queue entry to a TASE2 DataValue.
@@ -1159,13 +1242,30 @@ func commandToDataValue(cmd commandQueueEntry) *tase2.DataValue {
 // for the target control point, so a numeric command reaches a Real setpoint
 // as float and a Command/Discrete point as integer regardless of the ASDU
 // configured on the tag. If the type cannot be read, the value is unchanged.
-func adaptCommandValue(client *tase2.Client, domain, item string, dv *tase2.DataValue) *tase2.DataValue {
+// A value that cannot be coerced to the point's type is reported (it is
+// still sent: the server decides).
+func adaptCommandValue(client *tase2.Client, sec *connSec, cmd commandQueueEntry, domain, item string, dv *tase2.DataValue) *tase2.DataValue {
 	spec, err := client.GetVariableType(tase2.ObjectRef{Domain: domain, Item: item})
 	if err != nil || spec == nil {
 		return dv
 	}
+	wrongType := func(want string) {
+		sec.emitOnce("type:"+domain+"/"+item, secevent.Event{Kind: kindCmdWrongType, Service: "write",
+			Domain: domain, Item: item, Value: commandValueText(cmd),
+			Detail: "command value is not a " + want + " as the control point is (tag " + cmd.Tag + ")"})
+	}
 
 	num, hasNum := dataValueToFloat(dv)
+	switch spec.Type {
+	case mms.FloatingPoint, mms.Integer, mms.Unsigned, mms.Boolean:
+		if !hasNum {
+			wrongType("number")
+		}
+	case mms.VisibleString:
+		if dv.Type != mms.VisibleString {
+			wrongType("string")
+		}
+	}
 
 	switch spec.Type {
 	case mms.FloatingPoint:
@@ -1189,6 +1289,7 @@ func adaptCommandValue(client *tase2.Client, domain, item string, dv *tase2.Data
 		}
 	case mms.Structure:
 		LogMsg(LogLevelMin, "Commands - Control point %s/%s is a structure; sending raw value (may be rejected)", domain, item)
+		wrongType("structure")
 	}
 	return dv
 }

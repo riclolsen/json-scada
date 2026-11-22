@@ -113,6 +113,8 @@ const CATEGORIES = [
   'tls',
   'peer',
   'association',
+  'auth',
+  'identity',
   'protocol',
   'sequence',
   'access',

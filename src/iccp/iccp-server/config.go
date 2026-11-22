@@ -70,30 +70,44 @@ type protocolDriverInstance struct {
 
 // protocolConnection mirrors the protocolConnections collection document.
 type protocolConnection struct {
-	ID                           bson.ObjectID          `bson:"_id"`
-	ProtocolDriver               string                 `bson:"protocolDriver"`
-	ProtocolDriverInstanceNumber int                    `bson:"protocolDriverInstanceNumber"`
-	ProtocolConnectionNumber     int                    `bson:"protocolConnectionNumber"`
-	Name                         string                 `bson:"name"`
-	Description                  string                 `bson:"description"`
-	Enabled                      bool                   `bson:"enabled"`
-	CommandsEnabled              bool                   `bson:"commandsEnabled"`
-	IPAddressLocalBind           string                 `bson:"ipAddressLocalBind"`
-	IPAddresses                  []string               `bson:"ipAddresses"`
-	Topics                       []string               `bson:"topics"`
-	TimeoutMs                    float64                `bson:"timeoutMs"`
-	LocalApTitle                 string                 `bson:"localApTitle"`
-	LocalAeQualifier             int                    `bson:"localAeQualifier"`
-	RemoteApTitle                string                 `bson:"remoteApTitle"`
-	RemoteAeQualifier            int                    `bson:"remoteAeQualifier"`
-	UseSecurity                  bool                   `bson:"useSecurity"`
-	LocalCertFilePath            string                 `bson:"localCertFilePath"`
-	PrivateKeyFilePath           string                 `bson:"privateKeyFilePath"`
-	PeerCertFilePath             string                 `bson:"peerCertFilePath"`
-	RootCertFilePath             string                 `bson:"rootCertFilePath"`
-	ChainValidation              bool                   `bson:"chainValidation"`
-	Password                     string                 `bson:"password"`
-	Stats                        map[string]interface{} `bson:"stats"`
+	ID                           bson.ObjectID `bson:"_id"`
+	ProtocolDriver               string        `bson:"protocolDriver"`
+	ProtocolDriverInstanceNumber int           `bson:"protocolDriverInstanceNumber"`
+	ProtocolConnectionNumber     int           `bson:"protocolConnectionNumber"`
+	Name                         string        `bson:"name"`
+	Description                  string        `bson:"description"`
+	Enabled                      bool          `bson:"enabled"`
+	CommandsEnabled              bool          `bson:"commandsEnabled"`
+	IPAddressLocalBind           string        `bson:"ipAddressLocalBind"`
+	IPAddresses                  []string      `bson:"ipAddresses"`
+	Topics                       []string      `bson:"topics"`
+	TimeoutMs                    float64       `bson:"timeoutMs"`
+	LocalApTitle                 string        `bson:"localApTitle"`
+	LocalAeQualifier             int           `bson:"localAeQualifier"`
+	RemoteApTitle                string        `bson:"remoteApTitle"`
+	RemoteAeQualifier            int           `bson:"remoteAeQualifier"`
+	UseSecurity                  bool          `bson:"useSecurity"`
+	LocalCertFilePath            string        `bson:"localCertFilePath"`
+	PrivateKeyFilePath           string        `bson:"privateKeyFilePath"`
+	PeerCertFilePath             string        `bson:"peerCertFilePath"`
+	RootCertFilePath             string        `bson:"rootCertFilePath"`
+	ChainValidation              bool          `bson:"chainValidation"`
+	Password                     string        `bson:"password"`
+	PeerIdentification           *bool         `bson:"peerIdentification"`
+	Stats                        storedStats   `bson:"stats"`
+}
+
+// storedStats is the part of protocolConnections.stats read back at
+// startup: the client identities the change detection starts from (decoded
+// leniently by srvSec.seed).
+type storedStats struct {
+	PeerIdentity bson.Raw `bson:"peerIdentity,omitempty"`
+}
+
+// peerIdentificationOn reports whether the clients' identities are kept in
+// the statistics (peerIdentification, default true).
+func (c protocolConnection) peerIdentificationOn() bool {
+	return c.PeerIdentification == nil || *c.PeerIdentification
 }
 
 // rtData holds a realtimeData document from MongoDB.
@@ -546,7 +560,7 @@ func parseLocalBind(s string) (host string, port int, err error) {
 }
 
 // insertCommand inserts a command into the commandsQueue collection.
-func insertCommand(collectionCommands *mongo.Collection, conn protocolConnection, tag string, value float64, valueStr string, rtDoc rtData) error {
+func insertCommand(collectionCommands *mongo.Collection, conn protocolConnection, tag string, value float64, valueStr string, rtDoc rtData, originatorIP string) error {
 	cmd := bson.M{
 		"protocolSourceConnectionNumber": rtDoc.ProtocolSourceConnectionNumber,
 		"protocolSourceCommonAddress":    commonAddrToFloat64(rtDoc.ProtocolSourceCommonAddress),
@@ -560,7 +574,7 @@ func insertCommand(collectionCommands *mongo.Collection, conn protocolConnection
 		"valueString":                    valueStr,
 		"originatorUserName": fmt.Sprintf("Protocol connection: %d %s",
 			conn.ProtocolConnectionNumber, conn.Name),
-		"originatorIpAddress": "",
+		"originatorIpAddress": originatorIP,
 		"timeTag":             time.Now(),
 	}
 	_, err := collectionCommands.InsertOne(context.TODO(), cmd)

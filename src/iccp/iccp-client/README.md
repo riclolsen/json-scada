@@ -47,7 +47,12 @@ The ICCP client:
 - **Watches** the `commandsQueue` MongoDB collection via change streams
   and forwards commands to the remote ICCP server as `WriteDataValue`
   calls (values are coerced to the type the server declares for the
-  control point).
+  control point). A tag with `protocolSourceCommandUseSBO` is first
+  selected on the same association (a read of `<point>_SBO`); the operate
+  follows only a successful select, and not when the command has expired
+  (10 s) by then. A write succeeds only on a single explicit success result;
+  an empty, multiple or unrecognized response is reported as indeterminate
+  and the command is cancelled.
 - **Supports** redundancy/high-availability via the standard JSON-SCADA
   protocol driver instance mechanism: only the active node keeps the ICCP
   associations up and writes data, unless `keepProtocolRunningWhileInactive`
@@ -105,6 +110,7 @@ db.protocolConnections.insert({
     rootCertFilePath: "",
     chainValidation: false,
     autoAcceptUntrustedCertificates: true,
+    peerIdentification: true,
     stats: {}
 });
 ```
@@ -131,7 +137,8 @@ db.protocolConnections.insert({
 - **rootCertFilePath** [String] - CA certificate (PEM) to verify the server. **Optional**.
 - **chainValidation** [Boolean] - Verify the server certificate chain. **Optional**.
 - **autoAcceptUntrustedCertificates** [Boolean] - Accept untrusted server certificates (overrides chain validation). **Optional**.
-- **stats** [Object] - Protocol statistics (updated by driver). **Mandatory**.
+- **peerIdentification** [Boolean] - Identify the server on every association into `stats.peerIdentity` and report a change of its identity (see [Security Events](#security-events)). When false, no identification request (MMS Identify or the VMD and TASE.2 objects) is sent. Default: true. **Optional**.
+- **stats** [Object] - Protocol statistics (updated by driver): `nodeName`, `timeTag`, `isConnected` and, with `peerIdentification`, `peerIdentity`. **Mandatory**.
 
 ## Tag Configuration
 
@@ -174,6 +181,51 @@ db.realtimeData.updateOne({"tag": "Breaker1.Command"}, {
 - **protocolSourceASDU** [String] - Data type (boolean, float, double, int32, string, etc.). **Mandatory**.
 - **origin** [String] - Must be "command". **Mandatory**.
 
+## Security Events
+
+The driver writes cyber-security events to the `secEvents` collection (see
+[docs/schema.md](../../../docs/schema.md#secevents-collection); the Admin UI
+Security Events viewer lists them). Each connection has a report-only tase2
+security policy, shared by its successive associations: nothing is refused
+because of it.
+
+Detected by the tase2 library (`source: "library"`), among others:
+
+- failed connects by phase (`conn.dial_failed`, at most one event per
+  10 minutes while the server stays unreachable, with the count);
+- TLS: a rejected server certificate (`tls.cert_rejected`), our
+  certificate rejected by the server, weak parameters;
+- malformed PDUs (`proto.*`), responses and rejects for requests not
+  pending, reports of transfer sets this client did not configure, report
+  time stamps going backwards (`unsol.*`, `seq.*`);
+- MAC address changes for the same IP and certificate changes
+  (`peer.mac_changed`, `tls.cert_changed`).
+
+Routine informational events are not stored.
+
+Detected by the driver (`source: "driver"`):
+
+- the server's identity, read on every association with the standard
+  services and objects: MMS Identify (or the VMD `VendorName`,
+  `ModelName`, `Revision` variables), `TASE2_Version`,
+  `Supported_Features` and the `Bilateral_Table_ID` of each domain with
+  mapped points, plus its address, MAC, certificate and AP title, published
+  in `stats.peerIdentity` (see [docs/schema.md](../../../docs/schema.md#peer-identification));
+  `peer.identified` at the first identification and `peer.identity_changed`
+  when a value changes (compared with the stored identity, so across
+  restarts too; the MAC and certificate history of the library is seeded
+  from it);
+- `access.unknown_object`, `access.denied`: a configured point the server
+  does not have or refuses (once per association);
+- `access.tag_unknown`: a command for a tag that is not a command tag of
+  the connection; `cmd.rejected`: a command on a connection with
+  `commandsEnabled` false, or refused by the server; `cmd.object_unknown`:
+  a command for a control point the server does not have;
+  `cmd.wrong_type`: a value the control point's type does not take;
+- `flood.controls`: more than 10 commands to the server within 10 s;
+- `cmd.unnecessary`: a digital command that would not change the state of
+  the tag's `supervisedOfCommand` point (opening an open breaker).
+
 ## Logging
 
 Library messages (the `iso`, `mms` and `tase2` layers) go through the driver
@@ -209,8 +261,7 @@ MongoDB commandsQueue ──CS──> [ICCP Client Driver] ──WriteDataValue�
 ```
 
 DSTS reporting is preferred; `ReadMultiple` polling covers domains where no
-transfer set could be activated. Select-before-operate (SBO) commands are not
-supported by the underlying library; commands are sent as direct operates.
+transfer set could be activated.
 
 ## License
 
