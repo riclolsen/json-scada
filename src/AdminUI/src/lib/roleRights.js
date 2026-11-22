@@ -15,6 +15,7 @@ export const ROLE_RIGHTS = [
   { key: 'disableAlarms', label: 'disableAlarms', icon: 'mdi-bell-off-outline' },
   { key: 'cimEngineering', label: 'cimEngineering', icon: 'mdi-transmission-tower' },
   { key: 'viewSecEvents', label: 'viewSecEvents', icon: 'mdi-shield-alert-outline' },
+  { key: 'editDisplays', label: 'editDisplays', icon: 'mdi-vector-square-edit' },
 ]
 
 // minimum password length of server_realtime_auth (MIN_PASSWORD_LENGTH)

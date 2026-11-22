@@ -62,6 +62,7 @@ function combineRights(roles) {
     disableAlarms: false,
     cimEngineering: false,
     viewSecEvents: false,
+    editDisplays: false,
     group1List: [],
     group1CommandList: [],
     displayList: [],
@@ -82,6 +83,7 @@ function combineRights(roles) {
     'disableAlarms',
     'cimEngineering',
     'viewSecEvents',
+    'editDisplays',
   ]
 
   const list = roles || []

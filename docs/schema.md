@@ -678,9 +678,10 @@ RBAC roles (model `app/models/role.model.js`); seed in `mongo_seed/roles.json`. 
 * _**_ackEvents_**_, _**_ackAlarms_**_, _**_disableAlarms_**_ [Boolean] - May acknowledge events, acknowledge alarms, disable alarms.
 * _**_group1List_**_ [Array of String] - _group1_ values the role can see. Empty = all.
 * _**_group1CommandList_**_ [Array of String] - _group1_ values the role can command. Empty = all the stations the user can see: a user restricted by _group1List_ can only command those stations (when both lists are given, a station must be in both). Special `$$` commands (no point) are allowed to a user restricted by either list only when _group1CommandList_ contains `$$`.
-* _**_displayList_**_ [Array of String] - Display files (e.g. `kaw2.svg`) the role can open; enforced for the `.svg` files under `/svg`. Empty = all; admins open any display.
+* _**_displayList_**_ [Array of String] - Display files (e.g. `kaw2.svg`) the role can open; enforced for the `.svg` files under `/svg` and for the display editing routes of a non-admin _editDisplays_ role. Empty = all; admins open any display.
 * _**_cimEngineering_**_ [Boolean] - CIM-EMS engineering: upload and activate network models, approve binding revisions, download CIM-EMS artifacts. Checked in addition to _isAdmin_. Default false.
 * _**_viewSecEvents_**_ [Boolean] - May open the Security Events viewer (_secEvents_). Not implied by _isAdmin_. Default false; the seeded `admin` and `security` roles grant it.
+* _**_editDisplays_**_ [Boolean] - May list, open and save the SVG displays (SVG Editor, `auth/listDisplays`, `auth/openDisplay`, `auth/saveDisplay`); limited to the _displayList_ when it is not empty. _isAdmin_ also allows it. Default false; the seeded `admin` role grants it.
 * _**_maxSessionDays_**_ [Double] - Session (JWT) lifetime in days. Default 3.
 
 ## _userActions_ collection

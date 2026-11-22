@@ -389,7 +389,11 @@
         "unused": "Unassigned"
       },
       "viewSecEvents": "View Security Events",
-      "viewSecEventsHint": "Can open the Security Events viewer (connection, certificate, identity and command anomalies reported by the protocol drivers)."
+      "viewSecEventsHint": "Can open the Security Events viewer (connection, certificate, identity and command anomalies reported by the protocol drivers).",
+
+      "editDisplays": "Edit Displays",
+
+      "editDisplaysHint": "Can list, open and save the SVG displays in the SVG Editor (admins always can). With a display list, only those displays."
     },
     "protocolDriverInstances": {
       "title": "Protocol Driver Instances",

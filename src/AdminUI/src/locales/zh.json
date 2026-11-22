@@ -389,7 +389,11 @@
         "unused": "未分配"
       },
       "viewSecEvents": "查看安全事件",
-      "viewSecEventsHint": "可以打开安全事件查看器（协议驱动报告的连接、证书、身份和命令异常）。"
+      "viewSecEventsHint": "可以打开安全事件查看器（协议驱动报告的连接、证书、身份和命令异常）。",
+
+      "editDisplays": "编辑显示画面",
+
+      "editDisplaysHint": "可以在SVG编辑器中列出、打开和保存SVG显示画面（管理员始终可以）。设置了显示列表时仅限这些画面。"
     },
     "protocolDriverInstances": {
       "title": "协议驱动程序实例",

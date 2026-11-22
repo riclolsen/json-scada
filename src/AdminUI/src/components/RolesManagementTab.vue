@@ -490,6 +490,7 @@
     disableAlarms: true,
     cimEngineering: false,
     viewSecEvents: false,
+    editDisplays: false,
     maxSessionDays: 3,
   }
   const roleFields = Object.keys(defaultRoleConfig)

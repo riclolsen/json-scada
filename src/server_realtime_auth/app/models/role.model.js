@@ -19,6 +19,8 @@ const Role = mongoose.model(
     cimEngineering: { type: Boolean, default: false },
     // may read the security events (secEvents)
     viewSecEvents: { type: Boolean, default: false },
+    // may list, open and save the svg displays (SVG editor), as isAdmin does
+    editDisplays: { type: Boolean, default: false },
     group1List: { type: [String], default: [] },
     group1CommandList: { type: [String], default: [] },
     displayList: { type: [String], default: [] },

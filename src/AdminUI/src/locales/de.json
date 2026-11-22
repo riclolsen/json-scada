@@ -389,7 +389,11 @@
         "unused": "Nicht zugewiesen"
       },
       "viewSecEvents": "Sicherheitsereignisse anzeigen",
-      "viewSecEventsHint": "Darf den Viewer für Sicherheitsereignisse öffnen (Verbindungs-, Zertifikats-, Identitäts- und Befehlsanomalien, gemeldet von den Protokolltreibern)."
+      "viewSecEventsHint": "Darf den Viewer für Sicherheitsereignisse öffnen (Verbindungs-, Zertifikats-, Identitäts- und Befehlsanomalien, gemeldet von den Protokolltreibern).",
+
+      "editDisplays": "Anzeigen bearbeiten",
+
+      "editDisplaysHint": "Darf die SVG-Anzeigen im SVG-Editor auflisten, öffnen und speichern (Administratoren immer). Mit einer Anzeigenliste nur diese Anzeigen."
     },
     "protocolDriverInstances": {
       "title": "Protokolltreiberinstanzen",

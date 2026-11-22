@@ -389,7 +389,11 @@
         "unused": "Sin asignar"
       },
       "viewSecEvents": "Ver Eventos de Seguridad",
-      "viewSecEventsHint": "Puede abrir el visor de Eventos de Seguridad (anomalías de conexión, certificado, identidad y comandos informadas por los drivers de protocolo)."
+      "viewSecEventsHint": "Puede abrir el visor de Eventos de Seguridad (anomalías de conexión, certificado, identidad y comandos informadas por los drivers de protocolo).",
+
+      "editDisplays": "Editar Pantallas",
+
+      "editDisplaysHint": "Puede listar, abrir y guardar las pantallas SVG en el Editor SVG (los administradores siempre pueden). Con una lista de pantallas, solo esas pantallas."
     },
     "protocolDriverInstances": {
       "title": "Instancias del controlador de protocolo",

@@ -389,7 +389,11 @@
         "unused": "Non attribués"
       },
       "viewSecEvents": "Voir les événements de sécurité",
-      "viewSecEventsHint": "Peut ouvrir la visionneuse des événements de sécurité (anomalies de connexion, de certificat, d'identité et de commandes signalées par les drivers de protocole)."
+      "viewSecEventsHint": "Peut ouvrir la visionneuse des événements de sécurité (anomalies de connexion, de certificat, d'identité et de commandes signalées par les drivers de protocole).",
+
+      "editDisplays": "Modifier les affichages",
+
+      "editDisplaysHint": "Peut lister, ouvrir et enregistrer les affichages SVG dans l'éditeur SVG (les administrateurs toujours). Avec une liste d'affichages, seulement ceux-ci."
     },
     "protocolDriverInstances": {
       "title": "Instances de pilote de protocole",

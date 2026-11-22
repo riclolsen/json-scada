@@ -389,7 +389,11 @@
         "unused": "Não atribuídas"
       },
       "viewSecEvents": "Ver Eventos de Segurança",
-      "viewSecEventsHint": "Pode abrir o visualizador de Eventos de Segurança (anomalias de conexão, certificado, identidade e comandos reportadas pelos drivers de protocolo)."
+      "viewSecEventsHint": "Pode abrir o visualizador de Eventos de Segurança (anomalias de conexão, certificado, identidade e comandos reportadas pelos drivers de protocolo).",
+
+      "editDisplays": "Editar Telas",
+
+      "editDisplaysHint": "Pode listar, abrir e salvar as telas SVG no Editor SVG (administradores sempre podem). Com uma lista de telas, somente essas telas."
     },
     "protocolDriverInstances": {
       "title": "Instâncias do driver de protocolo",

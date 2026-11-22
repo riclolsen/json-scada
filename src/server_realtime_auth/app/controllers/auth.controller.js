@@ -109,6 +109,7 @@ const ROLE_UPDATE_FIELDS = [
   'disableAlarms',
   'cimEngineering',
   'viewSecEvents',
+  'editDisplays',
   'group1List',
   'group1CommandList',
   'displayList',
@@ -1723,6 +1724,14 @@ function displayPath(name) {
     : null
 }
 
+// A display editor that is not an admin works only on the displays of its
+// displayList (when the list is not empty), as the /svg viewer route allows.
+function displayAllowed(rights, fileName) {
+  if (!rights || rights.isAdmin) return true
+  const list = Array.isArray(rights.displayList) ? rights.displayList : []
+  return list.length === 0 || list.includes(fileName)
+}
+
 exports.listDisplays = (req, res) => {
   Log.log('listDisplays')
 
@@ -1732,7 +1741,13 @@ exports.listDisplays = (req, res) => {
       res.status(200).send({ error: errorText(err) })
       return
     }
-    res.status(200).send(files.filter((f) => path.extname(f).toLowerCase() === '.svg'))
+    res
+      .status(200)
+      .send(
+        files.filter(
+          (f) => path.extname(f).toLowerCase() === '.svg' && displayAllowed(req.rights, f)
+        )
+      )
   })
 }
 
@@ -1745,6 +1760,10 @@ exports.openDisplay = (req, res) => {
   if (!target) {
     Log.log('openDisplay: Invalid file name attempted: ' + String(req.query?.file))
     res.status(400).send({ error: 'Invalid file name (must be a .svg file)' })
+    return
+  }
+  if (!displayAllowed(req.rights, target.fileName)) {
+    res.status(403).send({ error: 'Access to display denied!' })
     return
   }
 
@@ -1771,6 +1790,10 @@ exports.saveDisplay = (req, res) => {
   }
   if (typeof req.body.content !== 'string') {
     res.status(400).send({ error: 'Missing display content' })
+    return
+  }
+  if (!displayAllowed(req.rights, target.fileName)) {
+    res.status(403).send({ error: 'Access to display denied!' })
     return
   }
 

@@ -389,7 +389,11 @@
         "unused": "Non assegnati"
       },
       "viewSecEvents": "Visualizza eventi di sicurezza",
-      "viewSecEventsHint": "Può aprire il visualizzatore degli eventi di sicurezza (anomalie di connessione, certificato, identità e comandi segnalate dai driver di protocollo)."
+      "viewSecEventsHint": "Può aprire il visualizzatore degli eventi di sicurezza (anomalie di connessione, certificato, identità e comandi segnalate dai driver di protocollo).",
+
+      "editDisplays": "Modifica visualizzazioni",
+
+      "editDisplaysHint": "Può elencare, aprire e salvare le visualizzazioni SVG nell'editor SVG (gli amministratori sempre). Con un elenco di visualizzazioni, solo quelle."
     },
     "protocolDriverInstances": {
       "title": "Istanze del driver del protocollo",

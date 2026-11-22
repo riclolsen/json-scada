@@ -17,6 +17,7 @@
         "disableAlarms": true,
         "viewSecEvents": true,
         "cimEngineering": true,
+        "editDisplays": true,
         "group1List": [],
         "displayList": [],
         "maxSessionDays": 3,

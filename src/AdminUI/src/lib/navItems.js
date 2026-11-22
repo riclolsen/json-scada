@@ -10,6 +10,7 @@
  *   page      URL opened in a new window
  *   adminOnly shown only to users whose roles grant isAdmin
  *   right     shown only to users whose roles grant this right
+ *   rightOrAdmin  shown to admins and to users whose roles grant this right
  *
  * {json:scada} - Copyright 2020-2026 - Ricardo L. Olsen
  */
@@ -49,7 +50,13 @@ export const navGroups = [
     key: 'engineering',
     items: [
       { id: 'admin', titleKey: 'dashboard.admin', route: '/admin', page: '/#/admin', adminOnly: true },
-      { id: 'svgedit', titleKey: 'dashboard.svgedit', route: '/svg-edit', page: '/svgedit', adminOnly: true },
+      {
+        id: 'svgedit',
+        titleKey: 'dashboard.svgedit',
+        route: '/svg-edit',
+        page: '/svgedit',
+        rightOrAdmin: 'editDisplays',
+      },
       { id: 'nodered', titleKey: 'dashboard.nodered', route: '/nodered', page: '/#/nodered', adminOnly: true },
       { id: 'n8n', titleKey: 'dashboard.n8n', route: '/n8n', page: '/#/n8n', adminOnly: true },
       { id: 'apollo', titleKey: 'dashboard.apollo', route: '/apollo', page: '/#/apollo' },
@@ -64,7 +71,10 @@ export const homeItem = { id: 'home', titleKey: 'nav.home', route: '/dashboard',
 
 // Groups with the items this user may see (empty groups dropped).
 export function visibleGroups(isAdmin, rights = {}) {
-  const allowed = (it) => (isAdmin || !it.adminOnly) && (!it.right || !!rights?.[it.right])
+  const allowed = (it) =>
+    (isAdmin || !it.adminOnly) &&
+    (!it.right || !!rights?.[it.right]) &&
+    (!it.rightOrAdmin || isAdmin || !!rights?.[it.rightOrAdmin])
   return navGroups
     .map((g) => ({ ...g, items: g.items.filter(allowed) }))
     .filter((g) => g.items.length)

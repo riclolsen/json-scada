@@ -130,19 +130,21 @@ module.exports = function (app, accessPoint) {
     [authJwt.isSecEventsViewer],
     secEventsController.listSecEvents
   )
+  // svg displays (SVG editor, MCP display tools): isAdmin or a role with
+  // editDisplays (non-admins only the displays of their displayList)
   app.use(
     accessPoint + 'auth/listDisplays',
-    [authJwt.isAdmin],
+    [authJwt.isDisplayEditor],
     controller.listDisplays
   )
   app.get(
     accessPoint + 'auth/openDisplay',
-    [authJwt.isAdmin],
+    [authJwt.isDisplayEditor],
     controller.openDisplay
   )
   app.post(
     accessPoint + 'auth/saveDisplay',
-    [authJwt.isAdmin],
+    [authJwt.isDisplayEditor],
     controller.saveDisplay
   )
   app.post(

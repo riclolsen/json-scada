@@ -523,6 +523,7 @@ const typeDefs = `#graphql
     disableAlarms: Boolean
     cimEngineering: Boolean
     viewSecEvents: Boolean
+    editDisplays: Boolean
     group1List: [String]
     group1CommandList: [String]
     displayList: [String]
@@ -747,6 +748,7 @@ const typeDefs = `#graphql
     disableAlarms: Boolean
     cimEngineering: Boolean
     viewSecEvents: Boolean
+    editDisplays: Boolean
     group1List: [String]
     group1CommandList: [String]
     displayList: [String]

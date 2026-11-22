@@ -403,6 +403,7 @@ When enabled, the user roles (Role Based Access Control - RBAC) and rights are c
 - _**ackAlarms**_ [Boolean] - right to acknowledge and eliminate alarms.
 - _**disableAlarms**_ [Boolean] - right to disable/enable alarms for points.
 - _**viewSecEvents**_ [Boolean] - right to open the Security Events viewer (`POST /Invoke/auth/listSecEvents`, the `secEvents` collection). Not implied by _isAdmin_.
+- _**editDisplays**_ [Boolean] - right to list, open and save the SVG displays with the SVG Editor (`/Invoke/auth/listDisplays`, `openDisplay`, `saveDisplay`), only the displays of _displayList_ when it is not empty. Admins always have it.
 - _**group1List**_ [Array of String] - right to access only a limited set of data (from a group1 list). An empty list means no restrictions on groups.
 - _**displayList**_ [Array of String] - right to access only a limited set of displays. An empty list means no restrictions on displays.
 - _**maxSessionDays**_ [Double] - time in days for the maximum session period (after this, the JWT access token expires).
