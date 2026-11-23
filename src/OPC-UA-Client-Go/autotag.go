@@ -27,6 +27,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -137,13 +138,19 @@ func autotagPass(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, 
 
 	// Objects are containers, not data; methods only matter when commands
 	// are allowed.
-	var toRead []string
+	var toRead, metaKeys []string
 	for _, key := range browsed.Order {
 		e, ok := browsed.Refs[key]
 		if !ok {
 			continue
 		}
 		if e.Ref.NodeClass == ua.NodeClassObject {
+			continue
+		}
+		// deviation D39: a variable's unit and range describe it; they get
+		// no tag of their own.
+		if isMetadataProperty(e) {
+			metaKeys = append(metaKeys, key)
 			continue
 		}
 		if e.Ref.NodeClass == ua.NodeClassMethod && !conn.CommandsEnabled {
@@ -161,6 +168,16 @@ func autotagPass(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, 
 	}
 
 	maxPerRead := operationLimit(ctx, cli, id.Server_ServerCapabilities_OperationLimits_MaxNodesPerRead)
+
+	meta, err := readEngMetadata(ctx, cli, conn, browsed, metaKeys, maxPerRead)
+	if err != nil {
+		if sessionLost(cli, err) {
+			return fmt.Errorf("%w: reading %d unit and range properties %d at a time: %v",
+				errValueReadTooLarge, len(metaKeys), conn.ValueReadChunk(), err)
+		}
+		// Only the unit and limits of the new tags are missing.
+		jslog.Log(jslog.LevelBasic, "%s - Error reading unit and range properties: %v", conn.Name, err)
+	}
 
 	for offset := 0; offset < len(toRead); offset += maxNodesToRead {
 		if ctx.Err() != nil {
@@ -316,7 +333,12 @@ func autotagPass(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, 
 				srcTime = srcTime.Add(time.Duration(conn.HoursShift * float64(time.Hour)))
 			}
 
+			m := meta[info.Address]
 			enqueueValue(OPCValue{
+				Unit:                       m.unit,
+				HasRange:                   m.rangeRank > 0,
+				RangeLow:                   m.low,
+				RangeHigh:                  m.high,
 				CreateCommandForSupervised: createCommandForSupervised,
 				AccessLevels:               info.AccessLevel,
 				ValueJSON:                  jsonValue,
@@ -343,6 +365,97 @@ func autotagPass(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, 
 
 	jslog.Log(jslog.LevelNoLog, "%s - %d variables added to monitoring.", conn.Name, len(conn.ListMon))
 	return nil
+}
+
+// metadataProps are the properties of an analog variable (AnalogItemType,
+// OPC 10000-8 §5.3.2) that become its tag's unit and limits instead of tags
+// of their own. The value is the rank of a range: EURange, the normal
+// operating range, comes before InstrumentRange, the range the instrument
+// can measure; NumberRange is not standard but some servers use it.
+var metadataProps = map[string]int{
+	"EngineeringUnits": 0,
+	"EURange":          3,
+	"InstrumentRange":  2,
+	"NumberRange":      1,
+}
+
+// isMetadataProperty tells a unit or range property of a variable.
+func isMetadataProperty(e refEntry) bool {
+	ref := e.Ref
+	if ref == nil || ref.BrowseName == nil || ref.NodeClass != ua.NodeClassVariable ||
+		ref.ReferenceTypeID == nil || ref.ReferenceTypeID.Namespace() != 0 ||
+		ref.ReferenceTypeID.IntID() != id.HasProperty || e.Parent == "" {
+		return false
+	}
+	_, ok := metadataProps[ref.BrowseName.Name]
+	return ok
+}
+
+// engMeta is what a variable's properties say of it: its unit and its
+// range (rangeRank 0 when none was read).
+type engMeta struct {
+	unit      string
+	low, high float64
+	rangeRank int
+}
+
+// readEngMetadata reads the unit and range properties found by browsing and
+// returns them by the key of the variable they describe.
+func readEngMetadata(ctx context.Context, cli *opcua.Client, conn *OPCUAConnection, browsed *browseResult, keys []string, maxPerRead uint32) (map[string]engMeta, error) {
+	out := map[string]engMeta{}
+	if len(keys) == 0 {
+		return out, nil
+	}
+	values, err := readNodeValues(ctx, cli, keys, maxPerRead, conn.ValueReadChunk())
+	if err != nil {
+		return out, err
+	}
+	for i, key := range keys {
+		e := browsed.Refs[key]
+		dv := values[i]
+		if dv == nil || !statusIsGood(dv.Status) || dv.Value == nil {
+			continue
+		}
+		m := out[e.Parent]
+		v := dv.Value.Value()
+		if eo, ok := v.(*ua.ExtensionObject); ok && eo != nil {
+			v = eo.Value
+		}
+		switch x := v.(type) {
+		case *ua.EUInformation:
+			if u := euUnit(x); u != "" {
+				m.unit = u
+			}
+		case *ua.Range:
+			rank := metadataProps[e.Ref.BrowseName.Name]
+			if x != nil && validRange(x.Low, x.High) && rank > m.rangeRank {
+				m.low, m.high, m.rangeRank = x.Low, x.High, rank
+			}
+		}
+		out[e.Parent] = m
+	}
+	return out, nil
+}
+
+// euUnit is the unit text of an EUInformation: its display name ("°C"),
+// else its description.
+func euUnit(eu *ua.EUInformation) string {
+	if eu == nil {
+		return ""
+	}
+	if eu.DisplayName != nil {
+		if t := strings.TrimSpace(eu.DisplayName.Text); t != "" {
+			return t
+		}
+	}
+	if eu.Description != nil {
+		return strings.TrimSpace(eu.Description.Text)
+	}
+	return ""
+}
+
+func validRange(low, high float64) bool {
+	return !math.IsNaN(low) && !math.IsNaN(high) && !math.IsInf(low, 0) && !math.IsInf(high, 0) && low < high
 }
 
 // splitBrowsePath turns the full browse path of a node into the path and

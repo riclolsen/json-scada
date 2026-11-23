@@ -51,6 +51,9 @@ const (
 type refEntry struct {
 	Ref  *ua.ReferenceDescription
 	Path string
+	// Parent is the key of the node it was found under: for a property
+	// (HasProperty), the variable it describes.
+	Parent string
 }
 
 // browseResult is the outcome of a full browse: the references by node id
@@ -220,7 +223,7 @@ func browseFullAddressSpace(ctx context.Context, cli *opcua.Client, conn *OPCUAC
 					continue
 				}
 
-				out.Refs[key] = refEntry{Ref: ref, Path: path}
+				out.Refs[key] = refEntry{Ref: ref, Path: path, Parent: batch[i].NodeID.String()}
 				out.Order = append(out.Order, key)
 
 				// Properties are leaves; everything else is expanded.

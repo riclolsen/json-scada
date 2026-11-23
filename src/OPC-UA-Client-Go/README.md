@@ -335,6 +335,15 @@ objects (folders), variables and methods. Properties of a variable are discovere
 own, but their children are not expanded. Types, views and anything outside `Objects` are not
 browsed.
 
+**Units and measurement range.** The `EngineeringUnits`, `EURange`, `InstrumentRange` and
+`NumberRange` properties of a variable (reached through `HasProperty`) are not tagged or monitored.
+Instead they fill in the variable's new analog tag: `unit` gets the `EUInformation` display name
+(its description when the display name is empty), and `lololoLimit` / `hihihiLimit` get the low
+and high bounds of the range. `EURange` takes precedence over `InstrumentRange`, which takes
+precedence over `NumberRange` (not a standard OPC UA property, accepted when a server uses it). A
+range whose bounds are not finite or not increasing is ignored, and a tag without these properties
+keeps the defaults (no unit, no limits). Only new tags are affected; existing tags are not changed.
+
 **What is skipped.** The server's own bookkeeping about its clients: `SessionsDiagnosticsSummary`
 (with everything below it), `SessionDiagnosticsArray`, `SessionSecurityDiagnosticsArray` and
 `SubscriptionDiagnosticsArray`. They describe sessions that come and go, so tags made from them are

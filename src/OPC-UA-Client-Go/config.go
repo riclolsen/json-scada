@@ -183,6 +183,14 @@ type OPCValue struct {
 	DisplayName                string
 	ParentName                 string
 	Path                       string
+
+	// From the variable's EngineeringUnits and EURange (or InstrumentRange,
+	// NumberRange) properties, for a new analog tag's unit and its
+	// lololoLimit/hihihiLimit (deviation D39).
+	Unit      string
+	HasRange  bool
+	RangeLow  float64
+	RangeHigh float64
 }
 
 // --- connection runtime accessors ----------------------------------------

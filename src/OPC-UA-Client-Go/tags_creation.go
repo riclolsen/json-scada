@@ -146,6 +146,15 @@ func newRealtimeDoc(ov OPCValue, id float64, commandOfSupervised float64) bson.M
 
 	default: // analog
 		doc["value"] = ov.Value
+		// deviation D39: the unit and the measurement range the server
+		// declares for the variable (EngineeringUnits, EURange).
+		if ov.Unit != "" {
+			doc["unit"] = ov.Unit
+		}
+		if ov.HasRange {
+			doc["lololoLimit"] = ov.RangeLow
+			doc["hihihiLimit"] = ov.RangeHigh
+		}
 		// parity: the analog literal in TagsCreation.cs is the only one
 		// that never assigns valueJson, so the C# field keeps its null
 		// default and the stored document gets null rather than "".

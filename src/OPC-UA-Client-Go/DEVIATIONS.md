@@ -43,6 +43,7 @@ certificate items covered by `security.go` (D1 to D4).
 | D36 | The library is the `github.com/riclolsen/opcua` fork of gopcua (a `replace` in `go.mod`), for its security event reporting | `go.mod` |
 | D37 | Security events go to `secEvents`: the library's, and the driver's (refused certificates, unknown nodes, refused, unknown, mistyped, stale, flooding and unnecessary commands, every method call). A command whose expiry passes during a method's lookups is cancelled `expired` | `secevents.go`, `session.go`, `subscribe.go`, `mongo_commands.go` |
 | D38 | With `peerIdentification` (default on), the server's `ServerStatus.BuildInfo`, application description, certificate and MAC address go to `stats.peerIdentity` on every session, and their changes and server restarts are reported | `secevents.go` |
+| D39 | A variable's `EngineeringUnits`, `EURange`, `InstrumentRange` and `NumberRange` properties are not tagged; they set the new analog tag's `unit`, `lololoLimit` and `hihihiLimit` (EURange first) | `browse.go`, `autotag.go`, `tags_creation.go` |
 
 ## How it was verified
 

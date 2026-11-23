@@ -34,8 +34,10 @@ MongoDB semantics, no .NET runtime dependency. The C# driver has been removed fr
   - `security.go` — certificates, PKCS#12/PEM loading, self-signed generation, the UA XML subset
   - `session.go` — endpoint discovery and selection, client options, connect/retry loop
     (← `ConsoleClient()`)
-  - `browse.go` — address space walk (← `BrowseFullAddressSpaceAsync`)
-  - `autotag.go` — the autoCreateTags read pass, browse-path splitting
+  - `browse.go` — address space walk (← `BrowseFullAddressSpaceAsync`); `refEntry.Parent` links a
+    property to its variable
+  - `autotag.go` — the autoCreateTags read pass, browse-path splitting, unit and range properties
+    folded into the parent's tag (`metadataProps`, never tagged)
   - `subscribe.go` — subscriptions, the notification pump (← `OnNotification`), per-item flood cap
   - `diagnostics.go` — per-session/per-subscription server diagnostics, never tagged or monitored
   - `uaconv.go` — value conversion (← `ConvertOpcValue`)
@@ -61,7 +63,7 @@ MongoDB semantics, no .NET runtime dependency. The C# driver has been removed fr
 ## Work Guidance
 
 - Behaviour of the former C# driver is the specification; its quirks are reproduced on purpose
-  and marked `parity:` in comments. Intentional differences are numbered (D1 to D38) and listed in
+  and marked `parity:` in comments. Intentional differences are numbered (D1 to D39) and listed in
   `DEVIATIONS.md`, each marked `deviation Dn` at its code site — add to that list
   rather than silently diverging.
 - Keep `README.md` true. It states behaviour to users (defaults, `cancelReason` values, the topic
@@ -117,8 +119,9 @@ MongoDB semantics, no .NET runtime dependency. The C# driver has been removed fr
 
 - `go test ./...` — conversions, tag documents (including the golden files), browse paths, topic
   matching, command conversions, discovery backoff, security events and server identification
-  (`secevents_test.go`), and loopback runs (browse, autotag, subscribe, write, identify) against an
-  in-process gopcua server. No MongoDB or device needed.
+  (`secevents_test.go`), and loopback runs (browse, autotag, unit and range in
+  `engmeta_test.go`, subscribe, write, identify) against an in-process gopcua server. No MongoDB or
+  device needed.
 - `go vet ./...` and `gofmt -l .` must be clean.
 - `go test -race` can report a race inside gopcua's in-process test server (`server/node.go`,
   reached from `setServerValue` in `loopback_test.go`) in the two loopback acquisition tests; it is
