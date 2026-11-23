@@ -138,6 +138,7 @@ Inkscape+SAGE:
 
 Notes for version 0.72:
 
+* SunSpec client driver (SUNSPEC, Go): discovers the SunSpec model chain of each unit, creates the tags of the discovered points (and command tags for writable points), polls the models and writes points; peer identification from the Common model and security events like the Modbus client.
 * Role right editDisplays: users of a role with it may use the SVG Editor (list, open and save displays) without being admins, limited to the role display list when one is set.
 * Windows services run under WinSW instead of NSSM: one XML per service in c:\json-scada\platform-windows\services (from platform-windows\service-templates), same service names and settings. Logs are now c:\json-scada\log\<name>.out.log and <name>.err.log (10 MB, one rolled file). The installer converts existing NSSM services on upgrade, keeping their settings, and repoints the log viewer (conf\log.io-file.json).
 * Windows installer: in-place upgrades. Run the new installer over an existing installation (do not uninstall first, the uninstaller removes the databases). Databases, configuration, displays and service settings are kept; services are stopped during the upgrade and the running ones restarted; conf and scripts are backed up to c:\json-scada\backup; services added by the new version are registered; MongoDB collections, indexes, validators and feature compatibility version and the TimescaleDB extension are updated; PostgreSQL data of an older major version keeps running on its previous binaries. Details in c:\json-scada\log\upgrade.log.

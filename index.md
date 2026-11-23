@@ -131,6 +131,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [OPC-DA Client Driver](src/OPC-DA-Client/README.md)
 - [OPC-DA Server Driver](src/OPC-DA-Server/README.md)
 - [PLC4J Client Driver](src/plc4j-client/README.md)
+- [SunSpec Client Driver (Go; model discovery, automatic tags, TCP/TLS/RTU)](src/modbus-go/cmd/sunspecclient/README.md)
 - [Modbus Client Driver (Go; TCP/TLS/RTU/RTU-over-TCP/TLS, all byte orders)](src/modbus-go/cmd/modbusclient/README.md)
 - [Modbus Server Driver (Go; TCP/TLS/RTU/RTU-over-TCP/TLS, all byte orders)](src/modbus-go/cmd/modbusserver/README.md)
 - [CIM-EMS Driver (CGMES 2.4.15 models, load flow, state estimation, contingency analysis; Python)](src/cim-ems/README.md)

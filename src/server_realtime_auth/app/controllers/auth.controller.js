@@ -540,6 +540,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'ICCP',
       'ICCP_SERVER',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -566,6 +567,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC60870-5-101_SERVER',
       'IEC60870-5-101',
       'MODBUS',
+      'SUNSPEC',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('autoCreateTags' in req.body)) {
@@ -871,6 +873,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'ICCP',
       'ONVIF',
       'MODBUS',
+      'SUNSPEC',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('giInterval' in req.body)) {
@@ -925,6 +928,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'OPC-UA',
       'OPC-DA',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -943,6 +947,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'DNP3_SERVER',
       'OPC-DA',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -973,6 +978,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC60870-5-104',
       'IEC60870-5-104_SERVER',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -1002,6 +1008,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC61850',
       'IEC61850_SERVER',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -1016,6 +1023,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'DNP3_SERVER',
       'MQTT-SPARKPLUG-B',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -1186,7 +1194,7 @@ exports.updateProtocolConnection = async (req, res) => {
   }
 
   // MODBUS (client) specific
-  if (['MODBUS'].includes(req?.body?.protocolDriver)) {
+  if (['MODBUS', 'SUNSPEC'].includes(req?.body?.protocolDriver)) {
     if (!('connectionMode' in req.body)) {
       req.body.connectionMode = 'TCP Active'
     }

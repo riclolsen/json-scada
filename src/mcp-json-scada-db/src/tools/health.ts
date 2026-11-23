@@ -53,6 +53,7 @@ const DRIVER_SERVICE: Record<string, string> = {
   ONVIF: 'onvif',
   'CIM-EMS': 'cim_ems',
   MODBUS: 'modbusclient',
+  SUNSPEC: 'sunspecclient',
   MODBUS_SERVER: 'modbusserver',
 }
 

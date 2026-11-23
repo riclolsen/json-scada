@@ -294,6 +294,7 @@
             'IEC61850',
             'PLC4X',
             'MODBUS',
+            'SUNSPEC',
             'OPC-DA',
             'ICCP',
             'DNP3_SERVER',
@@ -323,6 +324,7 @@
               'IEC61850',
               'IEC61850_SERVER',
               'MODBUS',
+              'SUNSPEC',
               'MODBUS_SERVER',
               'IEC60870-5-104',
               'IEC60870-5-104_SERVER',
@@ -1042,6 +1044,7 @@
                   'ONVIF',
                   'N8N',
                   'MODBUS',
+                  'SUNSPEC',
                 ].includes(editedConnection.protocolDriver)
               "
             >
@@ -1088,6 +1091,7 @@
                   'ONVIF',
                   'N8N',
                   'MODBUS',
+                  'SUNSPEC',
                 ].includes(editedConnection.protocolDriver)
               "
             >
@@ -2033,7 +2037,7 @@
 
             <v-list-item
               class="ma-0"
-              v-if="editedConnection.protocolDriver === 'MODBUS'"
+              v-if="['MODBUS', 'SUNSPEC'].includes(editedConnection.protocolDriver)"
             >
               <v-select
                 :items="connectionModeModbusItems"
@@ -2076,7 +2080,7 @@
               'ICCP',
               'ICCP_SERVER',
             ].includes(editedConnection.protocolDriver) ||
-            (['DNP3', 'DNP3_SERVER', 'MODBUS', 'MODBUS_SERVER'].includes(
+            (['DNP3', 'DNP3_SERVER', 'MODBUS', 'SUNSPEC', 'MODBUS_SERVER'].includes(
               editedConnection.protocolDriver
             ) &&
               editedConnection.connectionMode !== 'Serial')
@@ -2145,6 +2149,7 @@
                   'I104M',
                   'PLCTAG',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                   'TELEGRAF-LISTENER',
                   'NODE-RED',
@@ -2247,7 +2252,7 @@
               editedConnection.protocolDriver
             ) &&
               editedConnection.connectionMode.startsWith('TLS')) ||
-            (['MODBUS', 'MODBUS_SERVER'].includes(
+            (['MODBUS', 'SUNSPEC', 'MODBUS_SERVER'].includes(
               editedConnection.protocolDriver
             ) &&
               editedConnection.connectionMode.includes('TLS'))
@@ -2276,6 +2281,7 @@
                   'ICCP',
                   'ICCP_SERVER',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
@@ -2462,6 +2468,7 @@
                   'ICCP',
                   'ICCP_SERVER',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
@@ -2503,7 +2510,7 @@
 
             <v-list-item
               v-if="
-                ['MODBUS', 'MODBUS_SERVER'].includes(
+                ['MODBUS', 'SUNSPEC', 'MODBUS_SERVER'].includes(
                   editedConnection.protocolDriver
                 )
               "
@@ -2541,6 +2548,7 @@
                   'OPC-DA', 
                   'OPC-DA_SERVER',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(
                   editedConnection.protocolDriver
@@ -2729,6 +2737,7 @@
                   'DNP3_SERVER',
                   'MQTT-SPARKPLUG-B',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(
                   editedConnection.protocolDriver
@@ -2823,6 +2832,7 @@
                   'ICCP',
                   'ICCP_SERVER',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
@@ -2849,6 +2859,7 @@
                   'ICCP',
                   'ICCP_SERVER',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
@@ -3563,7 +3574,7 @@
           tile
           variant="outlined"
           v-if="
-            ['MODBUS', 'MODBUS_SERVER'].includes(
+            ['MODBUS', 'SUNSPEC', 'MODBUS_SERVER'].includes(
               editedConnection.protocolDriver
             )
           "
@@ -3575,6 +3586,20 @@
           </v-card-title>
 
           <v-list flat density="compact" shaped>
+            <template v-if="editedConnection.protocolDriver === 'SUNSPEC'">
+              <v-list-item v-for="field in ['unitIds', 'baseAddresses', 'modelIds']" :key="field">
+                <v-combobox v-model="editedConnection[field]" :label="field" multiple chips closable-chips />
+              </v-list-item>
+              <v-list-item>
+                <v-select :model-value="editedConnection.registerType ?? 'holding'" @update:model-value="editedConnection.registerType = $event"
+                  label="registerType" :items="['holding', 'input']" />
+                <v-text-field :model-value="editedConnection.maxModels ?? 256" @update:model-value="editedConnection.maxModels = Number($event)"
+                  label="maxModels" type="number" min="1" />
+                <v-switch :model-value="editedConnection.autoCreateCommandTags ?? true" @update:model-value="editedConnection.autoCreateCommandTags = $event"
+                  label="autoCreateCommandTags" />
+                <v-switch v-model="editedConnection.autoCreateUnimplemented" label="autoCreateUnimplemented" />
+              </v-list-item>
+            </template>
             <v-list-item
               v-if="
                 ['MODBUS', 'MODBUS_SERVER'].includes(
@@ -3757,7 +3782,7 @@
 
             <v-list-item
               v-if="
-                editedConnection.protocolDriver === 'MODBUS'
+                ['MODBUS', 'SUNSPEC'].includes(editedConnection.protocolDriver)
               "
             >
               <template v-slot:default="{ active }">
@@ -3788,7 +3813,7 @@
 
             <v-list-item
               v-if="
-                editedConnection.protocolDriver === 'MODBUS'
+                ['MODBUS', 'SUNSPEC'].includes(editedConnection.protocolDriver)
               "
             >
               <template v-slot:default="{ active }">
@@ -3819,7 +3844,7 @@
 
             <v-list-item
               v-if="
-                editedConnection.protocolDriver === 'MODBUS'
+                ['MODBUS', 'SUNSPEC'].includes(editedConnection.protocolDriver)
               "
             >
               <template v-slot:default="{ active }">
@@ -4154,7 +4179,7 @@
             ['IEC60870-5-101', 'IEC60870-5-103', 'IEC60870-5-101_SERVER'].includes(
               editedConnection.protocolDriver
             ) ||
-            (['DNP3', 'DNP3_SERVER', 'MODBUS', 'MODBUS_SERVER'].includes(
+            (['DNP3', 'DNP3_SERVER', 'MODBUS', 'SUNSPEC', 'MODBUS_SERVER'].includes(
               editedConnection.protocolDriver
             ) &&
               editedConnection.connectionMode === 'Serial')
@@ -4176,6 +4201,7 @@
                   'DNP3',
                   'DNP3_SERVER',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
@@ -4214,6 +4240,7 @@
                   'DNP3',
                   'DNP3_SERVER',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
@@ -4253,6 +4280,7 @@
                   'DNP3',
                   'DNP3_SERVER',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
@@ -4291,6 +4319,7 @@
                   'DNP3',
                   'DNP3_SERVER',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
@@ -4329,6 +4358,7 @@
                   'DNP3',
                   'DNP3_SERVER',
                   'MODBUS',
+                  'SUNSPEC',
                   'MODBUS_SERVER',
                 ].includes(editedConnection.protocolDriver)
               "
@@ -4828,6 +4858,7 @@
     'DNP3',
     'DNP3_SERVER',
     'MODBUS',
+    'SUNSPEC',
     'MODBUS_SERVER',
     'MQTT-SPARKPLUG-B',
     'OPC-UA',

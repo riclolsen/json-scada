@@ -196,6 +196,13 @@ const CATALOG = {
     passConfPath: true,
     defaultStartMode: 'manual',
   },
+  SUNSPEC: {
+    key: 'sunspecclient',
+    type: 'exe',
+    exe: '{bin}/sunspec-client',
+    passConfPath: true,
+    defaultStartMode: 'manual',
+  },
   MODBUS_SERVER: {
     key: 'modbusserver',
     type: 'exe',

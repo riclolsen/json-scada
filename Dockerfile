@@ -293,6 +293,7 @@ RUN cd src/dnp3-go && \
 RUN cd src/modbus-go && \
     go mod tidy && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/modbus-client ./cmd/modbusclient && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/sunspec-client ./cmd/sunspecclient && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/modbus-server ./cmd/modbusserver
 
 # Copy ICCP client and server to bin
@@ -413,6 +414,7 @@ COPY ./platform-ubuntu/dnp3_client.ini /etc/supervisor/conf.d/dnp3_client.ini
 COPY ./platform-ubuntu/dnp3_server.ini /etc/supervisor/conf.d/dnp3_server.ini
 COPY ./platform-ubuntu/mcp_server.ini /etc/supervisor/conf.d/mcp_server.ini
 COPY ./platform-ubuntu/modbusclient.ini /etc/supervisor/conf.d/modbusclient.ini
+COPY ./platform-ubuntu/sunspecclient.ini /etc/supervisor/conf.d/sunspecclient.ini
 COPY ./platform-ubuntu/modbusserver.ini /etc/supervisor/conf.d/modbusserver.ini
 COPY ./platform-ubuntu/mongofw.ini /etc/supervisor/conf.d/mongofw.ini
 COPY ./platform-ubuntu/mongowr.ini /etc/supervisor/conf.d/mongowr.ini

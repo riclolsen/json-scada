@@ -11,10 +11,16 @@ the same command-line arguments and environment variables, and the same service 
 |---|---|---|---|---|
 | Client (master) | `MODBUS` | `bin/modbus-client` | `modbusclient` / `JSON_SCADA_modbusclient` | [cmd/modbusclient/README.md](cmd/modbusclient/README.md) |
 | Server (slave) | `MODBUS_SERVER` | `bin/modbus-server` | `modbusserver` / `JSON_SCADA_modbusserver` | [cmd/modbusserver/README.md](cmd/modbusserver/README.md) |
+| SunSpec client | `SUNSPEC` | `bin/sunspec-client` | `sunspecclient` / `JSON_SCADA_sunspecclient` | [cmd/sunspecclient/README.md](cmd/sunspecclient/README.md) |
 
 The driver READMEs are the operator references: configuration, tags, behaviour, statistics
 and troubleshooting. This page covers what both share, how they are built, and how they
 differ from the former Node.js drivers.
+
+The SunSpec client (new, no Node.js predecessor) uses
+[go-sunspec](https://github.com/riclolsen/go-sunspec) over the same go-modbus transports: it
+discovers each device's SunSpec model chain, creates the tags of the discovered points and
+shares the Modbus client's lifecycle, TLS bridge and security event writer.
 
 ## Transports
 
@@ -118,10 +124,11 @@ Go 1.26 or later. From this directory:
 ```bash
 go build -ldflags="-s -w" -o ../../bin/modbus-client ./cmd/modbusclient
 go build -ldflags="-s -w" -o ../../bin/modbus-server ./cmd/modbusserver
+go build -ldflags="-s -w" -o ../../bin/sunspec-client ./cmd/sunspecclient
 ```
 
 `build.bat` does the same on Windows. The platform build scripts and the Docker image build
-both binaries.
+the three binaries.
 
 The module uses `src/go-common` through a `replace` directive and is listed in `src/go.work`.
 
@@ -158,12 +165,13 @@ The code:
 
 | Package | Contents |
 |---|---|
-| `cmd/modbusclient`, `cmd/modbusserver` | Entry points |
+| `cmd/modbusclient`, `cmd/modbusserver`, `cmd/sunspecclient` | Entry points |
 | `internal/mbcore` | Value codec and byte orders, addresses and ASDUs, CRC and RTU framing, request descriptions. No MongoDB. |
 | `internal/mbnet` | TLS settings, the client bridge, the server front-end and RTU gateway, serial ports |
 | `internal/drv` | Command line, config file, instance document, logging adapters, BSON conversions |
 | `internal/mbsec` | Security event kinds, their classification and the mapping of go-modbus's events onto `secEvents` documents |
-| `internal/clientapp` | The `MODBUS` driver |
+| `internal/clientapp` | The `MODBUS` driver, and the client lifecycle (`Run`) the `SUNSPEC` driver shares |
+| `internal/sunspecapp` | The `SUNSPEC` driver: discovery, point addresses, automatic tags, polling, point writes, security events |
 | `internal/serverapp` | The `MODBUS_SERVER` driver |
 | `internal/loopback` | Client against server tests |
 
@@ -275,7 +283,10 @@ The tests need no MongoDB and no hardware:
   the Node.js tests), the write relay.
 - `internal/loopback`: the client polling the server and sending commands to it over TCP,
   RTU over TCP, TLS and RTU over TLS, with certificates generated for the test.
-- `TestReadmeDocumentsEveryConfigKey` (client and server) fails when a configuration key the
+- `internal/sunspecapp`: the SunSpec client against an in-process go-sunspec device on a
+  loopback port (discovery, automatic tags, polling, commands, security events), addresses and
+  value conversion.
+- `TestReadmeDocumentsEveryConfigKey` (Modbus client and server, SunSpec client) fails when a configuration key the
   code reads is missing from the driver README.
 
 Interoperability with other Modbus tools, for a manual check:

@@ -209,6 +209,15 @@ const ProtocolConnection = mongoose.model(
     // interpret plain numeric addresses as 1-based Modicon refs (40001 -> hr:0)
     useModiconAddresses: { type: Boolean, default: false },
 
+    // SUNSPEC discovery and automatic tag creation
+    unitIds: { type: [Double], default: undefined },
+    modelIds: { type: [Double], default: undefined },
+    baseAddresses: { type: [Double], default: undefined },
+    registerType: { type: String, enum: ['holding', 'input'] },
+    maxModels: { type: Double, min: 1 },
+    autoCreateCommandTags: Boolean,
+    autoCreateUnimplemented: Boolean,
+
     // MODBUS - polling and request shaping
     pollingInterval: { type: Double, min: 0, default: 1000.0 },
     maxRetries: { type: Double, min: 0, default: 2.0 },

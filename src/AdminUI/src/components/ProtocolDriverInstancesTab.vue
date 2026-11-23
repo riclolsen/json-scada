@@ -484,6 +484,7 @@
     'DNP3_SERVER',
     'MQTT-SPARKPLUG-B',
     'MODBUS',
+    'SUNSPEC',
     'MODBUS_SERVER',
     'OPC-UA',
     'OPC-UA_SERVER',

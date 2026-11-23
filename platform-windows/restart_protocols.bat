@@ -27,6 +27,7 @@ net stop JSON_SCADA_cim_ems_demo_field
 net stop JSON_SCADA_telegraf_runtime
 net stop JSON_SCADA_telegraf_listener
 net stop JSON_SCADA_modbusclient
+net stop JSON_SCADA_sunspecclient
 net stop JSON_SCADA_modbusserver
 net stop JSON_SCADA_nodered_driver
 net stop JSON_SCADA_n8nclient

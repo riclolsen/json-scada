@@ -504,6 +504,12 @@ services:
     container_name: jsdemo_modbusclient
     command: sh -c "sleep 70 && ./modbus-client 1 1"
 
+  sunspecclient:
+    <<: *go-driver
+    profiles: ["sunspec"]
+    container_name: jsdemo_sunspecclient
+    command: sh -c "sleep 70 && ./sunspec-client 1 1"
+
   telegraf_listener:
     image: node:22-alpine
     container_name: jsdemo_telegraf_listener

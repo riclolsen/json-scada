@@ -95,6 +95,7 @@ go build -ldflags="-s -w" -o ../../bin/dnp3-server ./cmd/dnp3server
 cd ../modbus-go
 go mod tidy
 go build -ldflags="-s -w" -o ../../bin/modbus-client ./cmd/modbusclient
+go build -ldflags="-s -w" -o ../../bin/sunspec-client ./cmd/sunspecclient
 go build -ldflags="-s -w" -o ../../bin/modbus-server ./cmd/modbusserver
 
 cd ../iec60870-5

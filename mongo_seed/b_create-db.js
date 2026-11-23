@@ -17,6 +17,7 @@ var protocolDriverNames = [
   "OPC-DA_SERVER",
   "TELEGRAF-LISTENER",
   "MODBUS",
+  "SUNSPEC",
   "MODBUS_SERVER",
   "MQTT-SPARKPLUG-B",
   "IEC61850-GOOSE",

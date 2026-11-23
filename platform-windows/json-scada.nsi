@@ -844,8 +844,10 @@ Section "Uninstall"
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_modbusclient"`
+  ExecWait `"${SC}" stop "JSON_SCADA_sunspecclient"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_modbusclient"`
+  ExecWait `"${SC}" delete "JSON_SCADA_sunspecclient"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_modbusserver"`

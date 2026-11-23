@@ -216,6 +216,16 @@
     },
     {
       "source": "node1",
+      "stream": "sunspecclient",
+      "config": {
+        "path": "/json-scada/log/sunspecclient.out.log",
+        "watcherOptions": {
+          "usePolling": true
+        }
+      }
+    },
+    {
+      "source": "node1",
       "stream": "modbusserver",
       "config": {
         "path": "/json-scada/log/modbusserver.out.log",

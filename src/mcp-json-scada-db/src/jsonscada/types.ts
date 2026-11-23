@@ -49,6 +49,7 @@ export type ProtocolDriverName =
   | 'TELEGRAF-LISTENER'
   | 'MODBUS'
   | 'MODBUS_SERVER'
+  | 'SUNSPEC'
   | 'MQTT-SPARKPLUG-B'
   | 'IEC61850-GOOSE'
   | 'IEC61850'

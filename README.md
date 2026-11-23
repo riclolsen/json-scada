@@ -130,6 +130,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [OPC-DA Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/OPC-DA-Client/README.md)
 - [OPC-DA Server Driver](https://github.com/riclolsen/json-scada/blob/master/src/OPC-DA-Server/README.md)
 - [PLC4J Client Driver](https://github.com/riclolsen/json-scada/blob/master/src/plc4j-client/README.md)
+- [SunSpec Client Driver (Go; model discovery, automatic tags, TCP/TLS/RTU)](https://github.com/riclolsen/json-scada/blob/master/src/modbus-go/cmd/sunspecclient/README.md)
 - [Modbus Client Driver (Go; TCP/TLS/RTU/RTU-over-TCP/TLS, all byte orders)](https://github.com/riclolsen/json-scada/blob/master/src/modbus-go/cmd/modbusclient/README.md)
 - [Modbus Server Driver (Go; TCP/TLS/RTU/RTU-over-TCP/TLS, all byte orders)](https://github.com/riclolsen/json-scada/blob/master/src/modbus-go/cmd/modbusserver/README.md)
 - [CIM-EMS Driver (CGMES 2.4.15 models, load flow, state estimation, contingency analysis; Python)](https://github.com/riclolsen/json-scada/blob/master/src/cim-ems/README.md)
