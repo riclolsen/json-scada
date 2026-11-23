@@ -333,6 +333,7 @@
               'DNP3',
               'DNP3_SERVER',
               'OPC-UA',
+              'OPC-UA_SERVER',
             ].includes(editedConnection.protocolDriver)
           "
         ></v-switch>

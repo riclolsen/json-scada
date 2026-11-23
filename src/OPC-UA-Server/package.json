@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test-history.js"
+    "test": "node test-history.js && node test-secevents.js"
   },
   "author": "",
   "license": "ISC",
