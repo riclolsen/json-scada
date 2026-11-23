@@ -38,7 +38,7 @@ DRIVER_KEYS="iec104client iec104server iec101client iec101server dnp3client dnp3
 iec61850client iec61850server iccpclient iccpserver iccp_client iccp_server \
 mqttsparkplugclient mqtt-sparkplug opcuaclient opcuaserver opcua_client opcua_server \
 opcdaclient plctags plc4xclient plc4jclient telegraf-listener telegraf_listener \
-i104m onvif modbusclient modbusserver nodered_driver n8nclient"
+i104m onvif modbusclient modbusserver sunspecclient nodered_driver n8nclient"
 
 echo "Migrating legacy supervisor driver files:"
 echo "  from: $SYS_DIR"

@@ -158,6 +158,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] Various protocols (Modbus, S7, etc.) via PLC4X-Java
 - [x] Modbus Client (native) TCP/TLS/RTU/RTU-over-TCP, all byte orders
 - [x] Modbus Server (native) TCP/TLS/RTU/RTU-over-TCP, all byte orders
+- [x] SunSpec Client (native) TCP/TLS/RTU/RTU-over-TCP, model discovery and automatic tags
 - [x] ICCP Client TCP/TLS
 - [x] ICCP Server TCP/TLS
 - [x] Telegraf Client (many data sources available such as MQTT, MODBUS, SNMP, ...)

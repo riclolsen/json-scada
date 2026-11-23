@@ -1167,6 +1167,10 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('interFrameDelayMs' in req.body)) {
       req.body.interFrameDelayMs = 0.0
     }
+  }
+
+  // MODBUS, MODBUS_SERVER, SUNSPEC - TLS and serial link parameters
+  if (['MODBUS', 'MODBUS_SERVER', 'SUNSPEC'].includes(req?.body?.protocolDriver)) {
     if (!('privateKeyPassphrase' in req.body)) {
       req.body.privateKeyPassphrase = ''
     }
@@ -1193,7 +1197,7 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  // MODBUS (client) specific
+  // MODBUS and SUNSPEC (clients) - transport and timing
   if (['MODBUS', 'SUNSPEC'].includes(req?.body?.protocolDriver)) {
     if (!('connectionMode' in req.body)) {
       req.body.connectionMode = 'TCP Active'
@@ -1202,7 +1206,9 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.timeoutMs = 1000.0
     }
     if (!('pollingInterval' in req.body)) {
-      req.body.pollingInterval = 1000.0
+      // SunSpec devices are read model by model: a slower default cycle
+      req.body.pollingInterval =
+        req.body.protocolDriver === 'SUNSPEC' ? 5000.0 : 1000.0
     }
     if (!('maxRetries' in req.body)) {
       req.body.maxRetries = 2.0
@@ -1212,6 +1218,10 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('interRequestDelayMs' in req.body)) {
       req.body.interRequestDelayMs = 0.0
     }
+  }
+
+  // MODBUS (client) read planning; SunSpec fixes its own layout
+  if (['MODBUS'].includes(req?.body?.protocolDriver)) {
     // clamp request sizes to the protocol maximums
     if (!('maxReadRegisters' in req.body)) {
       req.body.maxReadRegisters = 125.0
@@ -1237,6 +1247,40 @@ exports.updateProtocolConnection = async (req, res) => {
     // use FC22 Mask Write for single-bit writes, else read-modify-write
     if (!('useMaskWrite' in req.body)) {
       req.body.useMaskWrite = true
+    }
+  }
+
+  // SUNSPEC specific: discovery and automatic tag creation (the driver's defaults)
+  if (['SUNSPEC'].includes(req?.body?.protocolDriver)) {
+    // numeric lists from the UI chips (strings), filtered to their valid ranges
+    const intList = (k, min, max) => {
+      const a = Array.isArray(req.body[k])
+        ? req.body[k]
+        : req.body[k] === undefined || req.body[k] === null || req.body[k] === ''
+          ? []
+          : [req.body[k]]
+      req.body[k] = [
+        ...new Set(
+          a
+            .map((v) => Number(v))
+            .filter((v) => Number.isInteger(v) && v >= min && v <= max)
+        ),
+      ]
+    }
+    intList('unitIds', 0, 255)
+    if (req.body.unitIds.length === 0) req.body.unitIds = [1.0]
+    intList('baseAddresses', 0, 65535) // empty: go-sunspec's default list
+    intList('modelIds', 1, 65534) // empty: tags for every model
+    if (!['holding', 'input'].includes(req.body.registerType)) {
+      req.body.registerType = 'holding'
+    }
+    const mm = Math.floor(Number(req.body.maxModels))
+    req.body.maxModels = Number.isFinite(mm) && mm >= 1 ? mm : 256.0
+    if (!('autoCreateCommandTags' in req.body)) {
+      req.body.autoCreateCommandTags = true
+    }
+    if (!('autoCreateUnimplemented' in req.body)) {
+      req.body.autoCreateUnimplemented = false
     }
   }
 

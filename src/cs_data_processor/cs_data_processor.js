@@ -534,6 +534,7 @@ const pipeline = [
                             'PLCTAG',
                             'PLC4X',
                             'MODBUS',
+                            'SUNSPEC',
                             'IEC61850',
                             'ICCP',
                           ],

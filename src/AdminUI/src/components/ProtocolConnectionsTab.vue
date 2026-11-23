@@ -3581,23 +3581,177 @@
         >
           <v-card-title>
             <span class="text-headline-small">
-              {{ $t('admin.protocolConnections.modbusParameters') }}
+              {{
+                editedConnection.protocolDriver === 'SUNSPEC'
+                  ? $t('admin.protocolConnections.sunspecParameters')
+                  : $t('admin.protocolConnections.modbusParameters')
+              }}
             </span>
           </v-card-title>
 
           <v-list flat density="compact" shaped>
             <template v-if="editedConnection.protocolDriver === 'SUNSPEC'">
-              <v-list-item v-for="field in ['unitIds', 'baseAddresses', 'modelIds']" :key="field">
-                <v-combobox v-model="editedConnection[field]" :label="field" multiple chips closable-chips />
+              <v-list-item>
+                <template v-slot:default="{ active }">
+                  <v-row>
+                    <v-col>
+                      <div>
+                        <v-combobox
+                          :input-value="active"
+                          :label="$t('admin.protocolConnections.unitIds')"
+                          hide-details="auto"
+                          v-model="editedConnection.unitIds"
+                          multiple
+                          chips
+                          closable-chips
+                        ></v-combobox>
+                      </div>
+                    </v-col>
+                    <v-col>
+                      <v-list-item-title>
+                        {{ $t('admin.protocolConnections.unitIdsTitle') }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ $t('admin.protocolConnections.unitIdsHint') }}
+                      </v-list-item-subtitle>
+                    </v-col>
+                  </v-row>
+                </template>
               </v-list-item>
               <v-list-item>
-                <v-select :model-value="editedConnection.registerType ?? 'holding'" @update:model-value="editedConnection.registerType = $event"
-                  label="registerType" :items="['holding', 'input']" />
-                <v-text-field :model-value="editedConnection.maxModels ?? 256" @update:model-value="editedConnection.maxModels = Number($event)"
-                  label="maxModels" type="number" min="1" />
-                <v-switch :model-value="editedConnection.autoCreateCommandTags ?? true" @update:model-value="editedConnection.autoCreateCommandTags = $event"
-                  label="autoCreateCommandTags" />
-                <v-switch v-model="editedConnection.autoCreateUnimplemented" label="autoCreateUnimplemented" />
+                <template v-slot:default="{ active }">
+                  <v-row>
+                    <v-col>
+                      <div>
+                        <v-combobox
+                          :input-value="active"
+                          :label="$t('admin.protocolConnections.baseAddresses')"
+                          hide-details="auto"
+                          v-model="editedConnection.baseAddresses"
+                          multiple
+                          chips
+                          closable-chips
+                        ></v-combobox>
+                      </div>
+                    </v-col>
+                    <v-col>
+                      <v-list-item-title>
+                        {{ $t('admin.protocolConnections.baseAddressesTitle') }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ $t('admin.protocolConnections.baseAddressesHint') }}
+                      </v-list-item-subtitle>
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-list-item>
+              <v-list-item>
+                <template v-slot:default="{ active }">
+                  <v-row>
+                    <v-col>
+                      <div>
+                        <v-combobox
+                          :input-value="active"
+                          :label="$t('admin.protocolConnections.modelIds')"
+                          hide-details="auto"
+                          v-model="editedConnection.modelIds"
+                          multiple
+                          chips
+                          closable-chips
+                        ></v-combobox>
+                      </div>
+                    </v-col>
+                    <v-col>
+                      <v-list-item-title>
+                        {{ $t('admin.protocolConnections.modelIdsTitle') }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ $t('admin.protocolConnections.modelIdsHint') }}
+                      </v-list-item-subtitle>
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-list-item>
+              <v-list-item>
+                <template v-slot:default="{ active }">
+                  <v-row>
+                    <v-col>
+                      <div>
+                        <v-select
+                          :input-value="active"
+                          :label="$t('admin.protocolConnections.registerType')"
+                          hide-details="auto"
+                          :items="['holding', 'input']"
+                          :model-value="editedConnection.registerType ?? 'holding'"
+                          @update:model-value="editedConnection.registerType = $event"
+                        ></v-select>
+                      </div>
+                    </v-col>
+                    <v-col>
+                      <v-list-item-title>
+                        {{ $t('admin.protocolConnections.registerTypeTitle') }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ $t('admin.protocolConnections.registerTypeHint') }}
+                      </v-list-item-subtitle>
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-list-item>
+              <v-list-item>
+                <template v-slot:default="{ active }">
+                  <v-row>
+                    <v-col>
+                      <div>
+                        <v-text-field
+                          type="number"
+                          min="1"
+                          :input-value="active"
+                          :label="$t('admin.protocolConnections.maxModels')"
+                          hide-details="auto"
+                          :model-value="editedConnection.maxModels ?? 256"
+                          @update:model-value="editedConnection.maxModels = Number($event)"
+                        ></v-text-field>
+                      </div>
+                    </v-col>
+                    <v-col>
+                      <v-list-item-title>
+                        {{ $t('admin.protocolConnections.maxModelsTitle') }}
+                      </v-list-item-title>
+                      <v-list-item-subtitle>
+                        {{ $t('admin.protocolConnections.maxModelsHint') }}
+                      </v-list-item-subtitle>
+                    </v-col>
+                  </v-row>
+                </template>
+              </v-list-item>
+              <v-list-item>
+                <v-switch
+                  :model-value="editedConnection.autoCreateCommandTags ?? true"
+                  @update:model-value="editedConnection.autoCreateCommandTags = $event"
+                  inset
+                  color="primary"
+                  :label="`${$t('admin.protocolConnections.autoCreateCommandTags')}${
+                    (editedConnection.autoCreateCommandTags ?? true)
+                      ? $t('admin.protocolConnections.autoCreateCommandTagsTrue')
+                      : $t('admin.protocolConnections.autoCreateCommandTagsFalse')
+                  }`"
+                  class="mb-n6"
+                ></v-switch>
+              </v-list-item>
+              <v-list-item>
+                <v-switch
+                  :model-value="editedConnection.autoCreateUnimplemented ?? false"
+                  @update:model-value="editedConnection.autoCreateUnimplemented = $event"
+                  inset
+                  color="primary"
+                  :label="`${$t('admin.protocolConnections.autoCreateUnimplemented')}${
+                    (editedConnection.autoCreateUnimplemented ?? false)
+                      ? $t('admin.protocolConnections.autoCreateUnimplementedTrue')
+                      : $t('admin.protocolConnections.autoCreateUnimplementedFalse')
+                  }`"
+                  class="mb-n6"
+                ></v-switch>
               </v-list-item>
             </template>
             <v-list-item
