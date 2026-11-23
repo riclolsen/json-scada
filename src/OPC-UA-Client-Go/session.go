@@ -100,7 +100,7 @@ func connectionLoop(ctx context.Context, cfg jsconfig.Config, conn *OPCUAConnect
 	setupFailures := 0
 
 	for ctx.Err() == nil {
-		cli, err := connectOnce(ctx, conn, appCfg, attempt)
+		cli, sig, err := connectOnce(ctx, conn, appCfg, attempt)
 		if err != nil {
 			jslog.Log(jslog.LevelNoLog, "%s - FATAL: error creating session! %v", conn.Name, err)
 			attempt++ // advance to the next configured endpoint URL
@@ -117,6 +117,12 @@ func connectionLoop(ctx context.Context, cfg jsconfig.Config, conn *OPCUAConnect
 		// it, so a rebuilt connection never leaves goroutines behind.
 		sctx, endSession := context.WithCancel(ctx)
 		health := newSessionHealth()
+
+		// deviation D38: the server is identified now and after every
+		// reconnection the client makes by itself (StateChangedFunc signals
+		// them).
+		sig.notify()
+		go identifyLoop(sctx, conn, cli, sig)
 
 		// Browsing must precede the subscriptions: it appends the
 		// discovered items to conn.ListMon, which is what they subscribe.
@@ -229,25 +235,28 @@ func connectionLoop(ctx context.Context, cfg jsconfig.Config, conn *OPCUAConnect
 
 // connectOnce builds and connects a client against one of the configured
 // endpoint URLs.
-func connectOnce(ctx context.Context, conn *OPCUAConnection, appCfg uaAppConfig, attempt int) (*opcua.Client, error) {
+func connectOnce(ctx context.Context, conn *OPCUAConnection, appCfg uaAppConfig, attempt int) (*opcua.Client, *identifySignal, error) {
+	conn.secClearPeer()
 	// parity: the C# driver rotates through the endpoint URLs so failover
 	// to a redundant server happens on retry.
 	endpointURL := conn.EndpointURLs[attempt%len(conn.EndpointURLs)]
 
 	ep, err := selectEndpoint(ctx, conn, endpointURL)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	opts, err := clientOptions(conn, appCfg, ep)
+	sig := newIdentifySignal()
+	opts, err := clientOptions(conn, appCfg, ep, sig)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+	conn.secSetEndpoint(ep)
 
 	jslog.Log(jslog.LevelNoLog, "%s - Create a session with OPC UA server.", conn.Name)
 	cli, err := opcua.NewClient(ep.EndpointURL, opts...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	dialCtx, cancel := context.WithTimeout(ctx, time.Duration(conn.TimeoutMs)*time.Millisecond)
@@ -256,9 +265,9 @@ func connectOnce(ctx context.Context, conn *OPCUAConnection, appCfg uaAppConfig,
 		closeCtx, ccancel := context.WithTimeout(context.Background(), 2*time.Second)
 		_ = cli.Close(closeCtx)
 		ccancel()
-		return nil, err
+		return nil, nil, err
 	}
-	return cli, nil
+	return cli, sig, nil
 }
 
 // selectEndpoint discovers the server's endpoints and picks one with the
@@ -366,6 +375,7 @@ func selectEndpoint(ctx context.Context, conn *OPCUAConnection, endpointURL stri
 
 	if !conn.AutoAcceptUntrustedCertificates && selected.SecurityMode != ua.MessageSecurityModeNone {
 		if err := validateServerCert(selected.ServerCertificate, filepath.Join(certDir, "trusted"), conn.Name); err != nil {
+			conn.secCertRejected(selected.EndpointURL, selected.ServerCertificate, err)
 			return nil, err
 		}
 	}
@@ -378,7 +388,9 @@ func selectEndpoint(ctx context.Context, conn *OPCUAConnection, endpointURL stri
 // Option order matters: the Auth* options create the user identity token
 // and SecurityFromEndpoint fills in its PolicyID from the endpoint, so the
 // Auth* options must come first.
-func clientOptions(conn *OPCUAConnection, appCfg uaAppConfig, ep *ua.EndpointDescription) ([]opcua.Option, error) {
+//
+// sig is notified on every (re)connection of the client built with them.
+func clientOptions(conn *OPCUAConnection, appCfg uaAppConfig, ep *ua.EndpointDescription, sig *identifySignal) ([]opcua.Option, error) {
 	appURI := appCfg.ApplicationURI
 
 	// The application instance certificate, needed for any secure mode.
@@ -432,7 +444,22 @@ func clientOptions(conn *OPCUAConnection, appCfg uaAppConfig, ep *ua.EndpointDes
 		opcua.StateChangedFunc(func(s opcua.ConnState) {
 			// Called synchronously by the client: log only, never block.
 			jslog.Log(jslog.LevelDetailed, "%s - connection state: %v", conn.Name, s)
+			if s == opcua.Connected {
+				sig.notify() // non-blocking
+			}
 		}),
+	}
+	// deviation D37: the library's security events. Called on its protocol
+	// goroutines; the handler only filters and queues. With
+	// peerIdentification off the handler goes on a dialer of its own,
+	// without the MAC tracker the library adds otherwise, so connecting looks
+	// up no MAC address.
+	if conn.PeerIdentification {
+		opts = append(opts, opcua.SecurityEventHandler(conn.secLibraryEvent))
+	} else {
+		d := opcua.DefaultDialer()
+		d.Events = conn.secLibraryEvent
+		opts = append(opts, opcua.Dialer(d))
 	}
 
 	if secure {

@@ -39,7 +39,7 @@ func readConfigFile() (cfg jsconfig.Config, instanceNumber int) {
 
 	jslog.Log(jslog.LevelNoLog, "%s", CopyrightMessage)
 	jslog.Log(jslog.LevelNoLog, "Driver version %s", DriverVersion)
-	jslog.Log(jslog.LevelNoLog, "Using the gopcua library, %s.", LibraryVersion)
+	jslog.Log(jslog.LevelNoLog, "Using the opcua library, %s.", LibraryVersion)
 	jslog.Log(jslog.LevelNoLog, "Log level: %d", jslog.Level())
 
 	path := jsconfig.ResolvePath(JSONConfigFilePath, JSONConfigFilePathAlt, args.ConfigFilePath)

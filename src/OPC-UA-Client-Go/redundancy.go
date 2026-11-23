@@ -36,6 +36,7 @@ import (
 	"github.com/riclolsen/json-scada/src/go-common/jsredundancy"
 	"github.com/riclolsen/json-scada/src/go-common/jsstats"
 
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -73,10 +74,14 @@ func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg
 	entries := make([]jsstats.Entry, 0, len(conns))
 	for _, conn := range conns {
 		cli := conn.Client()
-		entries = append(entries, jsstats.Entry{
+		e := jsstats.Entry{
 			ConnectionNumber: conn.ProtocolConnectionNumber,
 			IsConnected:      jsstats.Bool(cli != nil && cli.State() == opcua.Connected),
-		})
+		}
+		if id := conn.PeerIdentityDoc(); id != nil {
+			e.Stats = bson.M{"peerIdentity": id}
+		}
+		entries = append(entries, e)
 	}
 	jsstats.Writer{
 		NodeName: cfg.NodeName,

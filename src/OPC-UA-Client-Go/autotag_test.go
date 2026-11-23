@@ -135,6 +135,8 @@ func testConn() *OPCUAConnection {
 		NodeIdsDetails:                  map[string]*NodeDetails{},
 		OpcSubscriptions:                map[float64][]*monItem{},
 		handles:                         map[uint32]*monItem{},
+		PeerIdentification:              true,
+		sec:                             newConnSec(),
 	}
 }
 

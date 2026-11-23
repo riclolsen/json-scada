@@ -235,6 +235,7 @@ func createSubscription(ctx context.Context, cli *opcua.Client, conn *OPCUAConne
 	created := 0
 	failed := false
 	rejected := map[string][]string{}
+	var unknown []unknownNode
 	for start := 0; start < len(requests); start += monitorChunk {
 		end := min(start+monitorChunk, len(requests))
 		chunk := requests[start:end]
@@ -252,12 +253,16 @@ func createSubscription(ctx context.Context, cli *opcua.Client, conn *OPCUAConne
 			if !statusIsGood(res.StatusCode) {
 				name := statusCodeName(res.StatusCode)
 				rejected[name] = append(rejected[name], chunk[i].ItemToMonitor.NodeID.String())
+				if unknownNodeStatus[res.StatusCode] {
+					unknown = append(unknown, unknownNode{chunk[i].ItemToMonitor.NodeID.String(), res.StatusCode})
+				}
 				continue
 			}
 			created++
 		}
 	}
 	logRejected(conn, rejected)
+	conn.secUnknownNodes(unknown)
 
 	jslog.Log(jslog.LevelNoLog, "%s - %d Monitored items", conn.Name, created)
 

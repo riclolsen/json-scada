@@ -40,6 +40,9 @@ certificate items covered by `security.go` (D1 to D4).
 | D33 | Each connection executes its commands on its own worker, in order; more than 256 waiting are refused with `busy` | `mongo_commands.go` |
 | D34 | Method arguments follow the declared `InputArguments` types; `ByteString`, `NodeId`, `ExpandedNodeId`, `Guid`, `LocalizedText`, `QualifiedName` and `XmlElement` commands are sent as that type, not as a String | `mongo_commands.go` |
 | D35 | `timeoutMs` of zero or less means the 20,000 ms default | `config.go` |
+| D36 | The library is the `github.com/riclolsen/opcua` fork of gopcua (a `replace` in `go.mod`), for its security event reporting | `go.mod` |
+| D37 | Security events go to `secEvents`: the library's, and the driver's (refused certificates, unknown nodes, refused, unknown, mistyped, stale, flooding and unnecessary commands, every method call). A command whose expiry passes during a method's lookups is cancelled `expired` | `secevents.go`, `session.go`, `subscribe.go`, `mongo_commands.go` |
+| D38 | With `peerIdentification` (default on), the server's `ServerStatus.BuildInfo`, application description, certificate and MAC address go to `stats.peerIdentity` on every session, and their changes and server restarts are reported | `secevents.go` |
 
 ## How it was verified
 

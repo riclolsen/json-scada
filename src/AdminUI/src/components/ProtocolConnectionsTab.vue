@@ -332,6 +332,7 @@
               'ICCP_SERVER',
               'DNP3',
               'DNP3_SERVER',
+              'OPC-UA',
             ].includes(editedConnection.protocolDriver)
           "
         ></v-switch>
