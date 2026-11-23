@@ -64,9 +64,7 @@ func (c *Connection) HandleCommand(ctx context.Context, doc bson.M) {
 		c.log.Info("command ignored, this node is not the active one")
 		return
 	}
-	// Ignore stale commands, so a restart does not replay them.
-	if ts := jsmongo.GetTime(doc, "timeTag"); !ts.IsZero() && time.Since(ts) > jscommands.DefaultExpiry {
-		c.secCommandStale(doc, ts)
+	if c.expired(doc) {
 		c.ack(ctx, doc, false, "command expired")
 		return
 	}
@@ -78,6 +76,22 @@ func (c *Connection) HandleCommand(ctx context.Context, doc bson.M) {
 	c.ack(ctx, doc, ok, desc)
 }
 
+// expired reports (and logs as a security event) a command older than the
+// expiry, so a restart or a long wait for the link does not replay it.
+func (c *Connection) expired(doc bson.M) bool {
+	ts := jsmongo.GetTime(doc, "timeTag")
+	if ts.IsZero() || time.Since(ts) <= jscommands.DefaultExpiry {
+		return false
+	}
+	c.secCommandStale(doc, ts)
+	return true
+}
+
+// errNotSent stops a command in the gate before it reaches the device.
+type errNotSent struct{ desc string }
+
+func (e errNotSent) Error() string { return e.desc }
+
 func (c *Connection) executeCommand(ctx context.Context, doc bson.M) (bool, string) {
 	refuse := func(kind, desc string) (bool, string) {
 		c.secCommandRefused(doc, kind, desc, nil)
@@ -88,7 +102,7 @@ func (c *Connection) executeCommand(ctx context.Context, doc bson.M) (bool, stri
 		return refuse(mbsec.KindCmdObjectUnknown, err.Error())
 	}
 	unit := drv.ToNum(doc["protocolSourceCommonAddress"], doc["protocolSourceCommonAddress"] != nil, 1)
-	if math.IsNaN(unit) || unit != math.Trunc(unit) || unit < 0 || unit > 255 {
+	if math.IsNaN(unit) || unit != math.Trunc(unit) || unit < 1 || unit > 255 {
 		return refuse(mbsec.KindCmdObjectUnknown, "invalid unit id "+fieldStr(doc, "protocolSourceCommonAddress"))
 	}
 	c.mu.Lock()
@@ -123,11 +137,33 @@ func (c *Connection) executeCommand(ctx context.Context, doc bson.M) (bool, stri
 	c.secCommand(ctx, doc, num, numeric)
 
 	var p *sunspec.DecodedPoint
+	var seq uint64
 	err = c.exec(ctx, true, false, func(ctx context.Context) error {
+		// The gate may have waited for a poll: check again what HandleCommand checked.
+		if c.Active != nil && !c.Active() {
+			return errNotSent{"this node is no longer the active one"}
+		}
+		if c.expired(doc) {
+			return errNotSent{"command expired"}
+		}
+		c.mu.Lock()
+		same := c.units[int(unit)] == us
+		c.mu.Unlock()
+		if !c.Connected() || us.dev.Client != c.currentClient() {
+			return errNotSent{"connection down"}
+		}
+		if !same {
+			return errNotSent{"the device was discovered again, command not sent"}
+		}
 		var e error
+		seq = c.nextSeq()
 		p, e = us.dev.WritePoint(ctx, inst, a.Point, val)
 		return e
 	})
+	var ns errNotSent
+	if errors.As(err, &ns) {
+		return false, ns.desc
+	}
 	if err != nil {
 		if isException(err) || linkError(err) {
 			c.countError(err)
@@ -149,13 +185,13 @@ func (c *Connection) executeCommand(ctx context.Context, doc bson.M) (bool, stri
 		return false, clientapp.ErrText(err)
 	}
 	c.stat(func(s *Stats) { s.Writes++ })
-	c.publishWritten(int(unit), a, p)
+	c.publishWritten(int(unit), a, p, seq)
 	return true, "OK"
 }
 
 // publishWritten publishes the value the device reports after a write to
 // the supervised tags of the point.
-func (c *Connection) publishWritten(unit int, a Address, p *sunspec.DecodedPoint) {
+func (c *Connection) publishWritten(unit int, a Address, p *sunspec.DecodedPoint, seq uint64) {
 	if p == nil {
 		return
 	}
@@ -173,11 +209,11 @@ func (c *Connection) publishWritten(unit int, a Address, p *sunspec.DecodedPoint
 	}
 	u := newUpdater(c.Cfg.ConnNumber())
 	for _, b := range targets {
-		c.publish(u, b, PointValue(p), "3", false)
+		c.publish(u, b, PointValue(p), "3", false, seq)
 	}
 	wctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := u.flush(wctx, c.sink); err != nil {
+	if err := c.flush(wctx, u); err != nil {
 		jslog.Log(jslog.LevelBasic, "%s: realtimeData write error: %v", c.Cfg.Name(), err)
 	}
 }

@@ -96,7 +96,7 @@ used: SunSpec fixes the encoding and the read layout.
 
 | Key | Default | Meaning |
 |---|---|---|
-| `unitIds` | `[1]` | Modbus unit ids of the SunSpec devices behind the address (several for a gateway or a serial line). Each is discovered on its own. |
+| `unitIds` | `[1]` | Modbus unit ids of the SunSpec devices behind the address (several for a gateway or a serial line), 1 to 255; unit 0 (broadcast) is ignored. Each is discovered on its own. |
 | `baseAddresses` | `[]` | Register addresses probed, in order, for the `SunS` marker. Empty uses go-sunspec's list: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001. |
 | `registerType` | `holding` | `holding` (function 3, nearly every device) or `input` (function 4; the map is then read-only and no command tags are created). |
 | `maxModels` | `256` | Most model headers read from a chain, the end marker included. |
@@ -150,7 +150,9 @@ not expose stays invalid and is reported once per connection (`access.object_non
 Each poll cycle reads, per unit, the model instances the tags use (adjacent models in shared
 requests of up to 125 registers) and publishes the values that changed; every `giInterval`
 seconds an integrity cycle publishes every value (cause of transmission 20, else 3). A link
-that does not answer marks every tag invalid.
+that does not answer marks every tag invalid, keeping its last value. Values are written in
+the order they were read: an older poll value never overwrites a newer one (a command
+read-back), and a value whose write failed is written again on the next cycle.
 
 ## Automatic tag creation
 
@@ -162,7 +164,7 @@ is not created again.
 
 | Field | Value |
 |---|---|
-| `tag` | `<connection name>;<unit>;<address>`, e.g. `PV_INV1;1;103/W` (a suffix `~2` when the name is taken). |
+| `tag` | `<connection name>;<unit>;<address>`, e.g. `PV_INV1;1;103/W` (a suffix `~2`, `~3`, ... when another tag, of any connection, has the name). |
 | `_id` | The next free key in the connection's range (`protocolConnectionNumber` × 1,000,000). |
 | `type` | `string` for string points, else `analog`. |
 | `description` | `<connection>~<model label>~<group path> <point label>`. |
@@ -181,6 +183,9 @@ A `commandsQueue` document for the connection is executed when the node is activ
 link is connected:
 
 1. A command older than its expiry is not executed (`command expired`, `cmd.stale_time`).
+   This, the node being active and the session are checked again when the command gets the
+   link (after a poll request in progress), so a command is never sent on a new session or
+   after a failover.
 2. The address must name a top-level point of a discovered model of the unit; otherwise
    `cmd.object_unknown` (or `cmd.rejected` for a point inside a group).
 3. The value is `value` for numeric points (engineering value: the driver applies the point's

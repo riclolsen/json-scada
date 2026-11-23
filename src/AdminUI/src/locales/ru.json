@@ -821,7 +821,7 @@
       "sunspecParameters": "Параметры SunSpec",
       "unitIds": "Unit ID",
       "unitIdsTitle": "Обнаруживаемые устройства SunSpec (Modbus unit id)",
-      "unitIdsHint": "Введите число и нажмите Enter. Диапазон 0–255. Пусто: устройство 1.",
+      "unitIdsHint": "Введите число и нажмите Enter. Диапазон 1–255. Пусто: устройство 1.",
       "baseAddresses": "Базовые адреса",
       "baseAddressesTitle": "Адреса регистров, проверяемые на маркер SunS",
       "baseAddressesHint": "Введите число и нажмите Enter. Пусто: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",

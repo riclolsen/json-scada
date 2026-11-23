@@ -8,6 +8,7 @@ package sunspecapp
 
 import (
 	"context"
+	"errors"
 	"os"
 	"regexp"
 	"strings"
@@ -24,6 +25,7 @@ import (
 	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 // fakeDB is realtimeData, the sink and the command store in memory.
@@ -360,5 +362,95 @@ func TestReadmeDocumentsEveryConfigKey(t *testing.T) {
 		if !strings.Contains(string(readme), "`"+k+"`") {
 			t.Errorf("config key %s is not documented in the README", k)
 		}
+	}
+}
+
+func TestUnitZeroIsRefused(t *testing.T) {
+	if got := Normalize(bson.M{"unitIds": bson.A{0.0, 3.0}}).UnitIDs; len(got) != 1 || got[0] != 3 {
+		t.Errorf("unitIds [0 3] -> %v, want [3]", got)
+	}
+	if got := Normalize(bson.M{"unitIds": bson.A{0.0}}).UnitIDs; len(got) != 1 || got[0] != 1 {
+		t.Errorf("unitIds [0] -> %v, want the default [1]", got)
+	}
+}
+
+// failingSink fails every write while fail is set.
+type failingSink struct {
+	*fakeDB
+	fail bool
+}
+
+func (f *failingSink) Apply(ctx context.Context, ops []clientapp.RtOp) error {
+	if f.fail {
+		return errors.New("write failed")
+	}
+	return f.fakeDB.Apply(ctx, ops)
+}
+
+func TestPublishOrderAndInvalid(t *testing.T) {
+	db := newFakeDB()
+	sink := &failingSink{fakeDB: db}
+	c := NewConnection(Normalize(bson.M{"protocolConnectionNumber": 3.0, "name": "S"}), sink)
+	c.SetBindings([]bson.M{{"_id": 1.0, "tag": "t", "protocolSourceCommonAddress": 1.0, "protocolSourceObjectAddress": "103/W"}})
+	b := c.bindings[0]
+	ctx := context.Background()
+	pub := func(v Value, seq uint64) error {
+		u := newUpdater(3)
+		c.publish(u, b, v, "3", false, seq)
+		return c.flush(ctx, u)
+	}
+	val := func() bson.M { db.mu.Lock(); defer db.mu.Unlock(); return db.sets[1.0] }
+
+	// a failed write does not move the cache: the same value is written again
+	sink.fail = true
+	if err := pub(Value{Num: 1}, c.nextSeq()); err == nil || b.last != nil {
+		t.Fatalf("failed flush: err %v, last %v", err, b.last)
+	}
+	sink.fail = false
+	if err := pub(Value{Num: 1}, c.nextSeq()); err != nil || val()["valueAtSource"] != 1.0 {
+		t.Fatalf("value not written again after a failed flush: %v %v", err, val())
+	}
+	// a command read-back (newer read) is not overwritten by an older poll read
+	pollSeq := c.nextSeq()
+	if err := pub(Value{Num: 55}, c.nextSeq()); err != nil {
+		t.Fatal(err)
+	}
+	if err := pub(Value{Num: 7}, pollSeq); err != nil || val()["valueAtSource"] != 55.0 {
+		t.Fatalf("older read written over a newer one: %v", val())
+	}
+	// link down: the whole sourceDataUpdate, invalid, with the last value
+	if !c.publishAllInvalid(ctx) {
+		t.Fatal("invalidate failed")
+	}
+	v := val()
+	if v["invalidAtSource"] != true || v["valueAtSource"] != 55.0 || v["originator"] != "SUNSPEC|3" || v["timeTag"] == nil {
+		t.Errorf("invalid document = %v", v)
+	}
+	if err := pub(Value{Num: 55}, c.nextSeq()); err != nil || val()["invalidAtSource"] != false {
+		t.Errorf("valid value after the outage not written: %v", val())
+	}
+}
+
+// takenStore refuses the tag names of other connections like the unique index.
+type takenStore struct {
+	*fakeDB
+	taken map[string]bool
+}
+
+func (s takenStore) Insert(ctx context.Context, doc bson.M) error {
+	if s.taken[doc["tag"].(string)] {
+		return mongo.WriteException{WriteErrors: []mongo.WriteError{{Code: 11000, Message: "E11000 duplicate key"}}}
+	}
+	return s.fakeDB.Insert(ctx, doc)
+}
+
+func TestInsertUniqueSkipsNamesOfOtherConnections(t *testing.T) {
+	s := takenStore{fakeDB: newFakeDB(), taken: map[string]bool{"X": true, "X~2": true}}
+	names := map[string]bool{}
+	err := insertUnique(context.Background(), s, names, "X", func(tag string) bson.M {
+		return bson.M{"_id": 1.0, "tag": tag}
+	})
+	if err != nil || s.byTag("X~3") == nil {
+		t.Fatalf("err %v, tags %v", err, s.tags)
 	}
 }

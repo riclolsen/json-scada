@@ -821,7 +821,7 @@
       "sunspecParameters": "SunSpec 参数",
       "unitIds": "单元 ID",
       "unitIdsTitle": "要发现的 SunSpec 设备（Modbus 单元 ID）",
-      "unitIdsHint": "输入数字并按回车。范围 0 到 255。为空：单元 1。",
+      "unitIdsHint": "输入数字并按回车。范围 1 到 255。为空：单元 1。",
       "baseAddresses": "基地址",
       "baseAddressesTitle": "探测 SunS 标记的寄存器地址",
       "baseAddressesHint": "输入数字并按回车。为空：0, 40000, 50000, 1, 39999, 40001, 49999, 50001。",

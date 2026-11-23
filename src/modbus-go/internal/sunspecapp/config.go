@@ -63,7 +63,8 @@ func Normalize(doc bson.M) Config {
 		AutoCreateUnimplemented: drv.Bool(doc, "autoCreateUnimplemented", false),
 	}
 	for _, u := range numArr(doc, "unitIds") {
-		if u >= 0 && u <= 255 && u == math.Trunc(u) {
+		// Unit 0 (broadcast) is refused: go-sunspec would read unit 1 for it.
+		if u >= 1 && u <= 255 && u == math.Trunc(u) {
 			c.UnitIDs = appendUnique(c.UnitIDs, int(u))
 		}
 	}

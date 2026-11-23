@@ -821,7 +821,7 @@
       "sunspecParameters": "Paramètres SunSpec",
       "unitIds": "Unit Ids",
       "unitIdsTitle": "Équipements SunSpec (unit ids Modbus) à découvrir",
-      "unitIdsHint": "Saisissez un nombre et appuyez sur Entrée. Plage 0 à 255. Vide : unité 1.",
+      "unitIdsHint": "Saisissez un nombre et appuyez sur Entrée. Plage 1 à 255. Vide : unité 1.",
       "baseAddresses": "Adresses de base",
       "baseAddressesTitle": "Adresses de registre sondées pour le marqueur SunS",
       "baseAddressesHint": "Saisissez un nombre et appuyez sur Entrée. Vide : 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",

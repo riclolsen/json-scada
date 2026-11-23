@@ -821,7 +821,7 @@
       "sunspecParameters": "Parametri SunSpec",
       "unitIds": "Unit Id",
       "unitIdsTitle": "Dispositivi SunSpec (unit id Modbus) da rilevare",
-      "unitIdsHint": "Digitare un numero e premere Invio. Intervallo 0-255. Vuoto: unità 1.",
+      "unitIdsHint": "Digitare un numero e premere Invio. Intervallo 1-255. Vuoto: unità 1.",
       "baseAddresses": "Indirizzi base",
       "baseAddressesTitle": "Indirizzi di registro sondati per il marcatore SunS",
       "baseAddressesHint": "Digitare un numero e premere Invio. Vuoto: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",

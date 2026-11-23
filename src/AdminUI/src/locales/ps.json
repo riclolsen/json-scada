@@ -821,7 +821,7 @@
       "sunspecParameters": "د SunSpec پارامترونه",
       "unitIds": "د یونټ پېژندنې",
       "unitIdsTitle": "د موندلو لپاره SunSpec وسایل (Modbus یونټ ID)",
-      "unitIdsHint": "یوه شمېره ولیکئ او Enter کېکاږئ. له 0 تر 255. خالي: یونټ 1.",
+      "unitIdsHint": "یوه شمېره ولیکئ او Enter کېکاږئ. له 1 تر 255. خالي: یونټ 1.",
       "baseAddresses": "اساسي پتې",
       "baseAddressesTitle": "د SunS نښې لپاره کتل شوې د راجستر پتې",
       "baseAddressesHint": "یوه شمېره ولیکئ او Enter کېکاږئ. خالي: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",

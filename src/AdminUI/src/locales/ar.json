@@ -821,7 +821,7 @@
       "sunspecParameters": "معاملات SunSpec",
       "unitIds": "معرفات الوحدات",
       "unitIdsTitle": "أجهزة SunSpec (معرفات وحدات Modbus) المطلوب اكتشافها",
-      "unitIdsHint": "اكتب رقمًا واضغط Enter. النطاق 0 إلى 255. فارغ: الوحدة 1.",
+      "unitIdsHint": "اكتب رقمًا واضغط Enter. النطاق 1 إلى 255. فارغ: الوحدة 1.",
       "baseAddresses": "العناوين الأساسية",
       "baseAddressesTitle": "عناوين السجلات التي يُبحث فيها عن علامة SunS",
       "baseAddressesHint": "اكتب رقمًا واضغط Enter. فارغ: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",

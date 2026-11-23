@@ -49,7 +49,10 @@ over the same go-modbus transports.
     shared with `SUNSPEC`; `internal/serverapp` — `MODBUS_SERVER` driver
   - `internal/sunspecapp` — `SUNSPEC` driver: discovery per `unitIds`, point addresses
     (`<model>[#n]/[<group>[i]/...]<point>`), automatic tags from the discovered models,
-    `ReadModels` polling, `WritePoint` commands, security events
+    `ReadModels` polling, `WritePoint` commands, security events. Values (invalid ones too) are
+    written as whole `sourceDataUpdate` documents (the data processors watch that field), in
+    read order (`nextSeq` taken inside the gate); a binding's `last` moves only after the write.
+    Commands recheck expiry, active node and session inside the gate.
   - `internal/loopback` — client ↔ server tests over every network transport
   - `src/go-common` via a `replace` directive — `jsconfig`, `jslog`, `jsmongo`,
     `jsredundancy`, `jsstats`, `jsrtdata`, `jscommands`, `jstls`, `jsmodel`, `jssecevents`

@@ -821,7 +821,7 @@
       "sunspecParameters": "SunSpec-Parameter",
       "unitIds": "Unit-IDs",
       "unitIdsTitle": "Zu erkennende SunSpec-Geräte (Modbus-Unit-IDs)",
-      "unitIdsHint": "Zahl eingeben und Enter drücken. Bereich 0 bis 255. Leer: Unit 1.",
+      "unitIdsHint": "Zahl eingeben und Enter drücken. Bereich 1 bis 255. Leer: Unit 1.",
       "baseAddresses": "Basisadressen",
       "baseAddressesTitle": "Auf die SunS-Kennung geprüfte Registeradressen",
       "baseAddressesHint": "Zahl eingeben und Enter drücken. Leer: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",

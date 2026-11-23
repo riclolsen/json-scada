@@ -821,7 +821,7 @@
       "sunspecParameters": "SunSpec Parameters",
       "unitIds": "Unit Ids",
       "unitIdsTitle": "SunSpec devices (Modbus unit ids) to discover",
-      "unitIdsHint": "Type a number and press Enter. Range 0 to 255. Empty: unit 1.",
+      "unitIdsHint": "Type a number and press Enter. Range 1 to 255. Empty: unit 1.",
       "baseAddresses": "Base Addresses",
       "baseAddressesTitle": "Register addresses probed for the SunS marker",
       "baseAddressesHint": "Type a number and press Enter. Empty: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",

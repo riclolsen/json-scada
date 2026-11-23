@@ -70,8 +70,11 @@ type binding struct {
 	Tag  string
 	Unit int
 	Addr Address
-	// last is the value last published; nil forces the next publish.
+	// last is the value last written to realtimeData; nil forces the next
+	// publish. seq is the read sequence of that value: an older read is not
+	// written over it.
 	last *Value
+	seq  uint64
 }
 
 // unitState is the discovered device behind one unit id.
@@ -115,6 +118,11 @@ type Connection struct {
 	runMu     sync.Mutex
 	runCancel context.CancelFunc
 	runDone   chan struct{}
+
+	// readSeq orders the device reads (taken inside the gate); pubMu
+	// serializes the realtimeData writes.
+	readSeq atomic.Uint64
+	pubMu   sync.Mutex
 
 	endpointIndex int
 	lastGi        time.Time
@@ -165,14 +173,14 @@ func (c *Connection) SetBindings(docs []bson.M) {
 			continue
 		}
 		unit := drv.ToNum(doc["protocolSourceCommonAddress"], doc["protocolSourceCommonAddress"] != nil, 1)
-		if math.IsNaN(unit) || unit < 0 || unit > 255 || unit != math.Trunc(unit) {
+		if math.IsNaN(unit) || unit < 1 || unit > 255 || unit != math.Trunc(unit) {
 			c.log.Info(fmt.Sprintf("skipping tag %s - invalid unit id (protocolSourceCommonAddress)", tag))
 			continue
 		}
 		key := drv.AnyString(doc["_id"])
 		b := &binding{ID: doc["_id"], Tag: tag, Unit: int(unit), Addr: addr}
 		if o := old[key]; o != nil && o.Unit == b.Unit && o.Addr.String() == b.Addr.String() {
-			b.last = o.last
+			b.last, b.seq = o.last, o.seq
 		}
 		bindings = append(bindings, b)
 		byID[key] = b
@@ -362,23 +370,23 @@ func (c *Connection) linkDown(ctx context.Context, invalidated *bool) {
 	c.endpointIndex = (c.endpointIndex + 1) % n
 }
 
-// publishAllInvalid marks every tag invalid; false when the write failed.
+// publishAllInvalid marks every tag invalid, keeping its last value; false
+// when the write failed.
 func (c *Connection) publishAllInvalid(ctx context.Context) bool {
 	c.mu.Lock()
-	ids := make([]any, 0, len(c.bindings))
-	for _, b := range c.bindings {
-		ids = append(ids, b.ID)
-		b.last = nil
-	}
+	bindings := c.bindings
 	c.mu.Unlock()
-	if len(ids) == 0 {
+	if len(bindings) == 0 {
 		return true
 	}
 	u := newUpdater(c.Cfg.ConnNumber())
-	u.queueInvalid(ids)
+	seq := c.nextSeq()
+	for _, b := range bindings {
+		c.publish(u, b, Value{Invalid: true}, "3", true, seq)
+	}
 	wctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
 	defer cancel()
-	if err := u.flush(wctx, c.sink); err != nil {
+	if err := c.flush(wctx, u); err != nil {
 		jslog.Log(jslog.LevelBasic, "%s: invalidate error: %v", c.Cfg.Name(), err)
 		return false
 	}
@@ -841,9 +849,10 @@ func (c *Connection) pollCycle(ctx context.Context) (answered, failed int, lastE
 		list := byUnit[unit]
 		us := units[unit]
 		if us == nil {
+			seq := c.nextSeq()
 			for _, b := range list {
 				c.secMissingPoint(b, "unit not discovered")
-				c.publish(u, b, Value{Invalid: true}, cot, isGi)
+				c.publish(u, b, Value{Invalid: true}, cot, isGi, seq)
 			}
 			continue
 		}
@@ -866,16 +875,20 @@ func (c *Connection) pollCycle(ctx context.Context) (answered, failed int, lastE
 		}
 		var res []sunspec.ModelResult
 		var err error
+		var seq uint64
 		if len(insts) > 0 {
 			c.stat(func(s *Stats) { s.Reads++ })
 			err = c.exec(ctx, false, true, func(ctx context.Context) error {
 				var e error
+				seq = c.nextSeq()
 				res, e = us.dev.ReadModels(ctx, insts)
 				return e
 			})
 			if ctx.Err() != nil {
 				return
 			}
+		} else {
+			seq = c.nextSeq()
 		}
 		alive := err == nil
 		for i := range res {
@@ -899,7 +912,7 @@ func (c *Connection) pollCycle(ctx context.Context) (answered, failed int, lastE
 		for i, b := range list {
 			if where[i] < 0 {
 				c.secMissingPoint(b, "model not in the device's chain")
-				c.publish(u, b, Value{Invalid: true}, cot, isGi)
+				c.publish(u, b, Value{Invalid: true}, cot, isGi, seq)
 				continue
 			}
 			r := res[where[i]]
@@ -920,7 +933,7 @@ func (c *Connection) pollCycle(ctx context.Context) (answered, failed int, lastE
 					c.secMissingPoint(b, "point not in the decoded model")
 				}
 			}
-			c.publish(u, b, PointValue(p), cot, isGi)
+			c.publish(u, b, PointValue(p), cot, isGi, seq)
 		}
 
 	}
@@ -928,13 +941,8 @@ func (c *Connection) pollCycle(ctx context.Context) (answered, failed int, lastE
 		map[bool]string{true: " [integrity]", false: ""}[isGi])
 	wctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 30*time.Second)
 	defer cancel()
-	if err := u.flush(wctx, c.sink); err != nil {
+	if err := c.flush(wctx, u); err != nil {
 		jslog.Log(jslog.LevelBasic, "%s: realtimeData write error, values will be written again: %v", c.Cfg.Name(), err)
-		c.mu.Lock()
-		for _, b := range bindings {
-			b.last = nil
-		}
-		c.mu.Unlock()
 	}
 	return
 }
@@ -953,14 +961,19 @@ func (c *Connection) countError(err error) {
 	})
 }
 
-// publish queues a value when it changed, or on an integrity cycle.
-func (c *Connection) publish(u *updater, b *binding, v Value, cot string, isGi bool) {
+// nextSeq numbers a device read; reads are numbered inside the gate, so
+// the order is the order on the link.
+func (c *Connection) nextSeq() uint64 { return c.readSeq.Add(1) }
+
+// publish queues a value read at seq when it differs from the value last
+// written, or on an integrity cycle. An invalid value without data keeps
+// the last value. The cache moves only when flush wrote the value.
+func (c *Connection) publish(u *updater, b *binding, v Value, cot string, isGi bool, seq uint64) {
 	c.mu.Lock()
-	changed := b.last == nil || *b.last != v || isGi
-	if changed {
-		vv := v
-		b.last = &vv
+	if v == (Value{Invalid: true}) && b.last != nil {
+		v.Num, v.Str = b.last.Num, b.last.Str
 	}
+	changed := seq > b.seq && (b.last == nil || *b.last != v || isGi)
 	c.mu.Unlock()
 	if !changed {
 		return
@@ -972,20 +985,79 @@ func (c *Connection) publish(u *updater, b *binding, v Value, cot string, isGi b
 		}
 		c.log.Debug(fmt.Sprintf("  %s [unit %d %s] = %s%s", b.Tag, b.Unit, b.Addr, v.Str, inv))
 	}
-	u.queue(b.ID, v, cot)
+	u.queue(b, v, cot, seq)
+}
+
+// flush writes the queued values, one flush at a time, leaving out a value
+// older than the one a later read already wrote; the written values become
+// the bindings' last values, the ones not written are published again.
+func (c *Connection) flush(ctx context.Context, u *updater) error {
+	if len(u.entries) == 0 {
+		return nil
+	}
+	entries := u.entries
+	u.entries = nil
+	c.pubMu.Lock()
+	defer c.pubMu.Unlock()
+	c.mu.Lock()
+	ops := make([]clientapp.RtOp, 0, len(entries))
+	kept := entries[:0]
+	for _, e := range entries {
+		if e.seq <= c.current(e.b).seq {
+			continue
+		}
+		ops = append(ops, clientapp.RtOp{ID: e.b.ID, Set: e.set})
+		kept = append(kept, e)
+	}
+	c.mu.Unlock()
+	if len(ops) == 0 {
+		return nil
+	}
+	err := c.sink.Apply(ctx, ops)
+	c.mu.Lock()
+	for _, e := range kept {
+		b := c.current(e.b)
+		if err != nil {
+			b.last = nil
+			continue
+		}
+		v := e.v
+		b.last, b.seq = &v, e.seq
+	}
+	c.mu.Unlock()
+	return err
+}
+
+// current is the binding that replaced b after a bindings reload (same tag
+// and address), b when there is none. c.mu is held.
+func (c *Connection) current(b *binding) *binding {
+	if n := c.byID[drv.AnyString(b.ID)]; n != nil && n.Unit == b.Unit && n.Addr.String() == b.Addr.String() {
+		return n
+	}
+	return b
 }
 
 // updater accumulates the sourceDataUpdate documents of a cycle.
 type updater struct {
 	originator string
-	ops        []clientapp.RtOp
+	entries    []queued
+}
+
+// queued is one sourceDataUpdate waiting for flush.
+type queued struct {
+	b   *binding
+	v   Value
+	seq uint64
+	set bson.M
 }
 
 func newUpdater(connNumber float64) *updater {
 	return &updater{originator: "SUNSPEC|" + mbcore.JSNumberString(connNumber)}
 }
 
-func (u *updater) queue(id any, v Value, cot string) {
+// queue adds the whole sourceDataUpdate document (the data processors
+// watch for it being replaced, an invalid value included).
+func (u *updater) queue(b *binding, v Value, cot string, seq uint64) {
 	sdu := jsrtdata.SourceDataUpdate{
 		ValueAtSource:               v.Num,
 		ValueStringAtSource:         v.Str,
@@ -994,26 +1066,7 @@ func (u *updater) queue(id any, v Value, cot string) {
 		InvalidAtSource:             v.Invalid,
 		Extra:                       bson.M{"transientAtSource": false, "originator": u.originator},
 	}
-	u.ops = append(u.ops, clientapp.RtOp{ID: id, Set: bson.M{"sourceDataUpdate": sdu.BSON()}})
+	u.entries = append(u.entries, queued{b: b, v: v, seq: seq, set: bson.M{"sourceDataUpdate": sdu.BSON()}})
 }
 
-func (u *updater) queueInvalid(ids []any) {
-	for _, id := range ids {
-		u.ops = append(u.ops, clientapp.RtOp{ID: id, Set: bson.M{
-			"sourceDataUpdate.invalidAtSource": true,
-			"sourceDataUpdate.timeTag":         jsmongo.Now(),
-			"sourceDataUpdate.originator":      u.originator,
-		}})
-	}
-}
-
-func (u *updater) pending() int { return len(u.ops) }
-
-func (u *updater) flush(ctx context.Context, s clientapp.Sink) error {
-	if len(u.ops) == 0 {
-		return nil
-	}
-	batch := u.ops
-	u.ops = nil
-	return s.Apply(ctx, batch)
-}
+func (u *updater) pending() int { return len(u.entries) }

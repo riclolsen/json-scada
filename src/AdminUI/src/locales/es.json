@@ -821,7 +821,7 @@
       "sunspecParameters": "Parámetros SunSpec",
       "unitIds": "Unit Ids",
       "unitIdsTitle": "Dispositivos SunSpec (unit ids Modbus) a descubrir",
-      "unitIdsHint": "Escriba un número y pulse Enter. Rango 0 a 255. Vacío: unidad 1.",
+      "unitIdsHint": "Escriba un número y pulse Enter. Rango 1 a 255. Vacío: unidad 1.",
       "baseAddresses": "Direcciones Base",
       "baseAddressesTitle": "Direcciones de registro sondeadas para el marcador SunS",
       "baseAddressesHint": "Escriba un número y pulse Enter. Vacío: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",

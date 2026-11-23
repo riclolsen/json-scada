@@ -1267,7 +1267,7 @@ exports.updateProtocolConnection = async (req, res) => {
         ),
       ]
     }
-    intList('unitIds', 0, 255)
+    intList('unitIds', 1, 255)
     if (req.body.unitIds.length === 0) req.body.unitIds = [1.0]
     intList('baseAddresses', 0, 65535) // empty: go-sunspec's default list
     intList('modelIds', 1, 65534) // empty: tags for every model

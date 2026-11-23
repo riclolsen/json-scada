@@ -821,7 +821,7 @@
       "sunspecParameters": "پارامترهای SunSpec",
       "unitIds": "شناسه‌های واحد",
       "unitIdsTitle": "دستگاه‌های SunSpec (شناسه واحد Modbus) برای کشف",
-      "unitIdsHint": "یک عدد وارد کرده و Enter بزنید. بازه 0 تا 255. خالی: واحد 1.",
+      "unitIdsHint": "یک عدد وارد کرده و Enter بزنید. بازه 1 تا 255. خالی: واحد 1.",
       "baseAddresses": "آدرس‌های پایه",
       "baseAddressesTitle": "آدرس‌های رجیستری که برای نشانگر SunS بررسی می‌شوند",
       "baseAddressesHint": "یک عدد وارد کرده و Enter بزنید. خالی: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",

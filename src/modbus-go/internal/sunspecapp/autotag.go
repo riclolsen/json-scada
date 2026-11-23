@@ -213,23 +213,23 @@ func AutoCreateTags(ctx context.Context, cfg Config, um UnitModels, store TagSto
 			kctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 			if !hasSup {
 				id := store.NextKey(kctx)
-				tag := uniqueName(names, name)
-				err = store.Insert(kctx, newTagDoc(cfg, um.Unit, dp, modelLabel, tag, id, false))
+				err = insertUnique(kctx, store, names, name, func(tag string) bson.M {
+					return newTagDoc(cfg, um.Unit, dp, modelLabel, tag, id, false)
+				})
 				if err == nil {
 					sup.ID = id
-					names[tag] = true
 					created++
 				}
 			}
 			if err == nil && writable && !hasCmd {
 				id := store.NextKey(kctx)
-				tag := uniqueName(names, name+";cmd")
-				doc := newTagDoc(cfg, um.Unit, dp, modelLabel, tag, id, true)
-				doc["supervisedOfCommand"] = sup.ID
-				err = store.Insert(kctx, doc)
+				err = insertUnique(kctx, store, names, name+";cmd", func(tag string) bson.M {
+					doc := newTagDoc(cfg, um.Unit, dp, modelLabel, tag, id, true)
+					doc["supervisedOfCommand"] = sup.ID
+					return doc
+				})
 				if err == nil {
 					cmd.ID = id
-					names[tag] = true
 					created++
 				}
 			}
@@ -251,8 +251,26 @@ func AutoCreateTags(ctx context.Context, cfg Config, um UnitModels, store TagSto
 	return created, nil
 }
 
-// uniqueName makes a tag name unique among names (a tag of another
-// connection may have it).
+// insertUnique inserts the tag document doc(name), with a "~N" suffix when
+// the name is taken: names has the connection's own tags, and a tag of
+// another connection with the name fails the unique index on tag.
+func insertUnique(ctx context.Context, store TagStore, names map[string]bool, name string, doc func(tag string) bson.M) error {
+	for range maxNameTries {
+		tag := uniqueName(names, name)
+		err := store.Insert(ctx, doc(tag))
+		names[tag] = true
+		if !mongo.IsDuplicateKeyError(err) {
+			return err
+		}
+		jslog.Log(jslog.LevelDetailed, "tag name %s is in use, trying another", tag)
+	}
+	return fmt.Errorf("no free tag name for %s", name)
+}
+
+// maxNameTries bounds the names insertUnique tries.
+const maxNameTries = 50
+
+// uniqueName makes a tag name unique among names.
 func uniqueName(names map[string]bool, tag string) string {
 	if !names[tag] {
 		return tag
