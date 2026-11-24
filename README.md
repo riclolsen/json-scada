@@ -63,6 +63,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - Extensibility of the core data model (MongoDB: NoSQL/schema-less).
 - HTML5 Web interface. UTF-8/I18N. Mobile access. Web-based configuration management.
 - Role-based access control (RBAC).
+- Cyber-security events: protocol drivers (IEC 61850, IEC 60870-5-101/103/104, DNP3, ICCP, Modbus, SunSpec, OPC UA) report suspicious or unexpected conditions (TLS handshakes, malformed frames, unauthorized or stale commands, peer identity changes, unknown peers, protocol violations) to a Security Events viewer with severity, peer identification and configurable retention.
 - Various high-quality protocol drivers.
 - Integration with MQTT brokers (compatibility with Sparkplug B).
 - Live point configuration updates.
@@ -104,6 +105,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [Docker Image](https://github.com/riclolsen/json-scada/blob/master/docs/docker_image.md)
 - [Docker Compose Demo](https://github.com/riclolsen/json-scada/blob/master/demo-docker/README.md)
 - [Schema Documentation](https://github.com/riclolsen/json-scada/blob/master/docs/schema.md)
+- [Security Events](https://github.com/riclolsen/json-scada/blob/master/docs/schema.md#secevents-collection)
 - [Developer Guide](https://github.com/riclolsen/json-scada/blob/master/docs/DEVELOPER_GUIDE.md)
 - [Windows Build Instructions](https://github.com/riclolsen/json-scada/blob/master/docs/build_windows.md)
 - [Config File](https://github.com/riclolsen/json-scada/blob/master/conf/README.md)
