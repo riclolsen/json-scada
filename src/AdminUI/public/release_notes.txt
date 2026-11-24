@@ -24,6 +24,7 @@ Acknowledgements:
   PostgreSQL - https://www.postgresql.org/
   TimescaleDB - https://github.com/timescale/timescaledb, https://www.timescale.com/
   Grafana - https://github.com/grafana/grafana, https://grafana.com/
+  OT Fabric - https://otfabric.io/ https://github.com/otfabric
   PLC4X - https://github.com/apache/plc4x
   Go-IEC61850 - https://github.com/dscsystems/go-iec61850
   Node-opcua - https://github.com/node-opcua/node-opcua
@@ -138,14 +139,35 @@ Inkscape+SAGE:
 
 Notes for version 0.72:
 
-* List-based alarms: the data processors (Node.js and Go) write one alarmsData document per alarm occurrence (analog range change or digital alarm state), ended when the condition changes; realtimeData.alarmed remains the summary of unacknowledged alarms. Operators acknowledge one alarm, all alarms of a point or all alarms. New Alarms Viewer in the Admin UI (realtime and historical modes), auth/listAlarms and GraphQL alarms query. soeData is no longer capped; daily retention (default 60 days) for soeData, acknowledged inactive alarmsData and hist, configurable in Admin / System (Data retention).
-* Full check of the 3-level limits of analog tags: all out-of-range levels are evaluated independently (hiLimit, hihiLimit, hihihiLimit, loLimit, loloLimit, lololoLimit), with hysteresis; alarmRange reports the most severe level violated (+-1, 2, 3), every range change creates an SOE event with the level (HI, HIHI, HIHIHI, LO, LOLO, LOLOLO) and a change to a more severe level is a new alarm even if the previous one is not acknowledged.
 * Security Events: cyber-security events (unexpected or suspicious conditions) reported by the protocol drivers to the secEvents collection, with severity level, kind, source (protocol library or driver checks), peer identification and repeat folding. Protocols that generate them: IEC 61850 (client and server), Modbus (client and server), SunSpec (client), IEC 60870-5-101, 103 and 104 (clients, plus the 101 and 104 servers), ICCP (client and server), DNP3 (client and server) and OPC UA (client and server). Events include connections and TLS handshakes, malformed frames, unauthorized or stale commands, peer identity changes, unknown peers and protocol violations. The Security Events viewer (Admin UI, role right viewSecEvents) lists and filters them; they are removed after secEventsRetentionDays (60 by default).
 * SunSpec client driver (SUNSPEC, Go): discovers the SunSpec model chain of each unit, creates the tags of the discovered points (and command tags for writable points), polls the models and writes points; peer identification from the Common model and security events like the Modbus client.
+* List-based alarms: the data processors (Node.js and Go) write one alarmsData document per alarm occurrence (analog range change or digital alarm state), ended when the condition changes; realtimeData.alarmed remains the summary of unacknowledged alarms. Operators acknowledge one alarm, all alarms of a point or all alarms. New Alarms Viewer in the Admin UI (realtime and historical modes), auth/listAlarms and GraphQL alarms query. soeData is no longer capped; daily retention (default 60 days) for soeData, acknowledged inactive alarmsData and hist, configurable in Admin / System (Data retention).
+* Full check of the 3-level limits of analog tags: all out-of-range levels are evaluated independently (hiLimit, hihiLimit, hihihiLimit, loLimit, loloLimit, lololoLimit), with hysteresis; alarmRange reports the most severe level violated (+-1, 2, 3), every range change creates an SOE event with the level (HI, HIHI, HIHIHI, LO, LOLO, LOLOLO) and a change to a more severe level is a new alarm even if the previous one is not acknowledged.
 * Role right editDisplays: users of a role with it may use the SVG Editor (list, open and save displays) without being admins, limited to the role display list when one is set.
 * Windows services run under WinSW instead of NSSM: one XML per service in c:\json-scada\platform-windows\services (from platform-windows\service-templates), same service names and settings. Logs are now c:\json-scada\log\<name>.out.log and <name>.err.log (10 MB, one rolled file). The installer converts existing NSSM services on upgrade, keeping their settings, and repoints the log viewer (conf\log.io-file.json).
 * Windows installer: in-place upgrades. Run the new installer over an existing installation (do not uninstall first, the uninstaller removes the databases). Databases, configuration, displays and service settings are kept; services are stopped during the upgrade and the running ones restarted; conf and scripts are backed up to c:\json-scada\backup; services added by the new version are registered; MongoDB collections, indexes, validators and feature compatibility version and the TimescaleDB extension are updated; PostgreSQL data of an older major version keeps running on its previous binaries. Details in c:\json-scada\log\upgrade.log.
+* JDK Windows updated to jdk-21.0.13.1+2.
 * Linux installers (Ubuntu 24.04/26.04, RHEL 9/10): in-place upgrades. After git pull, run the same installer again: databases, conf, displays and locally changed system configuration files are kept (new versions written as .jsnew); Supervisor programs keep their autostart setting and the running ones are restarted; conf and replaced files are backed up to backup/; the demo database is not imported again; MongoDB schema and feature compatibility version and the TimescaleDB extensions are updated; PostgreSQL data in an older major version cluster keeps being served by it. Details in log/upgrade.log.
+
+To quickly run the system after installed, open the JSON-SCADA desktop folder and:
+
+* On the JSON-SCADA desktop folder: execute "_Start_Services".
+* On the JSON-SCADA desktop folder: execute "_JSON SCADA WEB".
+* Default login credentials: username=admin password=jsonscada.
+* Metabase credentials: username=json@scada.com password=jsonscada123.
+* To access the MCP server: start the service (Admin > System > MCP server) and config your agent to access http://localhost:6001/mcp.
+
+Requirements and recommendations:
+
+* Windows 10/11 64 bits or Server >=2019, Windows PowerShell. At least 12GB RAM and 30GB of free space in the "C:" drive.
+* MongoDB requires AVX instructions on x86 CPU. Use a modern x86 CPU with 6 cores or more.
+* Administrative rights. Corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
+* Free TCP ports 6688, 6689, 27017, 5432, 80, 443, 8080, 3000, 3001, 9000, 20000. Other ports may be required for optional services and protocols.
+* If the server already has MongoDB, PostgreSQL, Grafana, Metabase, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
+* To update previously installed JSON-SCADA, backup your current project before installing a new version.
+* If using VirtualBox configure "paravirtualization interface"=KVM, otherwise Nodejs errors may occur.
+
+-------------------------------------------------------------------
 
 Notes for version 0.71:
 
