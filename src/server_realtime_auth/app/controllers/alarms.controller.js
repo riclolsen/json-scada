@@ -26,7 +26,8 @@ exports.listAlarms = async (req, res) => {
     const r = await AlarmList.listAlarms(
       mdb,
       req.body || {},
-      req.rights?.group1List || []
+      req.rights?.group1List || [],
+      { existingPointsOnly: true }
     )
     if (r.error) {
       res.status(200).send({ error: r.error })

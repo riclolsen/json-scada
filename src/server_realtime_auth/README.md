@@ -255,7 +255,7 @@ When the StatusCode for the command is 0 (Good) the command was acknowledged ok.
 
 ### Alarm List Service
 
-`POST /Invoke/auth/listAlarms` (signed-in user, token cookie) answers the alarm list of the Alarms Viewer as `{ "error": false, "alarms": [], "limited": false }` (`limited` true when the row limit was reached). Body: `mode` (`"realtime"` or `"historical"`), `timeBegin`, `timeEnd` (ISO dates, historical), `group1` (station list), `priorityMax`, `text`, `unackedOnly`, `limit`, with the same meaning and limits as the GraphQL _alarms_ query. Each alarm carries the _alarmsData_ fields, `_id` as a string.
+`POST /Invoke/auth/listAlarms` (signed-in user, token cookie) answers the alarm list of the Alarms Viewer as `{ "error": false, "alarms": [], "limited": false }` (`limited` true when the row limit was reached). Body: `mode` (`"realtime"` or `"historical"`), `timeBegin`, `timeEnd` (ISO dates, historical), `group1` (station list), `priorityMax`, `text`, `unackedOnly`, `limit`, with the same meaning and limits as the GraphQL _alarms_ query. Each alarm carries the _alarmsData_ fields, `_id` as a string. Realtime results require a matching point key and tag in _realtimeData_. Historical results include occurrences for deleted tags.
 
 To acknowledge one alarm, send the WriteRequest alarm acknowledgement (AckOneAlarm) of its point with `{ "_Properties": { "alarm_id": "<_id>" } }` as the written value properties; without `alarm_id` every unacknowledged alarm of the point is acknowledged. The point's _alarmed_ flag is cleared when it has no unacknowledged alarm left.
 

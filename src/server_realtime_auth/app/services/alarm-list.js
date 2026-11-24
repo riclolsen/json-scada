@@ -105,15 +105,36 @@ function alarmRow(d) {
 }
 
 // runs the query: { alarms, limited } or { error }
-async function listAlarms(mdb, params, group1List) {
+async function listAlarms(mdb, params, group1List, { existingPointsOnly = false } = {}) {
   const q = alarmListQuery(params, group1List)
   if (q.error) return { error: q.error }
-  const docs = await mdb
-    .collection('alarmsData')
-    .find(q.filter)
-    .sort(q.sort)
-    .limit(q.limit + 1)
-    .toArray()
+  const alarms = mdb.collection('alarmsData')
+  const limit = q.limit + 1
+  // Apply the row limit after checking point existence so orphaned alarms
+  // cannot displace alarms for current points.
+  const cursor =
+    existingPointsOnly && params?.mode !== 'historical'
+      ? alarms.aggregate([
+          { $match: q.filter },
+          { $sort: q.sort },
+          {
+            $lookup: {
+              from: 'realtimeData',
+              localField: 'pointKey',
+              foreignField: '_id',
+              let: { alarmTag: '$tag' },
+              pipeline: [
+                { $match: { $expr: { $eq: ['$tag', '$$alarmTag'] } } },
+                { $project: { _id: 1 } },
+              ],
+              as: 'currentPoint',
+            },
+          },
+          { $match: { 'currentPoint.0': { $exists: true } } },
+          { $limit: limit },
+        ])
+      : alarms.find(q.filter).sort(q.sort).limit(limit)
+  const docs = await cursor.toArray()
   const limited = docs.length > q.limit
   return { alarms: docs.slice(0, q.limit).map(alarmRow), limited }
 }
