@@ -455,6 +455,7 @@ export async function readAlarms(params, cfg, timeoutMs = 10000) {
       rowId: a._id,
       station: a.group1 || '',
       descr: a.description || '',
+      displayValue: a.valueString || (a.value ?? ''),
       text: a.alarmText || a.valueString || '',
       priority: typeof a.priority === 'number' ? a.priority : 9,
       acked: a.ack !== 0,

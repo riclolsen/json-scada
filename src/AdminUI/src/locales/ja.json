@@ -183,7 +183,8 @@
     "alarms": "件のアラーム",
     "unackedOnly": "未確認のみ",
     "modes": {
-      "realtime": "リアルタイム",
+      "normal": "普通",
+      "aggregated": "集計",
       "historical": "履歴"
     },
     "columns": {

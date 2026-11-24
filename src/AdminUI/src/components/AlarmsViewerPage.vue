@@ -2,13 +2,14 @@
   <v-container fluid class="pa-1 alarms-root" :style="rootStyle">
     <!-- Toolbar -->
     <v-toolbar density="compact" color="surface" class="mb-1 px-2" flat>
-      <v-btn-toggle v-model="mode" mandatory density="compact" variant="outlined" divided class="mr-2"
+      <v-btn-toggle :model-value="mode" mandatory density="compact" variant="outlined" divided class="mr-2"
         @update:model-value="onModeChange">
-        <v-btn value="realtime" size="small">{{ $t('alarmsViewer.modes.realtime') }}</v-btn>
+        <v-btn value="realtime" size="small">{{ $t('alarmsViewer.modes.normal') }}</v-btn>
+        <v-btn value="aggregated" size="small">{{ $t('alarmsViewer.modes.aggregated') }}</v-btn>
         <v-btn value="historical" size="small">{{ $t('alarmsViewer.modes.historical') }}</v-btn>
       </v-btn-toggle>
 
-      <template v-if="mode === 'realtime'">
+      <template v-if="isRealtime">
         <v-btn size="small" variant="tonal" color="warning" class="mr-2" :disabled="!userHasRight('ackAlarms')"
           @click="ackAll">
           {{ $t('tabularViewer.ackAll') }} (F8)
@@ -24,10 +25,20 @@
         </v-btn>
       </template>
 
-      <v-btn icon size="small" variant="text" :title="$t('tabularViewer.toggleKeyCols')"
-        @click="showKeyCols = !showKeyCols">
-        <v-icon>mdi-key</v-icon>
-      </v-btn>
+      <v-menu :close-on-content-click="false" location="bottom end">
+        <template #activator="{ props }">
+          <v-btn v-bind="props" icon size="small" variant="text" :disabled="!prefsReady"
+            :title="$t('admin.common.columns')" :aria-label="$t('admin.common.columns')">
+            <v-icon>mdi-view-column-outline</v-icon>
+          </v-btn>
+        </template>
+        <v-list density="compact" min-width="220" role="menu" :aria-label="$t('admin.common.columns')">
+          <v-list-item v-for="column in optionalColumns" :key="column.key" :title="column.title" link
+            :prepend-icon="visibleColumns.includes(column.key) ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'"
+            role="menuitemcheckbox" :aria-checked="visibleColumns.includes(column.key)"
+            @click="toggleColumn(column.key)" />
+        </v-list>
+      </v-menu>
       <v-btn icon size="small" variant="text" :title="$t('tabularViewer.fontUp')" @click="fontInc(1)">
         <v-icon>mdi-format-font-size-increase</v-icon>
       </v-btn>
@@ -40,7 +51,7 @@
 
       <v-spacer></v-spacer>
       <span class="text-body-small mr-2">
-        <b>{{ visibleRows.length }}</b> / {{ rows.length }} {{ $t('alarmsViewer.alarms') }}
+        <b>{{ visibleRows.length }}</b> / {{ modeRows.length }} {{ $t('alarmsViewer.alarms') }}
         <template v-if="lastUpdate"> — {{ lastUpdate }}</template>
       </span>
       <span class="text-body-small fan">{{ fanState }}</span>
@@ -104,6 +115,10 @@
       <template #[`item.descr`]="{ item }">
         <span class="d-block text-truncate" :title="item.descr">{{ item.descr }}</span>
       </template>
+      <template #[`item.displayValue`]="{ item }">
+        <span class="d-inline-block text-truncate" :title="String(item.displayValue)"
+          style="max-width: 240px">{{ item.displayValue }}</span>
+      </template>
       <template #[`item.text`]="{ item }">
         <span class="d-inline-block text-truncate" :title="item.text" style="max-width: 320px">{{ item.text }}</span>
       </template>
@@ -118,7 +133,7 @@
         </span>
       </template>
       <template #[`item.priority`]="{ item }">
-        <span class="qualif pill" :style="priorityPillStyle(item)">{{ item.priority }}{{ item.acked ? '' : 'L' }}</span>
+        <span class="qualif pill" :style="priorityPillStyle(item)">{{ item.priority }}{{ isRowAcked(item) ? '' : 'L' }}</span>
       </template>
     </v-data-table-virtual>
 
@@ -132,10 +147,11 @@
 </template>
 
 <script setup>
-// Alarms Viewer: the alarm list (alarmsData) kept by the data processor, one
-// row per alarm occurrence. Realtime: the alarms not acknowledged or still
-// active (click acknowledges one alarm, F8 all); historical: every alarm
-// raised in a period. Shift/Alt click opens the point.
+// Alarms Viewer: Normal shows unacknowledged or active alarms. Aggregated
+// shows the latest of these per tag. Historical shows occurrences in a period.
+// A click acknowledges one occurrence in Normal and the whole point in
+// Aggregated. F8 acknowledges all realtime alarms.
+// Shift/Alt click opens the point.
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -163,8 +179,8 @@ const cfg = ref(getViewersConfig())
 const rows = ref([])
 const group1List = ref([])
 const mode = ref('realtime')
+const isRealtime = computed(() => mode.value !== 'historical')
 const unackedOnly = ref(false)
-const showKeyCols = ref(false)
 const fontScale = ref(13)
 const filterOut = reactive({}) // station names and priorities (as strings) filtered out
 const beepOn = ref(false)
@@ -189,43 +205,73 @@ let beepTimer = null
 // set on unmount: async work still running then must not start timers again
 let disposed = false
 let lastSuccess = Date.now()
+let requestId = 0
 
 // --- columns -----------------------------------------------------------------
 const nowrapCol = { cellProps: { class: 'nowrap-cell' }, headerProps: { class: 'nowrap-cell' } }
-const headers = computed(() => {
-  const h = [{ title: t('alarmsViewer.columns.time'), key: 'timeStr', sortable: false, ...nowrapCol }]
-  if (showKeyCols.value) {
-    h.push({ title: t('tabularViewer.columns.pointNum'), key: 'pointKey', width: 70, sortable: false })
-    h.push({ title: t('tabularViewer.columns.id'), key: 'tag', width: 230, sortable: false })
-  }
-  h.push({ title: t('tabularViewer.columns.location'), key: 'station', width: 90, sortable: false })
-  h.push({
+const allHeaders = computed(() => [
+  { title: t('alarmsViewer.columns.time'), key: 'timeStr', optional: true, ...nowrapCol },
+  { title: t('tabularViewer.columns.pointNum'), key: 'pointKey', width: 70, optional: true },
+  { title: t('tabularViewer.columns.id'), key: 'tag', width: 230, optional: true },
+  { title: t('tabularViewer.columns.location'), key: 'station', width: 90, optional: true },
+  {
     title: t('tabularViewer.columns.description'),
     key: 'descr',
     width: '100%',
-    sortable: false,
     cellProps: { class: 'descr-cell' },
     headerProps: { class: 'descr-cell' },
-  })
-  h.push({ title: t('alarmsViewer.columns.alarm'), key: 'text', sortable: false, ...nowrapCol })
-  h.push({ title: t('alarmsViewer.columns.state'), key: 'state', sortable: false, ...nowrapCol })
-  h.push({ title: t('alarmsViewer.columns.priority'), key: 'priority', sortable: false, ...nowrapCol })
-  if (mode.value === 'historical' || showKeyCols.value) {
-    h.push({ title: t('alarmsViewer.columns.normalTime'), key: 'normalTimeStr', sortable: false, ...nowrapCol })
-    h.push({ title: t('alarmsViewer.columns.ackTime'), key: 'ackTimeStr', sortable: false, ...nowrapCol })
-    h.push({ title: t('alarmsViewer.columns.ackUser'), key: 'ackUser', sortable: false, ...nowrapCol })
-  }
-  if (showKeyCols.value)
-    h.push({ title: t('tabularViewer.columns.sourceTime'), key: 'sourceTimeStr', sortable: false, ...nowrapCol })
-  return h
-})
+  },
+  { title: t('tabularViewer.dlg.value'), key: 'displayValue', ...nowrapCol },
+  { title: t('alarmsViewer.columns.alarm'), key: 'text', optional: true, ...nowrapCol },
+  { title: t('alarmsViewer.columns.state'), key: 'state', optional: true, ...nowrapCol },
+  { title: t('alarmsViewer.columns.priority'), key: 'priority', ...nowrapCol },
+  { title: t('alarmsViewer.columns.normalTime'), key: 'normalTimeStr', optional: true, ...nowrapCol },
+  { title: t('alarmsViewer.columns.ackTime'), key: 'ackTimeStr', optional: true, ...nowrapCol },
+  { title: t('alarmsViewer.columns.ackUser'), key: 'ackUser', optional: true, ...nowrapCol },
+  { title: t('tabularViewer.columns.sourceTime'), key: 'sourceTimeStr', optional: true, ...nowrapCol },
+].map((header) => ({ ...header, sortable: false })))
+const optionalColumns = computed(() => allHeaders.value.filter((header) => header.optional))
+const realtimeColumns = ['timeStr', 'station', 'text', 'state']
+const historicalColumns = [...realtimeColumns, 'normalTimeStr', 'ackTimeStr', 'ackUser']
+const selectedColumns = ref(null)
+const visibleColumns = computed(() =>
+  selectedColumns.value ?? (isRealtime.value ? realtimeColumns : historicalColumns)
+)
+const headers = computed(() =>
+  allHeaders.value.filter((header) => !header.optional || visibleColumns.value.includes(header.key))
+)
+
+function toggleColumn(key) {
+  const columns = visibleColumns.value
+  selectedColumns.value = columns.includes(key) ? columns.filter((column) => column !== key) : [...columns, key]
+}
 
 // --- client-side filters -----------------------------------------------------
+const modeRows = computed(() => {
+  if (mode.value !== 'aggregated') return rows.value
+  // The realtime feed is already sorted newest first by timeTag and _id.
+  const seen = new Set()
+  return rows.value.filter((row) => {
+    const key = row.tag || (row.pointKey ?? row.rowId)
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+})
+
+const unackedPoints = computed(() =>
+  new Set(rows.value.filter((r) => !r.acked).map((r) => r.pointKey))
+)
+
+function isRowAcked(row) {
+  return mode.value === 'aggregated' ? !unackedPoints.value.has(row.pointKey) : row.acked
+}
+
 const visibleRows = computed(() =>
-  rows.value.filter((r) => {
+  modeRows.value.filter((r) => {
     if (filterOut[r.station]) return false
     if (filterOut[String(r.priority)]) return false
-    if (mode.value === 'realtime' && unackedOnly.value && r.acked) return false
+    if (isRealtime.value && unackedOnly.value && isRowAcked(r)) return false
     return true
   })
 )
@@ -237,9 +283,9 @@ const alarmInfo = computed(() => {
     if (!info[id]) info[id] = { ack: 0, nack: 0, minAck: 10, minNack: 10, isStation }
     return info[id]
   }
-  for (const r of rows.value) {
+  for (const r of modeRows.value) {
     for (const e of [ensure(String(r.priority), false), ensure(r.station, true)]) {
-      if (r.acked) {
+      if (isRowAcked(r)) {
         e.ack++
         e.minAck = Math.min(e.minAck, r.priority)
       } else {
@@ -282,14 +328,13 @@ function colorOfStation(station) {
 
 function rowProps({ item }) {
   let color
-  if (item.acked) color = isDark.value ? '#BDBDBD' : cfg.value.TabularViewer_AckTxtColor
+  if (isRowAcked(item)) color = isDark.value ? '#BDBDBD' : cfg.value.TabularViewer_AckTxtColor
   else if (item.priority === 0) color = colorOfPriority(0)
   else color = isDark.value ? '#82B1FF' : cfg.value.TabularViewer_AlmTxtColor
   return {
     style: {
       color,
       fontWeight: item.priority === 0 ? 'bold' : 'normal',
-      fontStyle: item.active ? 'normal' : 'italic',
       cursor: 'pointer',
     },
   }
@@ -298,7 +343,7 @@ function priorityPillStyle(item) {
   return {
     backgroundColor: colorOfPriority(item.priority),
     color: 'black',
-    opacity: item.acked ? 0.35 : 1,
+    opacity: isRowAcked(item) ? 0.35 : 1,
   }
 }
 
@@ -311,32 +356,34 @@ const rootStyle = computed(() => ({
 
 // --- realtime feed -----------------------------------------------------------
 async function pollTick() {
-  if (disposed) return
-  if (mode.value === 'realtime') {
-    fanState.value = '.'
-    try {
-      const r = await opc.readAlarms({ mode: 'realtime' }, cfg.value)
-      rows.value = r.alarms
-      lastSuccess = Date.now()
-      failed.value = false
-      lastUpdate.value = new Date().toLocaleTimeString()
-      await pollBeepStatus()
-    } catch (e) {
-      fanState.value = 'E'
-    }
-    // failsafe: blank list if the server stalled
-    if (Date.now() - lastSuccess > 15000) {
-      rows.value = []
-      failed.value = true
-    }
+  if (disposed || !isRealtime.value) return
+  const id = ++requestId
+  fanState.value = '.'
+  try {
+    const r = await opc.readAlarms({ mode: 'realtime' }, cfg.value)
+    if (disposed || id !== requestId) return
+    rows.value = r.alarms
+    lastSuccess = Date.now()
+    failed.value = false
+    lastUpdate.value = new Date().toLocaleTimeString()
+    await pollBeepStatus(id)
+  } catch (e) {
+    if (disposed || id !== requestId) return
+    fanState.value = 'E'
   }
-  if (disposed) return
-  clearTimeout(pollTimer) // a mode change or ack-all meanwhile scheduled one
+  if (disposed || id !== requestId) return
+  // failsafe: blank list if the server stalled
+  if (Date.now() - lastSuccess > 15000) {
+    rows.value = []
+    failed.value = true
+  }
+  clearTimeout(pollTimer) // ack-all may have scheduled a poll while this one ran
   pollTimer = setTimeout(pollTick, (cfg.value.TabularViewer_RefreshTime * 1000) / 1.5)
 }
 
-async function pollBeepStatus() {
+async function pollBeepStatus(id) {
   const pts = await opc.readPoints([BEEP_POINTKEY], true, cfg.value)
+  if (disposed || id !== requestId) return
   const beep = pts.find((p) => p.key === BEEP_POINTKEY)
   if (!beep) return
   alarmBeepType.value = beep.beepType || 0
@@ -363,6 +410,7 @@ async function histSearch() {
   const begin = new Date(histFrom.value)
   const end = new Date(histTo.value)
   if (isNaN(begin.getTime()) || isNaN(end.getTime())) return
+  const id = ++requestId
   histLoading.value = true
   fanState.value = '.'
   try {
@@ -377,43 +425,60 @@ async function histSearch() {
       cfg.value,
       60000
     )
+    if (disposed || id !== requestId) return
     rows.value = r.alarms
     histLimited.value = r.limited
     failed.value = false
     lastUpdate.value = ''
   } catch (e) {
+    if (disposed || id !== requestId) return
     fanState.value = 'E'
     failed.value = true
   } finally {
-    histLoading.value = false
+    if (!disposed && id === requestId) histLoading.value = false
   }
 }
 
-function onModeChange() {
+function onModeChange(nextMode) {
+  const wasRealtime = isRealtime.value
+  mode.value = nextMode
+  if (wasRealtime === isRealtime.value) return
+  requestId++
   rows.value = []
+  failed.value = false
+  histLoading.value = false
   histLimited.value = false
   lastUpdate.value = ''
   clearTimeout(pollTimer)
-  if (mode.value === 'historical') {
+  if (isRealtime.value) {
+    pollTimer = setTimeout(pollTick, 50)
+  } else {
     if (!histFrom.value || !histTo.value) setDefaultPeriod()
-    pollTimer = setTimeout(pollTick, 1000) // keeps the beep status idle
-  } else pollTimer = setTimeout(pollTick, 50)
-  setBeforeUnload(mode.value === 'realtime')
+  }
+  setBeforeUnload(isRealtime.value)
 }
 
 // --- row interactions --------------------------------------------------------
 function onRowClick(event, { item }) {
   const forceInfo = event.altKey || event.shiftKey || mode.value === 'historical'
-  if (!forceInfo && !item.acked && userHasRight('ackAlarms')) {
+  const acked = isRowAcked(item)
+  if (!forceInfo && !acked && userHasRight('ackAlarms')) {
+    const aggregated = mode.value === 'aggregated'
     opc.writeAck({
       pointId: item.pointKey,
-      alarmId: item._id,
+      alarmId: aggregated ? undefined : item._id,
       action: OpcAcknowledge.AckOneAlarm | OpcAcknowledge.SilenceBeep,
     })
-    item.acked = true
+    if (aggregated) {
+      for (const row of rows.value) {
+        if (row.pointKey === item.pointKey) row.acked = true
+      }
+    } else {
+      item.acked = true
+    }
     return
   }
-  if (forceInfo || item.acked) {
+  if (forceInfo || acked) {
     infoKey.value = item.pointKey
     infoOpen.value = true
   }
@@ -459,28 +524,32 @@ function loadFilters() {
   }
 }
 
-// --- per-user settings: mode, key columns, historical filter ----------------
+// --- per-user settings: mode, visible columns, historical filter -------------
 const PREFS_KEY = 'alm_settings'
-let prefsReady = false
+const prefsReady = ref(false)
 function savePrefs() {
-  if (!prefsReady) return
+  if (!prefsReady.value) return
   setUserSetting(
     PREFS_KEY,
     JSON.stringify({
       mode: mode.value,
-      showKeyCols: showKeyCols.value,
+      visibleColumns: selectedColumns.value,
       unackedOnly: unackedOnly.value,
       histText: histText.value || '',
     })
   )
 }
-watch([mode, showKeyCols, unackedOnly, histText], savePrefs)
+watch([mode, selectedColumns, unackedOnly, histText], savePrefs)
 function loadPrefs() {
   try {
     const p = JSON.parse(getUserSetting(PREFS_KEY) || 'null')
     if (!p || typeof p !== 'object') return
-    if (p.mode === 'realtime' || p.mode === 'historical') mode.value = p.mode
-    if (typeof p.showKeyCols === 'boolean') showKeyCols.value = p.showKeyCols
+    if (['realtime', 'aggregated', 'historical'].includes(p.mode)) mode.value = p.mode
+    if (Array.isArray(p.visibleColumns)) {
+      selectedColumns.value = optionalColumns.value.map(({ key }) => key).filter((key) => p.visibleColumns.includes(key))
+    } else if (p.showKeyCols === true) {
+      selectedColumns.value = optionalColumns.value.map(({ key }) => key)
+    }
     if (typeof p.unackedOnly === 'boolean') unackedOnly.value = p.unackedOnly
     if (typeof p.histText === 'string') histText.value = p.histText.slice(0, 200)
   } catch (e) {
@@ -503,7 +572,7 @@ function copyGrid() {
 function onKeydown(e) {
   const tag = (e.target && e.target.tagName) || ''
   const inInput = tag === 'INPUT' || tag === 'TEXTAREA'
-  if (e.key === 'F8' && mode.value === 'realtime') {
+  if (e.key === 'F8' && isRealtime.value) {
     ackAll()
     e.preventDefault()
   } else if (e.key === 'F9') {
@@ -542,17 +611,17 @@ onMounted(async () => {
   loadPrefs()
   if (route.value.query.mode === 'historical') mode.value = 'historical'
   setDefaultPeriod()
-  prefsReady = true
+  prefsReady.value = true
   window.addEventListener('keydown', onKeydown)
-  setBeforeUnload(mode.value === 'realtime')
+  setBeforeUnload(isRealtime.value)
   beepTimer = setInterval(() => {
-    if (beepOn.value && alarmBeep.value && mode.value === 'realtime') {
+    if (beepOn.value && alarmBeep.value && isRealtime.value) {
       const el = alarmBeepType.value === 2 ? criticalSound.value : nonCriticalSound.value
       if (el) el.play().catch(() => {})
     }
   }, 1500)
-  if (mode.value === 'historical') histSearch()
-  pollTick()
+  if (isRealtime.value) pollTick()
+  else histSearch()
 })
 
 onUnmounted(() => {

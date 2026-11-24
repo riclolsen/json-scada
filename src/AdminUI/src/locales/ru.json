@@ -183,7 +183,8 @@
     "alarms": "тревог",
     "unackedOnly": "Только неквитированные",
     "modes": {
-      "realtime": "Реальное время",
+      "normal": "Нормальный",
+      "aggregated": "Агрегированные",
       "historical": "Архив"
     },
     "columns": {

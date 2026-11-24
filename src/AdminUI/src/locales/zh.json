@@ -183,7 +183,8 @@
     "alarms": "条报警",
     "unackedOnly": "仅未确认",
     "modes": {
-      "realtime": "实时",
+      "normal": "普通的",
+      "aggregated": "汇总",
       "historical": "历史"
     },
     "columns": {

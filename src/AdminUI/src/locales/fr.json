@@ -183,7 +183,8 @@
     "alarms": "alarmes",
     "unackedOnly": "Non acquittées seules",
     "modes": {
-      "realtime": "Temps réel",
+      "normal": "Normale",
+      "aggregated": "Agrégué",
       "historical": "Historique"
     },
     "columns": {

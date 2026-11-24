@@ -183,7 +183,8 @@
     "alarms": "خبرتیاوې",
     "unackedOnly": "یوازې نا تایید شوي",
     "modes": {
-      "realtime": "ریښتینی وخت",
+      "normal": "نورمال",
+      "aggregated": "ټول شوی",
       "historical": "تاریخچه"
     },
     "columns": {

@@ -183,7 +183,8 @@
     "alarms": "إنذارات",
     "unackedOnly": "غير المؤكدة فقط",
     "modes": {
-      "realtime": "الوقت الحقيقي",
+      "normal": "طبيعي",
+      "aggregated": "المجموع",
       "historical": "السجل"
     },
     "columns": {

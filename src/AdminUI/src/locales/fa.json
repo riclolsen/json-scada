@@ -183,7 +183,8 @@
     "alarms": "هشدار",
     "unackedOnly": "فقط تأییدنشده",
     "modes": {
-      "realtime": "بلادرنگ",
+      "normal": "عادی",
+      "aggregated": "تجمیع شده",
       "historical": "تاریخچه"
     },
     "columns": {

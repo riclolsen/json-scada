@@ -183,7 +183,8 @@
     "alarms": "сигналів",
     "unackedOnly": "Лише неквитовані",
     "modes": {
-      "realtime": "Реальний час",
+      "normal": "Звичайний",
+      "aggregated": "Агреговані",
       "historical": "Архів"
     },
     "columns": {
