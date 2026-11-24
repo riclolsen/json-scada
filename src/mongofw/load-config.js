@@ -17,6 +17,7 @@
 
 'use strict'
 const fs = require('fs')
+const { createSecretKey } = require('node:crypto')
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
 const { ReadPreference } = require('mongodb')
@@ -42,14 +43,16 @@ function LoadConfig(confFileArg, logLevelArg, instArg) {
     process.exit()
   }
 
+  const env = (name) =>
+    process.env[AppDefs.ENV_PREFIX + '_' + name] ??
+    process.env[AppDefs.ENV_PREFIX + name]
+  const envLogLevel = parseInt(env('LOGLEVEL'), 10)
+  const envInstance = parseInt(env('INSTANCE'), 10)
   Log.levelCurrent = Log.levelNormal
-  if (AppDefs.ENV_PREFIX + 'LOGLEVEL' in process.env)
-    Log.levelCurrent = parseInt(process.env[AppDefs.ENV_PREFIX + 'LOGLEVEL'])
-  if (logLevelArg) Log.levelCurrent = parseInt(logLevelArg)
+  if (Number.isInteger(envLogLevel)) Log.levelCurrent = envLogLevel
+  if (Number.isInteger(logLevelArg)) Log.levelCurrent = logLevelArg
   configObj.LogLevel = Log.levelCurrent
-
-  configObj.Instance =
-    instArg || parseInt(process.env[AppDefs.ENV_PREFIX + 'INSTANCE']) || 1
+  configObj.Instance = instArg || envInstance || 1
 
   configObj.GridFsCollectionName = 'files'
   configObj.RealtimeDataCollectionName = 'realtimeData'
@@ -65,6 +68,14 @@ function LoadConfig(confFileArg, logLevelArg, instArg) {
   Log.log('Config - ' + AppDefs.MSG + ' Version ' + AppDefs.VERSION)
   Log.log('Config - Instance: ' + configObj.Instance)
   Log.log('Config - Log level: ' + Log.levelCurrent)
+
+  const keyPath = process.env[AppDefs.ENV_PREFIX + '_UDP_KEY_FILE'] ?? configObj.udpAuthKeyFile
+  if (typeof keyPath !== 'string' || !keyPath.trim())
+    throw new Error('Set udpAuthKeyFile or ' + AppDefs.ENV_PREFIX + '_UDP_KEY_FILE')
+  const key = fs.readFileSync(keyPath)
+  if (key.length !== 32)
+    throw new Error('The UDP authentication key file must contain exactly 32 raw bytes')
+  configObj.UdpAuthKey = createSecretKey(key)
 
   configObj.MongoConnectionOptions = getMongoConnectionOptions(configObj)
   return configObj
@@ -89,18 +100,21 @@ function getMongoConnectionOptions(configObj) {
     typeof configObj.tlsCaPemFile === 'string' &&
     configObj.tlsCaPemFile.trim() !== ''
   ) {
-    configObj.tlsClientKeyPassword = configObj.tlsClientKeyPassword || ''
-    configObj.tlsAllowInvalidHostnames =
-      configObj.tlsAllowInvalidHostnames || false
-    configObj.tlsAllowChainErrors = configObj.tlsAllowChainErrors || false
-    configObj.tlsInsecure = configObj.tlsInsecure || false
-
     connOptions.tls = true
     connOptions.tlsCAFile = configObj.tlsCaPemFile
-    connOptions.tlsCertificateKeyFile = configObj.tlsClientPemFile
-    connOptions.tlsCertificateKeyFilePassword = configObj.tlsClientKeyPassword
-    connOptions.tlsAllowInvalidHostnames = configObj.tlsAllowInvalidHostnames
-    connOptions.tlsInsecure = configObj.tlsInsecure
+    if (configObj.tlsClientPemFile) {
+      connOptions.tlsCertificateKeyFile = configObj.tlsClientPemFile
+      if (configObj.tlsClientKeyPassword)
+        connOptions.tlsCertificateKeyFilePassword = configObj.tlsClientKeyPassword
+    }
+    if (configObj.tlsInsecure === true) {
+      connOptions.tlsInsecure = true
+    } else {
+      if (configObj.tlsAllowInvalidHostnames === true)
+        connOptions.tlsAllowInvalidHostnames = true
+      if (configObj.tlsAllowChainErrors === true)
+        connOptions.tlsAllowInvalidCertificates = true
+    }
   }
 
   return connOptions
