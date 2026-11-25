@@ -100,6 +100,9 @@ func (e *Engine) writeStats(ctx context.Context, db *mongo.Database) {
 			"confirmTimeouts":   int64(confirmTimeouts),
 			"eventsQueued":      int64(eventsQueued),
 		}
+		if id := conn.Sec.StatsDoc(); id != nil {
+			stats["peerIdentity"] = id
+		}
 
 		entries = append(entries, jsstats.Entry{
 			ConnectionNumber: conn.ProtocolConnectionNumber,

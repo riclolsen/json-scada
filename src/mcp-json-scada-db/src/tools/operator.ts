@@ -45,12 +45,16 @@ const ACK = {
 const nodeId = (point: { tag?: string; pointKey?: number }) =>
   point.pointKey !== undefined ? { IdType: 0, Id: point.pointKey } : { IdType: 1, Id: point.tag }
 
+// out-of-range alarm limits, from the most severe low to the most severe high
+// (alarmRange -3..-1 below lololo/lolo/loLimit, 1..3 above hi/hihi/hihihiLimit)
+const LIMIT_FIELDS = ['lololoLimit', 'loloLimit', 'loLimit', 'hiLimit', 'hihiLimit', 'hihihiLimit'] as const
+
 async function findPoint(mgr: ConnectionManager, tag?: string, pointKey?: number) {
   const q: any = pointKey !== undefined ? { _id: pointKey } : { tag }
   return mgr.getRealtimeDataCollection().findOne(q, {
     projection: {
       _id: 1, tag: 1, type: 1, origin: 1, description: 1, value: 1, valueString: 1, alarmed: 1, alarmDisabled: 1,
-      annotation: 1, notes: 1, loLimit: 1, hiLimit: 1, hysteresis: 1, substituted: 1, invalid: 1, group1: 1,
+      annotation: 1, notes: 1, ...Object.fromEntries(LIMIT_FIELDS.map((f) => [f, 1])), hysteresis: 1, substituted: 1, invalid: 1, group1: 1,
     },
   })
 }
@@ -133,7 +137,8 @@ export function registerOperatorTools(server: McpServer, api: AdminApiClient, mg
       description:
         'Change operator properties of a point as the HMI point dialog does: annotation (a tag-out / blocking ' +
         'note shown on displays, empty string clears it; creates an event), alarmDisabled (inhibit alarms), ' +
-        'loLimit / hiLimit / hysteresis (analog alarm limits), notes (free text documentation) and ' +
+        'loLimit / loloLimit / lololoLimit / hiLimit / hihiLimit / hihihiLimit / hysteresis (analog out-of-range ' +
+        'alarm levels, alarmRange -1..-3 / 1..3; they must not decrease from lololoLimit to hihihiLimit), notes (free text documentation) and ' +
         'substituteValue (manually replace the value of a point, e.g. a failed meter). Fields not given keep ' +
         'their current value. Limits need the point to be analog. Each change needs the matching right of the MCP account (enterAnnotations, ' +
         'disableAlarms, enterLimits, enterNotes, substituteValues); changes without the right are silently ' +
@@ -145,7 +150,11 @@ export function registerOperatorTools(server: McpServer, api: AdminApiClient, mg
         annotation: z.string().max(2000).optional(),
         alarmDisabled: z.boolean().optional(),
         loLimit: z.number().optional(),
+        loloLimit: z.number().optional(),
+        lololoLimit: z.number().optional(),
         hiLimit: z.number().optional(),
+        hihiLimit: z.number().optional(),
+        hihihiLimit: z.number().optional(),
         hysteresis: z.number().min(0).optional(),
         notes: z.string().max(5000).optional(),
         substituteValue: z.number().optional(),
@@ -156,20 +165,27 @@ export function registerOperatorTools(server: McpServer, api: AdminApiClient, mg
       if (!mgr.status.HintMongoIsConnected) return notConnectedResult()
       try {
         if (a.tag === undefined && a.pointKey === undefined) return textResult('Give tag or pointKey.', true)
-        const keys = ['annotation', 'alarmDisabled', 'loLimit', 'hiLimit', 'hysteresis', 'notes', 'substituteValue'] as const
+        const keys = ['annotation', 'alarmDisabled', ...LIMIT_FIELDS, 'hysteresis', 'notes', 'substituteValue'] as const
         if (!keys.some((k) => a[k] !== undefined)) return textResult('Give at least one property to change.', true)
         const prev: any = await findPoint(mgr, a.tag, a.pointKey)
         const num = (v: unknown, d: number) => (typeof v === 'number' && !Number.isNaN(v) ? v : d)
         if (!prev) return textResult(`Point ${a.tag ?? a.pointKey} not found.`, true)
-        const limits = a.loLimit !== undefined || a.hiLimit !== undefined || a.hysteresis !== undefined
+        const limits = LIMIT_FIELDS.some((k) => a[k] !== undefined) || a.hysteresis !== undefined
         if (limits && prev.type !== 'analog') return textResult(`Point ${prev.tag} is ${prev.type}: limits apply to analog points only.`, true)
-        if (limits && num(a.loLimit, num(prev.loLimit, -Infinity)) > num(a.hiLimit, num(prev.hiLimit, Infinity)))
-          return textResult('loLimit must not exceed hiLimit.', true)
+        if (limits) {
+          // the finite limits after the change must not decrease from lololoLimit to hihihiLimit
+          const after = LIMIT_FIELDS.map((k) => [k, num(a[k], num(prev[k], NaN))] as const).filter(
+            ([, v]) => Number.isFinite(v)
+          )
+          for (let i = 1; i < after.length; i++)
+            if (after[i][1] < after[i - 1][1])
+              return textResult(`${after[i - 1][0]} must not exceed ${after[i][0]}.`, true)
+        }
         if (a.substituteValue !== undefined && prev.origin === 'command')
           return textResult('Command points cannot be substituted.', true)
         // only the given fields: the server leaves absent ones unchanged
         const props: Record<string, unknown> = {}
-        for (const k of ['alarmDisabled', 'annotation', 'loLimit', 'hiLimit', 'hysteresis', 'notes'] as const)
+        for (const k of ['alarmDisabled', 'annotation', ...LIMIT_FIELDS, 'hysteresis', 'notes'] as const)
           if (a[k] !== undefined) props[k] = a[k]
         if (a.substituteValue !== undefined) {
           props['substituted'] = true
@@ -186,7 +202,7 @@ export function registerOperatorTools(server: McpServer, api: AdminApiClient, mg
         })
         const cur: any = await findPoint(mgr, undefined, prev._id)
         const requested: Record<string, unknown> = {}
-        for (const k of ['annotation', 'alarmDisabled', 'loLimit', 'hiLimit', 'hysteresis', 'notes'] as const)
+        for (const k of ['annotation', 'alarmDisabled', ...LIMIT_FIELDS, 'hysteresis', 'notes'] as const)
           if (a[k] !== undefined) requested[k] = a[k]
         if (a.substituteValue !== undefined) requested['value'] = a.substituteValue
         const applied: Record<string, unknown> = {}

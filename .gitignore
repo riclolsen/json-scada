@@ -119,3 +119,4 @@ src/log-io/ui/build/
 /demo-docker
 /conf
 old/
+platform-windows/services/

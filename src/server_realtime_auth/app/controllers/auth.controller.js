@@ -108,6 +108,8 @@ const ROLE_UPDATE_FIELDS = [
   'ackAlarms',
   'disableAlarms',
   'cimEngineering',
+  'viewSecEvents',
+  'editDisplays',
   'group1List',
   'group1CommandList',
   'displayList',
@@ -328,6 +330,41 @@ exports.createTag = async (req, res) => {
   }
 }
 
+// fields of an analog tag that change its out-of-range alarm check
+const alarmCheckFields = [
+  'hiLimit', 'hihiLimit', 'hihihiLimit', 'loLimit', 'loloLimit', 'lololoLimit',
+  'hysteresis', 'alarmDisabled',
+]
+// a null limit (an Infinity serialized as JSON) is equal to an infinite one
+const limitValue = (v) => (v === null || v === undefined || !isFinite(v) ? null : Number(v))
+function changesAlarmCheck(stored, body) {
+  return alarmCheckFields.some(
+    (k) =>
+      k in body &&
+      (k === 'alarmDisabled'
+        ? !!body[k] !== !!stored[k]
+        : limitValue(body[k]) !== limitValue(stored[k]))
+  )
+}
+// the data processor recomputes the alarm range of the tag (as for limits
+// changed by an operator); merged on the server so a driver write is kept
+function requestRangeCheck(_id) {
+  Tag.collection
+    .updateOne({ _id: _id }, [
+      {
+        $set: {
+          sourceDataUpdate: {
+            $mergeObjects: [
+              { $ifNull: ['$sourceDataUpdate', {}] },
+              { rangeCheck: new Date().getTime() },
+            ],
+          },
+        },
+      },
+    ])
+    .catch((e) => Log.log('Update for range check error: ' + e.message))
+}
+
 exports.updateTag = async (req, res) => {
   try {
     registerUserAction(req, 'updateTag')
@@ -367,8 +404,10 @@ exports.updateTag = async (req, res) => {
       if (IsNumberVal(req.body.protocolSourceASDU))
         req.body.protocolSourceASDU = parseFloat(req.body.protocolSourceASDU)
 
-      await Tag.findOneAndUpdate({ _id: _id }, req.body)
+      const before = await Tag.findOneAndUpdate({ _id: _id }, req.body).lean()
       res.status(200).send({ error: false })
+      if (before?.type === 'analog' && changesAlarmCheck(before, req.body))
+        requestRangeCheck(before._id)
     } else res.status(200).send({ error: 'No _id in update request.' })
   } catch (err) {
     Log.log(err)
@@ -501,6 +540,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'ICCP',
       'ICCP_SERVER',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -527,6 +567,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC60870-5-101_SERVER',
       'IEC60870-5-101',
       'MODBUS',
+      'SUNSPEC',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('autoCreateTags' in req.body)) {
@@ -832,6 +873,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'ICCP',
       'ONVIF',
       'MODBUS',
+      'SUNSPEC',
     ].includes(req?.body?.protocolDriver)
   ) {
     if (!('giInterval' in req.body)) {
@@ -886,6 +928,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'OPC-UA',
       'OPC-DA',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -904,6 +947,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'DNP3_SERVER',
       'OPC-DA',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -934,6 +978,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC60870-5-104',
       'IEC60870-5-104_SERVER',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -963,6 +1008,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'IEC61850',
       'IEC61850_SERVER',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -977,6 +1023,7 @@ exports.updateProtocolConnection = async (req, res) => {
       'DNP3_SERVER',
       'MQTT-SPARKPLUG-B',
       'MODBUS',
+      'SUNSPEC',
       'MODBUS_SERVER',
     ].includes(req?.body?.protocolDriver)
   ) {
@@ -1120,6 +1167,10 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('interFrameDelayMs' in req.body)) {
       req.body.interFrameDelayMs = 0.0
     }
+  }
+
+  // MODBUS, MODBUS_SERVER, SUNSPEC - TLS and serial link parameters
+  if (['MODBUS', 'MODBUS_SERVER', 'SUNSPEC'].includes(req?.body?.protocolDriver)) {
     if (!('privateKeyPassphrase' in req.body)) {
       req.body.privateKeyPassphrase = ''
     }
@@ -1146,8 +1197,8 @@ exports.updateProtocolConnection = async (req, res) => {
     }
   }
 
-  // MODBUS (client) specific
-  if (['MODBUS'].includes(req?.body?.protocolDriver)) {
+  // MODBUS and SUNSPEC (clients) - transport and timing
+  if (['MODBUS', 'SUNSPEC'].includes(req?.body?.protocolDriver)) {
     if (!('connectionMode' in req.body)) {
       req.body.connectionMode = 'TCP Active'
     }
@@ -1155,7 +1206,9 @@ exports.updateProtocolConnection = async (req, res) => {
       req.body.timeoutMs = 1000.0
     }
     if (!('pollingInterval' in req.body)) {
-      req.body.pollingInterval = 1000.0
+      // SunSpec devices are read model by model: a slower default cycle
+      req.body.pollingInterval =
+        req.body.protocolDriver === 'SUNSPEC' ? 5000.0 : 1000.0
     }
     if (!('maxRetries' in req.body)) {
       req.body.maxRetries = 2.0
@@ -1165,6 +1218,10 @@ exports.updateProtocolConnection = async (req, res) => {
     if (!('interRequestDelayMs' in req.body)) {
       req.body.interRequestDelayMs = 0.0
     }
+  }
+
+  // MODBUS (client) read planning; SunSpec fixes its own layout
+  if (['MODBUS'].includes(req?.body?.protocolDriver)) {
     // clamp request sizes to the protocol maximums
     if (!('maxReadRegisters' in req.body)) {
       req.body.maxReadRegisters = 125.0
@@ -1190,6 +1247,40 @@ exports.updateProtocolConnection = async (req, res) => {
     // use FC22 Mask Write for single-bit writes, else read-modify-write
     if (!('useMaskWrite' in req.body)) {
       req.body.useMaskWrite = true
+    }
+  }
+
+  // SUNSPEC specific: discovery and automatic tag creation (the driver's defaults)
+  if (['SUNSPEC'].includes(req?.body?.protocolDriver)) {
+    // numeric lists from the UI chips (strings), filtered to their valid ranges
+    const intList = (k, min, max) => {
+      const a = Array.isArray(req.body[k])
+        ? req.body[k]
+        : req.body[k] === undefined || req.body[k] === null || req.body[k] === ''
+          ? []
+          : [req.body[k]]
+      req.body[k] = [
+        ...new Set(
+          a
+            .map((v) => Number(v))
+            .filter((v) => Number.isInteger(v) && v >= min && v <= max)
+        ),
+      ]
+    }
+    intList('unitIds', 1, 255)
+    if (req.body.unitIds.length === 0) req.body.unitIds = [1.0]
+    intList('baseAddresses', 0, 65535) // empty: go-sunspec's default list
+    intList('modelIds', 1, 65534) // empty: tags for every model
+    if (!['holding', 'input'].includes(req.body.registerType)) {
+      req.body.registerType = 'holding'
+    }
+    const mm = Math.floor(Number(req.body.maxModels))
+    req.body.maxModels = Number.isFinite(mm) && mm >= 1 ? mm : 256.0
+    if (!('autoCreateCommandTags' in req.body)) {
+      req.body.autoCreateCommandTags = true
+    }
+    if (!('autoCreateUnimplemented' in req.body)) {
+      req.body.autoCreateUnimplemented = false
     }
   }
 
@@ -1685,6 +1776,14 @@ function displayPath(name) {
     : null
 }
 
+// A display editor that is not an admin works only on the displays of its
+// displayList (when the list is not empty), as the /svg viewer route allows.
+function displayAllowed(rights, fileName) {
+  if (!rights || rights.isAdmin) return true
+  const list = Array.isArray(rights.displayList) ? rights.displayList : []
+  return list.length === 0 || list.includes(fileName)
+}
+
 exports.listDisplays = (req, res) => {
   Log.log('listDisplays')
 
@@ -1694,7 +1793,13 @@ exports.listDisplays = (req, res) => {
       res.status(200).send({ error: errorText(err) })
       return
     }
-    res.status(200).send(files.filter((f) => path.extname(f).toLowerCase() === '.svg'))
+    res
+      .status(200)
+      .send(
+        files.filter(
+          (f) => path.extname(f).toLowerCase() === '.svg' && displayAllowed(req.rights, f)
+        )
+      )
   })
 }
 
@@ -1707,6 +1812,10 @@ exports.openDisplay = (req, res) => {
   if (!target) {
     Log.log('openDisplay: Invalid file name attempted: ' + String(req.query?.file))
     res.status(400).send({ error: 'Invalid file name (must be a .svg file)' })
+    return
+  }
+  if (!displayAllowed(req.rights, target.fileName)) {
+    res.status(403).send({ error: 'Access to display denied!' })
     return
   }
 
@@ -1733,6 +1842,10 @@ exports.saveDisplay = (req, res) => {
   }
   if (typeof req.body.content !== 'string') {
     res.status(400).send({ error: 'Missing display content' })
+    return
+  }
+  if (!displayAllowed(req.rights, target.fileName)) {
+    res.status(403).send({ error: 'Access to display denied!' })
     return
   }
 

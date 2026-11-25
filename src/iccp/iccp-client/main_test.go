@@ -224,3 +224,12 @@ func TestConnRuntimePublishAndInvalidate(t *testing.T) {
 		t.Errorf("second invalidate = %d, want 0 (already invalid)", n)
 	}
 }
+
+// realtimeData keys are numbers: a tag document must decode.
+func TestRtDataNumericID(t *testing.T) {
+	raw, _ := bson.Marshal(bson.M{"_id": 12.0, "tag": "X"})
+	var r rtData
+	if err := bson.Unmarshal(raw, &r); err != nil || r.ID != 12 {
+		t.Fatalf("decode realtimeData: %v (id %v), want numeric _id 12", err, r.ID)
+	}
+}

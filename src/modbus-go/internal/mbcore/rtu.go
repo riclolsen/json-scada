@@ -69,10 +69,22 @@ type RTUFrame struct {
 // else is delimited by the inter-frame idle gap (OnIdle).
 type RTURequestDecoder struct {
 	buf []byte
+	// dropped counts the frames discarded for a bad CRC; resyncing is set
+	// while bytes are shifted out after one, so a frame counts once.
+	dropped   int
+	resyncing bool
 }
 
 // Reset drops anything buffered.
-func (d *RTURequestDecoder) Reset() { d.buf = d.buf[:0] }
+func (d *RTURequestDecoder) Reset() { d.buf, d.resyncing = d.buf[:0], false }
+
+// TakeDropped returns the number of frames discarded for a bad CRC since the
+// last call.
+func (d *RTURequestDecoder) TakeDropped() int {
+	n := d.dropped
+	d.dropped = 0
+	return n
+}
 
 // Buffered reports how many bytes wait for a frame boundary.
 func (d *RTURequestDecoder) Buffered() int { return len(d.buf) }
@@ -92,8 +104,10 @@ func (d *RTURequestDecoder) OnIdle() []RTUFrame {
 	var out []RTUFrame
 	if len(d.buf) >= 4 && CheckCRC(d.buf) {
 		out = append(out, RTUFrame{Unit: d.buf[0], PDU: append([]byte(nil), d.buf[1:len(d.buf)-2]...)})
+	} else if len(d.buf) > 0 && !d.resyncing {
+		d.dropped++
 	}
-	d.buf = d.buf[:0]
+	d.buf, d.resyncing = d.buf[:0], false
 	return out
 }
 
@@ -106,9 +120,14 @@ func (d *RTURequestDecoder) tryOne(out *[]RTUFrame) bool {
 	if CheckCRC(frame) {
 		*out = append(*out, RTUFrame{Unit: frame[0], PDU: append([]byte(nil), frame[1:n-2]...)})
 		d.buf = append(d.buf[:0], d.buf[n:]...)
+		d.resyncing = false
 		return true
 	}
 	// CRC failure: shift one byte and retry to resynchronize.
+	if !d.resyncing {
+		d.dropped++
+		d.resyncing = true
+	}
 	d.buf = append(d.buf[:0], d.buf[1:]...)
 	return len(d.buf) >= 4
 }

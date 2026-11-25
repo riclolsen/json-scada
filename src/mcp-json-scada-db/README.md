@@ -79,7 +79,9 @@ The server exposes the following tools to the MCP client:
 - `get_point`: Get the full document of a specific point by tag or numeric point key (including `valueJson`, the structured value that displays address with `!JSON <tag> <path>`, and `valueString`, whose parts they take with `!STR <tag> <selector>`).
 - `send_command`: Write a value to a command point. Respects `commandBlocked`, records the action in `userActions` and can wait for delivery confirmation from the protocol driver.
 - `get_history`: Get historical values for a point in a time range (from the `hist` collection).
-- `get_soe_events`: Get Sequence of Events records with regex/group/time filters.
+- `get_alarms` reads `alarmsData` by ID or filters by point, station, priority, active and acknowledgement state, and raise time. Realtime mode includes active or unacknowledged alarms of any age. Historical mode defaults to the last 24 hours. The result distinguishes the condition from acknowledgement and decodes analog limit ranges.
+- `get_soe_events` reads `soeData` by ID or filters by regex, point, station, acknowledgement, quality and arrival time. It includes document and point IDs and interprets acknowledgement and timestamp quality. Both tools use the MongoDB account’s read permissions. The `json-scada://alarms-and-soe/guide` resource explains how to interpret and correlate the lists.
+- `get_security_events` reads protocol security observations from `secEvents` by ID or filters by time, severity, kind, category, driver, connection, node, peer IP or source. It returns newest records, severity counts and common kinds in the returned records, with folded repeats counted separately. Use `includeDetails` for peer identity and protocol fields. The `json-scada://security-events/guide` resource explains triage and correlation. Access uses the MCP server’s MongoDB account and its collection permissions.
 - `get_system_status`: Summary of process instances, protocol driver instances and protocol connections. Liveness comes from the instance keep-alive (under 30 s old); a driver instance with a stale keep-alive still counts as alive when one of its connections has fresh `stats` (server drivers without redundancy may not write a keep-alive). `aliveSource` (`keepAlive`, `connectionStats` or `null`) says which signal decided, and each connection carries `statsFresh`.
 - `list_collections`: View all available database collections.
 - `query_collection`: Run a custom read-only query (MongoDB Extended JSON filter, projection and sort) on any collection. Credential fields are redacted; CIM-EMS model, binding, run and artifact collections are refused.
@@ -111,7 +113,7 @@ Displays:
 
 ### Configuration and Process Management Tools
 
-These tools are registered only when `JS_MCPJSDB_ADMIN_USERNAME` and `JS_MCPJSDB_ADMIN_PASSWORD` are set. They call the AdminUI backend API (`server_realtime_auth`, `/Invoke/auth/*`) as that user instead of writing MongoDB directly, so they get the same validation, protocol defaults, automatic driver restarts, OS service handling (NSSM on Windows, supervisord on Linux) and audit trail as the AdminUI. `server_realtime_auth` must be running and reachable at `JS_MCPJSDB_ADMIN_URL`.
+These tools are registered only when `JS_MCPJSDB_ADMIN_USERNAME` and `JS_MCPJSDB_ADMIN_PASSWORD` are set. They call the AdminUI backend API (`server_realtime_auth`, `/Invoke/auth/*`) as that user instead of writing MongoDB directly, so they get the same validation, protocol defaults, automatic driver restarts, OS service handling (WinSW on Windows, supervisord on Linux) and audit trail as the AdminUI. `server_realtime_auth` must be running and reachable at `JS_MCPJSDB_ADMIN_URL`.
 
 Use a dedicated admin account, since these tools can stop data acquisition and change the system configuration. Tools that delete, stop or restart are marked `destructiveHint` so MCP clients can ask for confirmation. Every change is recorded in `userActions` under that account.
 
@@ -129,10 +131,14 @@ Non-driver processes (`cs_data_processor`, `calculations`, the realtime server, 
 
 Updates change only the given fields. Fields maintained by running drivers (redundancy keep-alive, `stats`) are never sent back, so an update cannot trigger a redundancy failover.
 
-Example (Windows service):
+Example (Windows service): set the variables in `C:\json-scada\platform-windows\services\JSON_SCADA_mcp_server.xml` and restart the service:
 
-```
-nssm set JSON_SCADA_mcp_server AppEnvironmentExtra JS_MCPJSDB_TRANSPORT=http JS_MCPJSDB_IP_BIND=127.0.0.1 JS_MCPJSDB_HTTP_PORT=6001 JS_MCPJSDB_ADMIN_USERNAME=mcp-admin JS_MCPJSDB_ADMIN_PASSWORD=<password>
+```xml
+<env name="JS_MCPJSDB_TRANSPORT" value="http"/>
+<env name="JS_MCPJSDB_IP_BIND" value="127.0.0.1"/>
+<env name="JS_MCPJSDB_HTTP_PORT" value="6001"/>
+<env name="JS_MCPJSDB_ADMIN_USERNAME" value="mcp-admin"/>
+<env name="JS_MCPJSDB_ADMIN_PASSWORD" value="PASSWORD"/>
 ```
 
 ### System Tags Tools

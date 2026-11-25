@@ -85,6 +85,7 @@ db.protocolConnections.insert({
     privateKeyFilePath: "",
     rootCertFilePath: "",
     chainValidation: false,
+    peerIdentification: true,
     stats: {}
 });
 ```
@@ -97,7 +98,7 @@ db.protocolConnections.insert({
 - **enabled** [Boolean] - Enable/disable connection. **Mandatory**.
 - **commandsEnabled** [Boolean] - Enable command forwarding. **Mandatory**.
 - **ipAddressLocalBind** [String] - Listen address and port: `"host:port"`, `":port"`, `"host"` or `"[ipv6]:port"` (e.g. "0.0.0.0:102"). The host must be an IP address or `localhost`; an empty host listens on all interfaces (0.0.0.0), and the port defaults to 102. An invalid value is logged and that connection is not started. **Mandatory**.
-- **ipAddresses** [Array of Strings] - Allowed client IP addresses (not yet enforced!). Empty = allow all. **Optional**.
+- **ipAddresses** [Array of Strings] - Expected client IP addresses or CIDR prefixes. A connection from any other address is reported as a `conn.unexpected` security event; it is not refused. Empty = any address is expected. **Optional**.
 - **topics** [Array of Strings] - `group1` filter for exposed tags. Empty = all tags. Topics always limit the connection's predefined datasets and the control points it may operate. When `remoteApTitle` is set, they are also enforced on discovery/reads/writes via the bilateral table (only the listed domains are granted); without a `remoteApTitle` (open mode) discovery and reads are not restricted. **Optional**.
 - **timeoutMs** [Double] - Not used by the server. **Optional**.
 - **localApTitle** [String] - Local AP Title (e.g. "1.1.999.1"). Gets a default if empty. **Optional**.
@@ -110,6 +111,7 @@ db.protocolConnections.insert({
 - **rootCertFilePath** [String] - CA certificate (PEM) to verify client certificates. **Optional**.
 - **chainValidation** [Boolean] - Require and verify client certificates (mutual TLS) against the CA. Default: false. **Optional**.
 - **password** [String] - ACSE authentication password. Empty = no auth. **Optional**.
+- **peerIdentification** [Boolean] - Keep the identity of the connected clients in `stats.peerIdentity` and report a change of it for the same address (see [Security Events](#security-events)). Default: true. **Optional**.
 - **stats** [Object] - Protocol statistics, written by the driver every 10 s (see [Statistics](#statistics)). **Mandatory**.
 
 ## Logging
@@ -142,10 +144,60 @@ that have already ended:
 | `informationMessagesSent` | Information Messages |
 | `bytesRx`, `bytesTx` | MMS PDU octets |
 | `eventsDropped` | server events lost because the observer fell behind |
+| `peerIdentity` | with `peerIdentification`: `clients` (open associations: `address`, `ip`, `mac`, `macSource`, `acseIdentity`, `authenticated`, `blt`, `tls`, `connectedAt`) and `known` (the last identity of up to 64 client IPs: `ip`, `mac`, `macSource`, `acseIdentity`, `tlsSha256`, `lastSeen`) |
 
 Server events are logged too: association accepted, released, aborted or
 lost, and dropped reports at `logLevel >= 1`; rejected requests and failed
 controls at 2; everything else at 3.
+
+## Security Events
+
+The driver writes cyber-security events to the `secEvents` collection (see
+[docs/schema.md](../../../docs/schema.md#secevents-collection); the Admin UI
+Security Events viewer lists them). Each listening connection has a
+report-only tase2 security policy: nothing is refused because of it.
+
+Detected by the tase2 library (`source: "library"`), among others:
+
+- connections from addresses outside `ipAddresses` (`conn.unexpected`),
+  connection rates, handshake timeouts;
+- TLS: rejected or missing client certificates, plaintext on the TLS port,
+  weak parameters, a listener without TLS or without authentication;
+- ACSE: missing, unknown or duplicated AP titles (`identity.*`), failed
+  authentication and brute force (`auth.*`);
+- malformed TPKT, COTP, session, presentation and MMS PDUs (`proto.*`);
+- reads and writes of unknown domains or objects, writes to read-only
+  objects, scans and enumeration (`access.*`);
+- every select and operate (`cmd.select`, `cmd.operate`), operate without
+  select, duplicate (replayed) operates, operates on tagged devices;
+- transfer sets disabled or changed, datasets deleted, indication writes,
+  conclude and abort (`ctrl.*`);
+- duplicate invoke IDs and stale acknowledgements (`seq.*`), floods of
+  requests, reads, controls or transfer set writes (`flood.*`, `dos.*`);
+- MAC address changes for the same IP and certificate changes for the same
+  AP title (`peer.mac_changed`, `tls.cert_changed`).
+
+Routine informational events (connection accepted or closed, association
+accepted) are not stored.
+
+Detected by the driver (`source: "driver"`):
+
+- `peer.identified`: the first association from an address;
+  `peer.identity_changed`: an address states another AP title/AE qualifier
+  than the last time (compared with `stats.peerIdentity.known`, so across
+  restarts too; the MAC and certificate history of the library is seeded
+  from it);
+- `cmd.rejected`, `cmd.object_unknown`: a control refused by the driver,
+  with the reason (commands disabled, node inactive, domain outside the
+  `topics`, no or not a command tag, `commandBlocked`);
+- `cmd.wrong_type`: a value that is not a number for an analog or digital
+  command tag (refused), or a digital command other than 0/1 (forwarded as
+  1, reported);
+- `flood.controls`: more than 10 controls from one client IP within 10 s;
+- `cmd.unnecessary`: a digital command that would not change the state of
+  the tag's `supervisedOfCommand` point (opening an open breaker).
+
+Forwarded commands carry the client IP in `commandsQueue.originatorIpAddress`.
 
 ## Command Line Arguments
 
@@ -264,8 +316,12 @@ When a TASE.2 client writes to a control point, the driver:
    protocol, the domain is in the connection's `topics` and the tag's
    `commandBlocked` (followed live from the change stream) is not set.
 2. Looks up the corresponding realtimeData tag (`origin: "command"`).
-3. Creates a command document in the `commandsQueue` collection.
-3. The command is then picked up by the appropriate protocol client driver
+3. Refuses a value that is not a finite number for an analog or digital tag
+   (a numeric string may have surrounding spaces; NaN and infinities are
+   refused), reporting `cmd.wrong_type`.
+4. Creates a command document in the `commandsQueue` collection; when the
+   insert fails the command is refused and `cmd.rejected` is reported.
+5. The command is then picked up by the appropriate protocol client driver
    (the one matching `protocolSourceConnectionNumber`).
 
 ## Data Model Mapping
@@ -278,7 +334,7 @@ When a TASE.2 client writes to a control point, the driver:
 | `type: "analog"` | RealQTimeTagExtended Indication Point (float32 + quality + ms time stamp) |
 | `type: "analog"` with integer ASDU (int16/32/64, uint16/32/64) | DiscreteQTimeTagExtended Indication Point (int + quality + ms time stamp) |
 | `type: "string"`, `"json"`, others | Not exposed via ICCP |
-| `origin: "command"` | Command Control Point (INTEGER32; SBO when `protocolSourceCommandUseSBO`, else direct operate), when some connection with `commandsEnabled` covers its domain; otherwise not exposed |
+| `origin: "command"` | Control Point (SBO when `protocolSourceCommandUseSBO`, else direct operate), when some connection with `commandsEnabled` covers its domain; otherwise not exposed. A digital tag is a Control_Command (Integer16 0/1); an analog tag is a setpoint typed by its ASDU: Float32 (real setpoint, the default) or an integer (discrete setpoint, integer ASDUs) |
 | `invalid`, `transient`, `frozen` | Quality validity: invalid, else suspect (transient), else held (frozen), else valid |
 | `substituted`, `origin` | Quality source: entered (substituted or `origin: "manual"`), calculated (`origin: "calculated"`), else telemetered |
 | `timeTagAtSource` (when `timeTagAtSourceOk`, else current time) | Point TimeStamp: IEC 60870-6-802 Ed.2 TimeStampExtended {GMTBasedS, Milliseconds}, UTC, millisecond resolution |

@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	"dnp3-go/internal/dnp3sec"
+
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 
@@ -132,5 +134,7 @@ func connectionFromDoc(doc bson.M) *Connection {
 		AllowTLSv11:              jsmongo.GetBool(doc, "allowTLSv11", false),
 		AllowTLSv12:              jsmongo.GetBool(doc, "allowTLSv12", true),
 		AllowTLSv13:              jsmongo.GetBool(doc, "allowTLSv13", true),
+		PeerIdentification:       jsmongo.GetBool(doc, "peerIdentification", true),
+		storedIdentity:           dnp3sec.StoredIdentity(doc),
 	}
 }

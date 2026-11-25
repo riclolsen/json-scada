@@ -42,7 +42,8 @@
     "customDevelopments": "دودیز پرمختګونه",
     "open": "خلاص",
     "cimEms": "CIM-EMS",
-    "svgedit": "د SVG مدیر"
+    "svgedit": "د SVG مدیر",
+    "secEventsViewer": "امنیتي پېښې"
   },
   "tabularViewer": {
     "station": "سټیشن",
@@ -91,9 +92,15 @@
       "value": "ارزښت",
       "state": "ایالت",
       "quality": "کیفیت",
-      "hiLimit": "لوړ حد",
-      "loLimit": "ټیټ حد",
+      "hiLimit": "لوړ حد (HI)",
+      "loLimit": "ټیټ حد (LO)",
+      "hihiLimit": "لوړ حد 2 (HIHI)",
+      "hihihiLimit": "لوړ حد 3 (HIHIHI)",
+      "loloLimit": "ټیټ حد 2 (LOLO)",
+      "lololoLimit": "ټیټ حد 3 (LOLOLO)",
       "hysteresis": "د هایسټریسس",
+      "alarmRange": "د خبرتیا حد",
+      "limitsOrder": "حدونه په ترتیب کې نه دي (LOLOLO ≤ LOLO ≤ LO ≤ HI ≤ HIHI ≤ HIHIHI)",
       "annotation": "د بندولو تشریح",
       "notes": "د اسنادو یادښتونه",
       "alarmDisabled": "الارم غیر فعال شوی",
@@ -170,6 +177,72 @@
       "date": "نیټه",
       "time": "لومړنی وخت",
       "filter": "فلټر"
+    }
+  },
+  "alarmsViewer": {
+    "alarms": "خبرتیاوې",
+    "unackedOnly": "یوازې نا تایید شوي",
+    "modes": {
+      "normal": "نورمال",
+      "aggregated": "ټول شوی",
+      "historical": "تاریخچه"
+    },
+    "columns": {
+      "time": "وخت",
+      "alarm": "خبرتیا",
+      "state": "حالت",
+      "priority": "لومړیتوب",
+      "normalTime": "د عادي کېدو وخت",
+      "ackTime": "د تایید وخت",
+      "ackUser": "تاییدوونکی کارن"
+    },
+    "state": {
+      "active": "فعال",
+      "normal": "عادي"
+    },
+    "hist": {
+      "from": "له",
+      "to": "تر",
+      "filter": "فلټر",
+      "filterHint": "ټګ، تشریح، متن",
+      "find": "لټون",
+      "limited": "یوازې لومړۍ {n} خبرتیاوې ښودل کېږي: موده یا فلټر محدود کړئ."
+    }
+  },
+  "secEvents": {
+    "title": "امنیتي پېښې",
+    "from": "له",
+    "to": "تر",
+    "now": "اوس",
+    "minSeverity": "لږ تر لږه جدیت",
+    "category": "کټګوري",
+    "filterHint": "ډول، مقابل لوری، شی، جزئیات",
+    "find": "لټون",
+    "autoRefresh": "اتومات تازه کول",
+    "exportCsv": "CSV صادرول",
+    "showFrom": "له {s} پورته ښودل",
+    "events": "پېښې",
+    "limited": "یوازې {n} وروستۍ پېښې ښودل کېږي: موده یا فلټر محدود کړئ.",
+    "noData": "امنیتي پېښې نشته",
+    "noRight": "ستاسو رولونه د امنیتي پېښو د کتلو حق نه ورکوي.",
+    "unavailable": "ډیټابیس نشته",
+    "severities": {
+      "info": "معلومات",
+      "notice": "خبرتیا",
+      "warning": "اخطار",
+      "alert": "زنګ",
+      "critical": "جدي"
+    },
+    "columns": {
+      "time": "وخت",
+      "severity": "جدیت",
+      "kind": "پېښه",
+      "connection": "اتصال",
+      "peer": "مقابل لوری",
+      "object": "شی",
+      "action": "کړنه",
+      "detail": "جزئیات",
+      "source": "سرچینه"
     }
   },
   "login": {
@@ -315,7 +388,11 @@
         "total": "رولونه",
         "admin": "د مدیر رولونه",
         "unused": "نه دي ورکړل شوي"
-      }
+      },
+      "viewSecEvents": "امنیتي پېښې کتل",
+      "viewSecEventsHint": "کولی شي د امنیتي پېښو کتونکی پرانیزي (د پروتوکول ډرایورونو له خوا راپور شوي د اتصال، سند، هویت او امرونو بې نظمۍ).",
+      "editDisplays": "د ښودنو سمول",
+      "editDisplaysHint": "کولی شي د SVG مدیر کې د SVG ښودنې لیست کړي، پرانیزي او خوندي کړي (مدیران تل). د ښودنو له لیست سره، یوازې هغه ښودنې."
     },
     "protocolDriverInstances": {
       "title": "د پروتوکول چلوونکي مثالونه",
@@ -742,6 +819,28 @@
       "serverUnitIds": "شناسه‌های واحد سرور",
       "serverUnitIdsTitle": "شناسه‌های واحد (آدرس‌های برده) سرویس‌دهی‌شده",
       "serverUnitIdsHint": "عدد را وارد کنید و Enter بزنید. بازه ۰ تا ۲۵۵.",
+      "sunspecParameters": "د SunSpec پارامترونه",
+      "unitIds": "د یونټ پېژندنې",
+      "unitIdsTitle": "د موندلو لپاره SunSpec وسایل (Modbus یونټ ID)",
+      "unitIdsHint": "یوه شمېره ولیکئ او Enter کېکاږئ. له 1 تر 255. خالي: یونټ 1.",
+      "baseAddresses": "اساسي پتې",
+      "baseAddressesTitle": "د SunS نښې لپاره کتل شوې د راجستر پتې",
+      "baseAddressesHint": "یوه شمېره ولیکئ او Enter کېکاږئ. خالي: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",
+      "modelIds": "د ماډل پېژندنې",
+      "modelIdsTitle": "هغه SunSpec ماډلونه چې اتومات ټګونه اخلي",
+      "modelIdsHint": "د ماډل ID ولیکئ او Enter کېکاږئ (لکه 1, 103, 160). خالي: ټول موندل شوي ماډلونه.",
+      "registerType": "د راجستر ډول",
+      "registerTypeTitle": "هغه راجسترونه چې د SunSpec نقشه لري",
+      "registerTypeHint": "holding (فنکشن 3، نږدې ټول وسایل) یا input (فنکشن 4، یوازې لوستل).",
+      "maxModels": "اعظمي ماډلونه",
+      "maxModelsTitle": "له ځنځیر څخه د لوستل شویو ماډل سرلیکونو اعظمي شمېر",
+      "maxModelsHint": "بشپړه شمېره، لږ تر لږه 1. ډیفالټ 256.",
+      "autoCreateCommandTags": "د امر ټګونه په اتومات ډول جوړ کړئ: ",
+      "autoCreateCommandTagsTrue": "سم",
+      "autoCreateCommandTagsFalse": "ناسم",
+      "autoCreateUnimplemented": "د نه پلي شویو نقطو لپاره ټګونه جوړ کړئ: ",
+      "autoCreateUnimplementedTrue": "سم",
+      "autoCreateUnimplementedFalse": "ناسم",
       "strictUnitId": "سخت unit id: ",
       "strictUnitIdTrue": "رښتیا",
       "strictUnitIdFalse": "دروغ",
@@ -802,7 +901,9 @@
         "total": "اړیکې",
         "tags": "ټګونه",
         "invalidTags": "ناباوري ټګونه"
-      }
+      },
+      "peerIdentification": "مقابل لوری پېژندل (امنیتي پېښې): ",
+      "peerIdentificationHint": "په هر اتصال کې د مقابل لوري هویت (جوړونکی، ماډل، فرم‌وېر، MAC پته، سند) د اتصال احصایې ته لولي او بدلونونه یې د امنیتي پېښو په توګه راپور کوي."
     },
     "userActions": {
       "title": "د کارونکي کړنې",
@@ -850,6 +951,13 @@
       "editOrigin": "اصل",
       "editType": "ډول",
       "editHistorianDeadBand": "د تاریخ لیکونکي مړوند (٪)",
+      "editHihihiLimit": "لوړ حد 3 (HIHIHI)",
+      "editHihiLimit": "لوړ حد 2 (HIHI)",
+      "editHiLimit": "لوړ حد (HI)",
+      "editLoLimit": "ټیټ حد (LO)",
+      "editLoloLimit": "ټیټ حد 2 (LOLO)",
+      "editLololoLimit": "ټیټ حد 3 (LOLOLO)",
+      "editHysteresis": "د هایسټریسس",
       "editHistorianPeriod": "د تاریخي بشپړتیا دوره (ثانوي)",
       "editAlarmState": "د الارم ریاست",
       "editAlarmStateOff": "بند",
@@ -1016,7 +1124,15 @@
       "pruneExecute": "ړنګول",
       "pruneConfirmText": "ټاکل شوي تنظیمات د تل لپاره ړنګیږي. که اړتیا یې کیدای شي، لومړی بیک‌اپ صادر کړئ.",
       "pruneTypeToConfirm": "د تایید لپاره {word} ولیکئ",
-      "pruneDone": "تنظیمات پاک شول"
+      "pruneDone": "تنظیمات پاک شول",
+      "retentionTitle": "د معلوماتو ساتنه",
+      "retentionHint": "د پېښو (SOE)، خبرتیاوو او تاریخي معلوماتو د ساتنې ورځې؛ اضافي برخه ورځ کې یو ځل ړنګېږي. نا تایید شوې یا فعالې خبرتیاوې ساتل کېږي.",
+      "retentionSoe": "پېښې (SOE)",
+      "retentionAlarms": "خبرتیاوې",
+      "retentionHist": "تاریخي معلومات",
+      "retentionDays": "ورځې",
+      "retentionRule": "له {min} څخه تر {max} پورې د ورځو بشپړ شمېر",
+      "retentionSecEvents": "امنیتي پېښې"
     },
     "cimEms": {
       "readOnly": "یوازې لیدل: د ماډلونو پورته کول او فعالول، د تړاوونو تصویب او ښکته کول د CIM-EMS انجینري حق لرونکي رول ته اړتیا لري.",
@@ -1221,8 +1337,12 @@
     "reset": "لید بیا تنظیمول او ژوندۍ تعقیب",
     "downloadCsv": "CSV ښکته کول",
     "current": "اوسنی ارزښت",
-    "hiLimit": "لوړ حد",
-    "loLimit": "ټیټ حد",
+    "hiLimit": "لوړ حد (HI)",
+    "loLimit": "ټیټ حد (LO)",
+    "hihiLimit": "لوړ حد 2 (HIHI)",
+    "hihihiLimit": "لوړ حد 3 (HIHIHI)",
+    "loloLimit": "ټیټ حد 2 (LOLO)",
+    "lololoLimit": "ټیټ حد 3 (LOLOLO)",
     "noData": "په دې موده کې معلومات نشته",
     "noPoint": "هېڅ ټکی نه دی ټاکل شوی (?point=<کیلي یا ټګ> وکاروئ)",
     "notFound": "ټکی ونه موندل شو"
@@ -1247,5 +1367,18 @@
       "analytics": "شننه",
       "engineering": "انجنیري"
     }
+  },
+  "customDev": {
+    "subtitle": "په src/custom-developments کې جوړ شوي وېب اپونه: ډشبورډونه، فیس‌پلېټونه او ځانګړي لیدونه.",
+    "search": "اپونه ولټوئ",
+    "open": "پرانیستل",
+    "openNewWindow": "په نوې کړکۍ کې پرانیستل",
+    "back": "لیست ته بېرته",
+    "retry": "بیا هڅه",
+    "empty": "تر اوسه کوم ځانګړی پرمختګ نشته",
+    "emptyHint": "د src/custom-developments په یوه فولډر کې اپ جوړ کړئ (npm install && npm run build) او server_realtime_auth بیا پیل کړئ.",
+    "noMatch": "هیڅ اپ له لټون سره سمون نه خوري.",
+    "noDescription": "هیڅ تشریح نشته",
+    "built": "جوړ شوی {date}"
   }
 }

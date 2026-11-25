@@ -4,7 +4,7 @@ This driver implements a client for the IEC 61850 (MMS) protocol in Go, on top o
 [go-iec61850](https://github.com/dscsystems/go-iec61850) — a pure-Go implementation of the
 protocol stack.
 
-    Binary:  iec61850-client (iec61850-client.exe on Windows)
+    Binary:  iec61850_client (iec61850_client.exe on Windows)
     Service: JSON_SCADA_iec61850client (Windows), [program:iec61850client] (Linux)
     Log:     log/iec61850client.log
 
@@ -76,6 +76,7 @@ Parameters for communication with IEC61850 servers.
 - _**giInterval**_ [Double] - Scan interval in seconds for data not in reports. **Mandatory parameter**.
 - _**class0ScanInterval**_ [Double] - Integrity interval in seconds for data in reports. **Mandatory parameter**.
 - _**useSecurity**_ [Boolean] - Use (true) or not (false) secure encrypted connection. **Mandatory parameter**.
+- _**peerIdentification**_ [Boolean] - Identify the IED on every association and report changes of its identity as security events (see [Security events](#security-events)). Off, the driver sends no identification request (MMS Identify, nameplate reads). Default true. **Optional parameter**.
 
 TLS notes: certificates may be PEM or DER. `chainValidation: false` skips chain verification;
 `allowOnlySpecificCertificates: true` pins the peer to `peerCertFilesPaths`, which must then list at least one certificate (the connection is refused otherwise). The version window is the lowest to the highest enabled flag. Go does not negotiate TLS 1.0/1.1, so a request for them is clamped to TLS 1.2 and logged. The default port for MMS over TLS is 3782 — put it in `ipAddresses` explicitly, since the default here stays 102 for compatibility.
@@ -131,9 +132,41 @@ Create a regular command tag. Configure the connection number, IEC61850 object i
 - _**kconv1**_ [Double] - Analog conversion factor: multiplier. Use -1 to invert digital values. **Mandatory parameter**.
 - _**kconv2**_ [Double] - Analog conversion factor: adder. **Mandatory parameter**.
 
+## Security events
+
+The driver writes cyber-security events into the `secEvents` collection, shown by the Admin UI
+Security Events viewer (`/sec-events-viewer`, for roles with the `viewSecEvents` right) and removed
+after `secEventsRetentionDays` (Admin / System, default 60 days). Fields in
+[docs/schema.md](../../../docs/schema.md#secevents-collection). go-iec61850 reports no client-side
+events yet, so all of these come from the driver (`source: "driver"`):
+
+- `tls.cert_rejected`: the IED certificate refused by pinning, chain validation or the host name
+  check (once per connection attempt).
+- `access.object_nonexistent` / `access.denied`: a configured point the IED does not have or
+  refuses to read (once per association).
+- `access.tag_unknown`: a command for an object this connection does not have; `cmd.object_unknown`:
+  a command object the IED does not have; `cmd.rejected`: a command refused by the driver (commands
+  disabled) or by the IED (with its AddCause).
+- `flood.controls`: more than 10 commands to one IED within 10 s.
+- `cmd.unnecessary`: a control whose supervised point already was in the commanded state (opening an
+  open breaker; only a value last updated before the dispatch counts); checked in the background, the
+  command is still sent without delay.
+- `report.unexpected`: a report with an RptID no block enabled by the driver advertises (once per
+  association); `report.sequence`: a report sequence number repeated or going backwards (a replay).
+- With `peerIdentification`: `peer.identified`, `peer.identity_changed` (MMS Identify vendor, model
+  or revision, or a logical device nameplate: `LPHD1.PhyNam` vendor, model, hardware/software
+  revision, serial number; `LLN0.NamPlt` vendor, software revision, configuration revision),
+  `peer.mac_changed` and `tls.cert_changed`.
+
+Peer identification reads the identity on every (re)established association into
+`stats.peerIdentity`: `vendor`, `model`, `revision`, `devices` (nameplates per logical device), `ip`,
+`mac` (from the operating system's neighbour table: an IED behind a router shows the router's),
+`tls` (the IED certificate) and the compared values (`keys`), which is where change detection
+restarts after a driver restart.
+
 ## Command line arguments
 
-    iec61850-client [instance [logLevel [configFile]]]
+    iec61850_client [instance [logLevel [configFile]]]
 
 - **1st — Instance number** [Integer] — driver instance to run. *Optional, default 1*.
 - **2nd — Log level** [Integer] — 0=minimum, 1=basic, 2=detailed, 3=debug. *Optional, default 1*.

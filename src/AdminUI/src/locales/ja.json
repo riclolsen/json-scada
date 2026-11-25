@@ -42,7 +42,8 @@
     "customDevelopments": "カスタム開発",
     "open": "開ける",
     "cimEms": "CIM-EMS",
-    "svgedit": "SVGエディター"
+    "svgedit": "SVGエディター",
+    "secEventsViewer": "セキュリティイベント"
   },
   "tabularViewer": {
     "station": "駅",
@@ -91,9 +92,15 @@
       "value": "価値",
       "state": "州",
       "quality": "品質",
-      "hiLimit": "上限",
-      "loLimit": "下限値",
+      "hiLimit": "上限 (HI)",
+      "loLimit": "下限値 (LO)",
+      "hihiLimit": "上限 2 (HIHI)",
+      "hihihiLimit": "上限 3 (HIHIHI)",
+      "loloLimit": "下限値 2 (LOLO)",
+      "lololoLimit": "下限値 3 (LOLOLO)",
       "hysteresis": "ヒステリシス",
+      "alarmRange": "アラーム範囲",
+      "limitsOrder": "制限値の順序が正しくありません (LOLOLO ≤ LOLO ≤ LO ≤ HI ≤ HIHI ≤ HIHIHI)",
       "annotation": "ブロッキングアノテーション",
       "notes": "文書に関する注記",
       "alarmDisabled": "アラーム無効",
@@ -170,6 +177,72 @@
       "date": "日付",
       "time": "初期時刻",
       "filter": "フィルター"
+    }
+  },
+  "alarmsViewer": {
+    "alarms": "件のアラーム",
+    "unackedOnly": "未確認のみ",
+    "modes": {
+      "normal": "普通",
+      "aggregated": "集計",
+      "historical": "履歴"
+    },
+    "columns": {
+      "time": "時刻",
+      "alarm": "アラーム",
+      "state": "状態",
+      "priority": "優先度",
+      "normalTime": "復帰時刻",
+      "ackTime": "確認時刻",
+      "ackUser": "確認ユーザー"
+    },
+    "state": {
+      "active": "発生中",
+      "normal": "正常"
+    },
+    "hist": {
+      "from": "開始",
+      "to": "終了",
+      "filter": "フィルター",
+      "filterHint": "タグ、説明、テキスト",
+      "find": "検索",
+      "limited": "最初の {n} 件のみ表示：期間またはフィルターを絞ってください。"
+    }
+  },
+  "secEvents": {
+    "title": "セキュリティイベント",
+    "from": "開始",
+    "to": "終了",
+    "now": "現在",
+    "minSeverity": "最小重大度",
+    "category": "カテゴリ",
+    "filterHint": "種類、相手、オブジェクト、詳細",
+    "find": "検索",
+    "autoRefresh": "自動更新",
+    "exportCsv": "CSV エクスポート",
+    "showFrom": "{s} 以上を表示",
+    "events": "件",
+    "limited": "最新の {n} 件のみ表示しています。期間またはフィルターを絞り込んでください。",
+    "noData": "セキュリティイベントはありません",
+    "noRight": "ロールに「セキュリティイベントの表示」権限がありません。",
+    "unavailable": "データベースを利用できません",
+    "severities": {
+      "info": "情報",
+      "notice": "通知",
+      "warning": "警告",
+      "alert": "アラート",
+      "critical": "重大"
+    },
+    "columns": {
+      "time": "時刻",
+      "severity": "重大度",
+      "kind": "イベント",
+      "connection": "接続",
+      "peer": "相手",
+      "object": "オブジェクト",
+      "action": "処置",
+      "detail": "詳細",
+      "source": "検出元"
     }
   },
   "login": {
@@ -315,7 +388,11 @@
         "total": "役割",
         "admin": "管理者の役割",
         "unused": "未割り当て"
-      }
+      },
+      "viewSecEvents": "セキュリティイベントの表示",
+      "viewSecEventsHint": "セキュリティイベントビューアを開けます（プロトコルドライバーが報告する接続、証明書、識別情報、コマンドの異常）。",
+      "editDisplays": "ディスプレイの編集",
+      "editDisplaysHint": "SVGエディターでSVGディスプレイの一覧表示、開く、保存ができます（管理者は常に可能）。ディスプレイリストがある場合はそのディスプレイのみ。"
     },
     "protocolDriverInstances": {
       "title": "プロトコル ドライバー インスタンス",
@@ -742,6 +819,28 @@
       "serverUnitIds": "サーバーユニット ID",
       "serverUnitIdsTitle": "提供するユニット ID（スレーブアドレス）",
       "serverUnitIdsHint": "数値を入力して Enter。範囲は 0 から 255。",
+      "sunspecParameters": "SunSpec パラメータ",
+      "unitIds": "ユニット ID",
+      "unitIdsTitle": "検出する SunSpec 機器（Modbus ユニット ID）",
+      "unitIdsHint": "数値を入力して Enter。範囲 1〜255。空：ユニット 1。",
+      "baseAddresses": "ベースアドレス",
+      "baseAddressesTitle": "SunS マーカーを探すレジスタアドレス",
+      "baseAddressesHint": "数値を入力して Enter。空：0, 40000, 50000, 1, 39999, 40001, 49999, 50001。",
+      "modelIds": "モデル ID",
+      "modelIdsTitle": "自動タグを作成する SunSpec モデル",
+      "modelIdsHint": "モデル ID を入力して Enter（例 1, 103, 160）。空：検出したすべてのモデル。",
+      "registerType": "レジスタ種別",
+      "registerTypeTitle": "SunSpec マップを保持するレジスタ",
+      "registerTypeHint": "holding（ファンクション 3、ほぼすべての機器）または input（ファンクション 4、読み取り専用）。",
+      "maxModels": "最大モデル数",
+      "maxModelsTitle": "チェーンから読むモデルヘッダの最大数",
+      "maxModelsHint": "整数、1 以上。既定 256。",
+      "autoCreateCommandTags": "コマンドタグを自動作成：",
+      "autoCreateCommandTagsTrue": "はい",
+      "autoCreateCommandTagsFalse": "いいえ",
+      "autoCreateUnimplemented": "未実装ポイントのタグを作成：",
+      "autoCreateUnimplementedTrue": "はい",
+      "autoCreateUnimplementedFalse": "いいえ",
       "strictUnitId": "厳密なユニット ID: ",
       "strictUnitIdTrue": "真実",
       "strictUnitIdFalse": "間違い",
@@ -802,7 +901,9 @@
         "total": "接続",
         "tags": "タグ",
         "invalidTags": "無効なタグ"
-      }
+      },
+      "peerIdentification": "相手を識別（セキュリティイベント）：",
+      "peerIdentificationHint": "接続のたびに相手の識別情報（ベンダー、モデル、ファームウェア、MAC アドレス、証明書）を接続統計に記録し、その変化をセキュリティイベントとして報告します。"
     },
     "userActions": {
       "title": "ユーザーアクション",
@@ -850,6 +951,13 @@
       "editOrigin": "起源",
       "editType": "タイプ",
       "editHistorianDeadBand": "ヒストリアンデッドバンド（％）",
+      "editHihihiLimit": "上限 3 (HIHIHI)",
+      "editHihiLimit": "上限 2 (HIHI)",
+      "editHiLimit": "上限 (HI)",
+      "editLoLimit": "下限値 (LO)",
+      "editLoloLimit": "下限値 2 (LOLO)",
+      "editLololoLimit": "下限値 3 (LOLOLO)",
+      "editHysteresis": "ヒステリシス",
       "editHistorianPeriod": "歴史家の誠実性期間（秒）",
       "editAlarmState": "アラーム状態",
       "editAlarmStateOff": "オフ",
@@ -1016,7 +1124,15 @@
       "pruneExecute": "削除",
       "pruneConfirmText": "選択した構成は完全に削除されます。必要になる可能性がある場合は先にバックアップをエクスポートしてください。",
       "pruneTypeToConfirm": "確認のため {word} と入力",
-      "pruneDone": "構成をクリーンアップしました"
+      "pruneDone": "構成をクリーンアップしました",
+      "retentionTitle": "データ保持",
+      "retentionHint": "イベント (SOE)、アラーム、履歴データの保持日数。超過分は1日1回削除されます。未確認または発生中のアラームは保持されます。",
+      "retentionSoe": "イベント (SOE)",
+      "retentionAlarms": "アラーム",
+      "retentionHist": "履歴データ",
+      "retentionDays": "日",
+      "retentionRule": "{min} から {max} までの整数の日数",
+      "retentionSecEvents": "セキュリティイベント"
     },
     "cimEms": {
       "readOnly": "閲覧のみ：モデルのアップロードと有効化、バインディングの承認、ダウンロードには CIM-EMS エンジニアリング権限を持つロールが必要です。",
@@ -1221,8 +1337,12 @@
     "reset": "表示をリセットしてリアルタイム追従",
     "downloadCsv": "CSVをダウンロード",
     "current": "現在値",
-    "hiLimit": "上限",
-    "loLimit": "下限",
+    "hiLimit": "上限 (HI)",
+    "loLimit": "下限 (LO)",
+    "hihiLimit": "上限 2 (HIHI)",
+    "hihihiLimit": "上限 3 (HIHIHI)",
+    "loloLimit": "下限 2 (LOLO)",
+    "lololoLimit": "下限 3 (LOLOLO)",
     "noData": "この期間のデータはありません",
     "noPoint": "ポイントが指定されていません（?point=<キーまたはタグ> を使用）",
     "notFound": "ポイントが見つかりません"
@@ -1247,5 +1367,18 @@
       "analytics": "分析",
       "engineering": "エンジニアリング"
     }
+  },
+  "customDev": {
+    "subtitle": "src/custom-developments でビルドしたWebアプリ：ダッシュボード、フェースプレート、専用ビュー。",
+    "search": "アプリを検索",
+    "open": "開く",
+    "openNewWindow": "新しいウィンドウで開く",
+    "back": "一覧に戻る",
+    "retry": "再試行",
+    "empty": "カスタム開発はまだありません",
+    "emptyHint": "src/custom-developments のフォルダーでアプリをビルドし（npm install && npm run build）、server_realtime_auth を再起動してください。",
+    "noMatch": "検索に一致するアプリはありません。",
+    "noDescription": "説明なし",
+    "built": "ビルド日 {date}"
   }
 }

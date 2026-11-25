@@ -31,7 +31,7 @@ const nodePath = require('node:path')
 const paths = require('./paths')
 
 // Normalizes a resolved filesystem path to the platform separators (the catalog
-// templates use '/', which we tidy up so nssm/supervisor store clean paths).
+// templates use '/', which we tidy up so WinSW/supervisor store clean paths).
 function normPath(p) {
   return nodePath.normalize(p)
 }
@@ -193,6 +193,13 @@ const CATALOG = {
     key: 'modbusclient',
     type: 'exe',
     exe: '{bin}/modbus-client',
+    passConfPath: true,
+    defaultStartMode: 'manual',
+  },
+  SUNSPEC: {
+    key: 'sunspecclient',
+    type: 'exe',
+    exe: '{bin}/sunspec-client',
     passConfPath: true,
     defaultStartMode: 'manual',
   },

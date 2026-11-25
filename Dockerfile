@@ -293,6 +293,7 @@ RUN cd src/dnp3-go && \
 RUN cd src/modbus-go && \
     go mod tidy && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/modbus-client ./cmd/modbusclient && \
+    go build -ldflags="-s -w" -o /app/json-scada/bin/sunspec-client ./cmd/sunspecclient && \
     go build -ldflags="-s -w" -o /app/json-scada/bin/modbus-server ./cmd/modbusserver
 
 # Copy ICCP client and server to bin
@@ -384,62 +385,63 @@ ENV PGUSER=postgres
 ENV PGHOST=localhost
 ENV PGPORT=5432
 
-COPY ./platform-ubuntu-2404/postgresql.conf /etc/postgresql/18/main/postgresql.conf
-COPY ./platform-ubuntu-2404/pg_hba.conf /etc/postgresql/18/main/pg_hba.conf
-COPY ./platform-ubuntu-2404/telegraf-input-opcua.conf /etc/telegraf/telegraf.d/telegraf-input-opcua.conf
-COPY ./platform-ubuntu-2404/telegraf-input-mqtt.conf /etc/telegraf/telegraf.d/telegraf-input-mqtt.conf
-COPY ./platform-ubuntu-2404/telegraf-input-mongodb.conf /etc/telegraf/telegraf.d/telegraf-input-mongodb.conf
-COPY ./platform-ubuntu-2404/telegraf-output-json-scada.conf /etc/telegraf/telegraf.d/telegraf-output-json-scada.conf
+COPY ./platform-ubuntu/postgresql.conf /etc/postgresql/18/main/postgresql.conf
+COPY ./platform-ubuntu/pg_hba.conf /etc/postgresql/18/main/pg_hba.conf
+COPY ./platform-ubuntu/telegraf-input-opcua.conf /etc/telegraf/telegraf.d/telegraf-input-opcua.conf
+COPY ./platform-ubuntu/telegraf-input-mqtt.conf /etc/telegraf/telegraf.d/telegraf-input-mqtt.conf
+COPY ./platform-ubuntu/telegraf-input-mongodb.conf /etc/telegraf/telegraf.d/telegraf-input-mongodb.conf
+COPY ./platform-ubuntu/telegraf-output-json-scada.conf /etc/telegraf/telegraf.d/telegraf-output-json-scada.conf
 
-COPY ./platform-ubuntu-2404/calculations.ini /etc/supervisor/conf.d/calculations.ini
-COPY ./platform-ubuntu-2404/cim_ems.ini /etc/supervisor/conf.d/cim_ems.ini
-COPY ./platform-ubuntu-2404/cim_ems_demo_field.ini /etc/supervisor/conf.d/cim_ems_demo_field.ini
-COPY ./platform-ubuntu-2404/config_server_excel.ini /etc/supervisor/conf.d/config_server_excel.ini
-COPY ./platform-ubuntu-2404/cs_custom_processor.ini /etc/supervisor/conf.d/cs_custom_processor.ini
-COPY ./platform-ubuntu-2404/cs_data_processor.ini /etc/supervisor/conf.d/cs_data_processor.ini
-COPY ./platform-ubuntu-2404/iccp_client.ini /etc/supervisor/conf.d/iccp_client.ini
-COPY ./platform-ubuntu-2404/iccp_server.ini /etc/supervisor/conf.d/iccp_server.ini
-COPY ./platform-ubuntu-2404/iec103client.ini /etc/supervisor/conf.d/iec103client.ini
-COPY ./platform-ubuntu-2404/iec104client.ini /etc/supervisor/conf.d/iec104client.ini
-COPY ./platform-ubuntu-2404/iec104server.ini /etc/supervisor/conf.d/iec104server.ini
-COPY ./platform-ubuntu-2404/iec101client.ini /etc/supervisor/conf.d/iec101client.ini
-COPY ./platform-ubuntu-2404/iec101server.ini /etc/supervisor/conf.d/iec101server.ini
-COPY ./platform-ubuntu-2404/iec61850client.ini /etc/supervisor/conf.d/iec61850client.ini
-COPY ./platform-ubuntu-2404/iec61850server.ini /etc/supervisor/conf.d/iec61850server.ini
-COPY ./platform-ubuntu-2404/onvif.ini /etc/supervisor/conf.d/onvif.ini
-COPY ./platform-ubuntu-2404/metabase.ini /etc/supervisor/conf.d/metabase.ini
-COPY ./platform-ubuntu-2404/grafana_server.ini /etc/supervisor/conf.d/grafana_server.ini
-COPY ./platform-ubuntu-2404/dnp3_client.ini /etc/supervisor/conf.d/dnp3_client.ini
-COPY ./platform-ubuntu-2404/dnp3_server.ini /etc/supervisor/conf.d/dnp3_server.ini
-COPY ./platform-ubuntu-2404/mcp_server.ini /etc/supervisor/conf.d/mcp_server.ini
-COPY ./platform-ubuntu-2404/modbusclient.ini /etc/supervisor/conf.d/modbusclient.ini
-COPY ./platform-ubuntu-2404/modbusserver.ini /etc/supervisor/conf.d/modbusserver.ini
-COPY ./platform-ubuntu-2404/mongofw.ini /etc/supervisor/conf.d/mongofw.ini
-COPY ./platform-ubuntu-2404/mongowr.ini /etc/supervisor/conf.d/mongowr.ini
-COPY ./platform-ubuntu-2404/mqtt-sparkplug.ini /etc/supervisor/conf.d/mqtt-sparkplug.ini
-COPY ./platform-ubuntu-2404/n8nclient.ini /etc/supervisor/conf.d/n8nclient.ini
-COPY ./platform-ubuntu-2404/nodered_driver.ini /etc/supervisor/conf.d/nodered_driver.ini
-COPY ./platform-ubuntu-2404/nodered_runtime.ini /etc/supervisor/conf.d/nodered_runtime.ini
-COPY ./platform-ubuntu-2404/opcua_client.ini /etc/supervisor/conf.d/opcua_client.ini
-COPY ./platform-ubuntu-2404/opcua_server.ini /etc/supervisor/conf.d/opcua_server.ini
-#COPY ./platform-ubuntu-2404/plc4xclient.ini /etc/supervisor/conf.d/plc4xclient.ini
-COPY ./platform-ubuntu-2404/plc4jclient.ini /etc/supervisor/conf.d/plc4jclient.ini
-COPY ./platform-ubuntu-2404/process_pg_hist.ini /etc/supervisor/conf.d/process_pg_hist.ini
-COPY ./platform-ubuntu-2404/process_pg_rtdata.ini /etc/supervisor/conf.d/process_pg_rtdata.ini
-COPY ./platform-ubuntu-2404/server_realtime_auth.ini /etc/supervisor/conf.d/server_realtime_auth.ini
+COPY ./platform-ubuntu/calculations.ini /etc/supervisor/conf.d/calculations.ini
+COPY ./platform-ubuntu/cim_ems.ini /etc/supervisor/conf.d/cim_ems.ini
+COPY ./platform-ubuntu/cim_ems_demo_field.ini /etc/supervisor/conf.d/cim_ems_demo_field.ini
+COPY ./platform-ubuntu/config_server_excel.ini /etc/supervisor/conf.d/config_server_excel.ini
+COPY ./platform-ubuntu/cs_custom_processor.ini /etc/supervisor/conf.d/cs_custom_processor.ini
+COPY ./platform-ubuntu/cs_data_processor.ini /etc/supervisor/conf.d/cs_data_processor.ini
+COPY ./platform-ubuntu/iccp_client.ini /etc/supervisor/conf.d/iccp_client.ini
+COPY ./platform-ubuntu/iccp_server.ini /etc/supervisor/conf.d/iccp_server.ini
+COPY ./platform-ubuntu/iec103client.ini /etc/supervisor/conf.d/iec103client.ini
+COPY ./platform-ubuntu/iec104client.ini /etc/supervisor/conf.d/iec104client.ini
+COPY ./platform-ubuntu/iec104server.ini /etc/supervisor/conf.d/iec104server.ini
+COPY ./platform-ubuntu/iec101client.ini /etc/supervisor/conf.d/iec101client.ini
+COPY ./platform-ubuntu/iec101server.ini /etc/supervisor/conf.d/iec101server.ini
+COPY ./platform-ubuntu/iec61850client.ini /etc/supervisor/conf.d/iec61850client.ini
+COPY ./platform-ubuntu/iec61850server.ini /etc/supervisor/conf.d/iec61850server.ini
+COPY ./platform-ubuntu/onvif.ini /etc/supervisor/conf.d/onvif.ini
+COPY ./platform-ubuntu/metabase.ini /etc/supervisor/conf.d/metabase.ini
+COPY ./platform-ubuntu/grafana_server.ini /etc/supervisor/conf.d/grafana_server.ini
+COPY ./platform-ubuntu/dnp3_client.ini /etc/supervisor/conf.d/dnp3_client.ini
+COPY ./platform-ubuntu/dnp3_server.ini /etc/supervisor/conf.d/dnp3_server.ini
+COPY ./platform-ubuntu/mcp_server.ini /etc/supervisor/conf.d/mcp_server.ini
+COPY ./platform-ubuntu/modbusclient.ini /etc/supervisor/conf.d/modbusclient.ini
+COPY ./platform-ubuntu/sunspecclient.ini /etc/supervisor/conf.d/sunspecclient.ini
+COPY ./platform-ubuntu/modbusserver.ini /etc/supervisor/conf.d/modbusserver.ini
+COPY ./platform-ubuntu/mongofw.ini /etc/supervisor/conf.d/mongofw.ini
+COPY ./platform-ubuntu/mongowr.ini /etc/supervisor/conf.d/mongowr.ini
+COPY ./platform-ubuntu/mqtt-sparkplug.ini /etc/supervisor/conf.d/mqtt-sparkplug.ini
+COPY ./platform-ubuntu/n8nclient.ini /etc/supervisor/conf.d/n8nclient.ini
+COPY ./platform-ubuntu/nodered_driver.ini /etc/supervisor/conf.d/nodered_driver.ini
+COPY ./platform-ubuntu/nodered_runtime.ini /etc/supervisor/conf.d/nodered_runtime.ini
+COPY ./platform-ubuntu/opcua_client.ini /etc/supervisor/conf.d/opcua_client.ini
+COPY ./platform-ubuntu/opcua_server.ini /etc/supervisor/conf.d/opcua_server.ini
+#COPY ./platform-ubuntu/plc4xclient.ini /etc/supervisor/conf.d/plc4xclient.ini
+COPY ./platform-ubuntu/plc4jclient.ini /etc/supervisor/conf.d/plc4jclient.ini
+COPY ./platform-ubuntu/process_pg_hist.ini /etc/supervisor/conf.d/process_pg_hist.ini
+COPY ./platform-ubuntu/process_pg_rtdata.ini /etc/supervisor/conf.d/process_pg_rtdata.ini
+COPY ./platform-ubuntu/server_realtime_auth.ini /etc/supervisor/conf.d/server_realtime_auth.ini
 
 # Launcher that gives server_realtime_auth a JWT signing secret unique to this
 # container instead of the public default from the repository (see the script).
-COPY ./platform-ubuntu-2404/start_server_realtime_auth.sh /app/json-scada/platform-ubuntu-2404/start_server_realtime_auth.sh
+COPY ./platform-ubuntu/start_server_realtime_auth.sh /app/json-scada/platform-ubuntu/start_server_realtime_auth.sh
 
 # Launcher that gives the Node-RED runtime a credential secret unique to this
 # container instead of the public default from the repository (see the script).
-COPY ./platform-ubuntu-2404/start_nodered_runtime.sh /app/json-scada/platform-ubuntu-2404/start_nodered_runtime.sh
-COPY ./platform-ubuntu-2404/telegraf_listener.ini /etc/supervisor/conf.d/telegraf_listener.ini
-COPY ./platform-ubuntu-2404/telegraf.ini /etc/supervisor/conf.d/telegraf.ini
-COPY ./platform-ubuntu-2404/nginx.conf /etc/nginx/nginx.conf
-COPY ./platform-ubuntu-2404/json_scada_http_open.conf /etc/nginx/conf.d/json_scada_http.conf
-COPY ./platform-ubuntu-2404/json_scada_https.conf /etc/nginx/conf.d/json_scada_https.conf
+COPY ./platform-ubuntu/start_nodered_runtime.sh /app/json-scada/platform-ubuntu/start_nodered_runtime.sh
+COPY ./platform-ubuntu/telegraf_listener.ini /etc/supervisor/conf.d/telegraf_listener.ini
+COPY ./platform-ubuntu/telegraf.ini /etc/supervisor/conf.d/telegraf.ini
+COPY ./platform-ubuntu/nginx.conf /etc/nginx/nginx.conf
+COPY ./platform-ubuntu/json_scada_http_open.conf /etc/nginx/conf.d/json_scada_http.conf
+COPY ./platform-ubuntu/json_scada_https.conf /etc/nginx/conf.d/json_scada_https.conf
 
 # Create necessary directories
 RUN mkdir -p /docker-entrypoint-initdb.d/mongo \
@@ -470,8 +472,8 @@ RUN chown -R jsonscada /app/json-scada/sql \
 # Make scripts executable
 RUN chmod +x /docker-entrypoint-initdb.d/mongo/*.sh \
     && chmod +x /app/json-scada/sql/*.sh \
-    && chmod +x /app/json-scada/platform-ubuntu-2404/start_server_realtime_auth.sh \
-    && chmod +x /app/json-scada/platform-ubuntu-2404/start_nodered_runtime.sh
+    && chmod +x /app/json-scada/platform-ubuntu/start_server_realtime_auth.sh \
+    && chmod +x /app/json-scada/platform-ubuntu/start_nodered_runtime.sh
 
 # The JWT secret and the Node-RED credential secret are generated at first start
 # inside conf/, so the service user must be able to write there.

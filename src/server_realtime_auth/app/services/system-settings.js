@@ -23,9 +23,39 @@
 const db = require('../models')
 const SystemSetting = db.systemSetting
 
+// retention limits, same as cs_data_processor retention.js / retention.go
+const RETENTION_FIELDS = [
+  'soeRetentionDays',
+  'alarmsRetentionDays',
+  'histRetentionDays',
+  'secEventsRetentionDays',
+]
+const MIN_RETENTION_DAYS = 1
+const MAX_RETENTION_DAYS = 36500
+
 const DEFAULTS = {
   autoManageServices: true,
   autoRestartOnConnectionChange: true,
+  soeRetentionDays: 60,
+  alarmsRetentionDays: 60,
+  histRetentionDays: 60,
+  secEventsRetentionDays: 60,
+}
+
+// a retention in whole days, or undefined when invalid
+function retentionDays(v) {
+  return Number.isInteger(v) && v >= MIN_RETENTION_DAYS && v <= MAX_RETENTION_DAYS
+    ? v
+    : undefined
+}
+
+// what is wrong with the retentions of a patch, or null
+function retentionProblem(patch) {
+  for (const k of RETENTION_FIELDS)
+    if (patch?.[k] !== undefined && retentionDays(patch[k]) === undefined)
+      return k + ' must be a whole number of days from ' + MIN_RETENTION_DAYS +
+        ' to ' + MAX_RETENTION_DAYS
+  return null
 }
 
 let cache = null
@@ -50,6 +80,8 @@ async function updateSettings(patch) {
     allowed.autoManageServices = patch.autoManageServices
   if (typeof patch.autoRestartOnConnectionChange === 'boolean')
     allowed.autoRestartOnConnectionChange = patch.autoRestartOnConnectionChange
+  for (const k of RETENTION_FIELDS)
+    if (retentionDays(patch[k]) !== undefined) allowed[k] = patch[k]
   const doc = await SystemSetting.findOneAndUpdate(
     { key: 'global' },
     { $set: allowed, $setOnInsert: { key: 'global' } },
@@ -66,4 +98,13 @@ function invalidate() {
   cache = null
 }
 
-module.exports = { getSettings, updateSettings, invalidate, DEFAULTS }
+module.exports = {
+  getSettings,
+  updateSettings,
+  invalidate,
+  retentionProblem,
+  DEFAULTS,
+  RETENTION_FIELDS,
+  MIN_RETENTION_DAYS,
+  MAX_RETENTION_DAYS,
+}

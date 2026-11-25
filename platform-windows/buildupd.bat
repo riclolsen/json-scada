@@ -104,6 +104,7 @@ cd %SRCPATH%\modbus-go
 go get -u ./...
 go mod tidy
 go build -ldflags="-s -w" -o %BINPATH%\modbus-client.exe .\cmd\modbusclient
+go build -ldflags="-s -w" -o %BINPATH%\sunspec-client.exe .\cmd\sunspecclient
 go build -ldflags="-s -w" -o %BINPATH%\modbus-server.exe .\cmd\modbusserver
 
 rem cd %SRCPATH%\i104m

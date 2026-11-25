@@ -24,6 +24,9 @@ const Log = require('./simple-logger')
 const LoadConfig = require('./load-config')
 const Redundancy = require('./redundancy')
 const CommStatus = require('./commstatus')
+const Limits = require('./limits')
+const AlarmList = require('./alarmlist')
+const Retention = require('./retention')
 const {
   M: Metrics,
   Stage,
@@ -132,6 +135,14 @@ const pipeline = [
   let mongoRtDataQueue = new Queue() // queue of realtime values to insert on MongoDB
   let digitalUpdatesCount = 0
   let clientMongo = null
+  // alarm list writes (alarmsData), in the order of the changes
+  const alarmWriter = new AlarmList.AlarmWriter(() =>
+    clientMongo && MongoStatus.HintMongoIsConnected
+      ? clientMongo
+          .db(jsConfig.mongoDatabaseName)
+          .collection(jsConfig.AlarmsDataCollectionName)
+      : null
+  )
 
   // publish the queue depths as metrics gauges, so back pressure is visible
   // when comparing implementations
@@ -146,6 +157,13 @@ const pipeline = [
 
   // communication status tags (_System.Driver/Conn/Comm.*), instance 1 only
   CommStatus.Start(jsConfig, () =>
+    clientMongo && MongoStatus.HintMongoIsConnected
+      ? clientMongo.db(jsConfig.mongoDatabaseName)
+      : null
+  )
+
+  // daily cleanup of soeData / alarmsData and hist expiry, instance 1 only
+  Retention.Start(jsConfig, () =>
     clientMongo && MongoStatus.HintMongoIsConnected
       ? clientMongo.db(jsConfig.mongoDatabaseName)
       : null
@@ -516,6 +534,7 @@ const pipeline = [
                             'PLCTAG',
                             'PLC4X',
                             'MODBUS',
+                            'SUNSPEC',
                             'IEC61850',
                             'ICCP',
                           ],
@@ -633,6 +652,9 @@ const pipeline = [
 
                 let isSOE = false
                 let alarmRange = 0
+                let rangeEscalated = false // to a more severe limit level
+                let analogRangeChanged = false // ends the active alarms of the point
+                let limitAlarmText = '' // text of a new limit alarm
 
                 if (change.operationType === 'insert') {
                   // document inserted
@@ -838,47 +860,22 @@ const pipeline = [
                   if (fullDocument?.hysteresis)
                     hysteresis = parseFloat(fullDocument.hysteresis)
 
-                  // check for limits
+                  // check for limits (all the configured levels, see limits.js)
                   if (
-                    // value != fullDocument.value &&
-                    'hiLimit' in fullDocument &&
-                    fullDocument.hiLimit !== null &&
-                    'loLimit' in fullDocument &&
-                    fullDocument.loLimit !== null &&
+                    Limits.hasLimits(fullDocument) &&
                     !fullDocument.alarmDisabled
                   ) {
-                    if (value > fullDocument.hiLimit + hysteresis) {
-                      alarmRange = 1
-                    } else if (
-                      value <
-                      fullDocument.loLimit - hysteresis
-                    ) {
-                      alarmRange = -1
-                    } else if (
-                      value < fullDocument.hiLimit - hysteresis &&
-                      value > fullDocument.loLimit + hysteresis
-                    ) {
-                      alarmed = false
-                      alarmRange = 0
-                    } else if (fullDocument?.alarmRange)
-                      // keep the old range if out of range
-                      alarmRange = fullDocument.alarmRange
+                    const r = Limits.alarmRangeOf(
+                      fullDocument,
+                      value,
+                      hysteresis,
+                      fullDocument?.alarmRange
+                    )
+                    alarmRange = r.range
+                    rangeEscalated = r.escalated
+                    if (r.normal) alarmed = false
 
                     // create a SOE entry for the limits alarm/normalization when analog alarm condition changes
-                    //if (alarmed != fullDocument.alarmed)
-                    //if (
-                    //    fullDocument.value <= fullDocument.hiLimit + hysteresis &&
-                    //    value > fullDocument.hiLimit + hysteresis
-                    //    ||
-                    //    fullDocument.value >= fullDocument.hiLimit - hysteresis &&
-                    //    value < fullDocument.hiLimit - hysteresis
-                    //    ||
-                    //    fullDocument.value >= fullDocument.loLimit - hysteresis  &&
-                    //    value < fullDocument.loLimit - hysteresis
-                    //    ||
-                    //    fullDocument.value <= fullDocument.loLimit + hysteresis  &&
-                    //    value > fullDocument.loLimit + hysteresis
-                    //      )
                     if (!fullDocument.alarmDisabled)
                       if (fullDocument?.alarmRange != alarmRange) {
                         if (alarmRange != 0) alarmed = true
@@ -895,7 +892,12 @@ const pipeline = [
                               Math.abs(fullDocument?.value)
                             ? ' ⤈'
                             : '') +
-                          (alarmed ? ' 🚩' : ' 🆗')
+                          (alarmed ? ' 🚩' : ' 🆗') +
+                          (alarmRange !== 0
+                            ? ' ' + Limits.rangeLabel(alarmRange)
+                            : '')
+                        analogRangeChanged = true
+                        limitAlarmText = eventText
                         db.collection(jsConfig.SoeDataCollectionName)
                           .insertOne(
                             {
@@ -927,6 +929,10 @@ const pipeline = [
                           })
                       }
                   }
+
+                  // alarms disabled: the limit alarms of the point end
+                  if (fullDocument.alarmDisabled && fullDocument?.alarmRange)
+                    analogRangeChanged = true
 
                   // analog tags can produce SOE events when marked as isEvent and valid value change, or having source timestamp
                   if (!fullDocument.alarmDisabled)
@@ -990,7 +996,8 @@ const pipeline = [
                     !fullDocument.alarmed ||
                     (fullDocument.type === 'digital' &&
                       value !== fullDocument.value) ||
-                    (fullDocument.type === 'digital' && isSOE)
+                    (fullDocument.type === 'digital' && isSOE) ||
+                    rangeEscalated
                   ) {
                     alarmTime = new Date()
                   }
@@ -1021,7 +1028,8 @@ const pipeline = [
                       (alarmed &&
                         fullDocument?.isEvent === false &&
                         fullDocument.type === 'digital') ||
-                      (alarmed && fullDocument?.alarmed === false)
+                      (alarmed && fullDocument?.alarmed === false) ||
+                      (alarmed && rangeEscalated)
                     ) {
                       // a new alarm, then update beep var
                       Log.log('NEW BEEP, tag: ' + fullDocument.tag)
@@ -1059,6 +1067,58 @@ const pipeline = [
                         timeTag: dt,
                       }, sduTimeMs)
                     }
+                  }
+
+                  // alarm list (alarmsData): end the earlier alarms of the point
+                  // when its condition changed, register the new alarm
+                  {
+                    let deactivate = false
+                    let alarmDoc = null
+                    const almTimes = {
+                      timeTag: dt,
+                      timeTagAtSource: sourceDataUpdate?.timeTagAtSource ?? null,
+                      timeTagAtSourceOk: sourceDataUpdate?.timeTagAtSourceOk ?? null,
+                    }
+                    if (fullDocument.type === 'analog') {
+                      deactivate = analogRangeChanged
+                      if (
+                        analogRangeChanged &&
+                        alarmRange !== 0 &&
+                        !fullDocument.alarmDisabled
+                      )
+                        alarmDoc = AlarmList.alarmDocument(fullDocument, {
+                          value,
+                          valueString,
+                          alarmText: limitAlarmText,
+                          alarmRange,
+                          active: true,
+                          ...almTimes,
+                        })
+                    } else if (
+                      fullDocument.type === 'digital' &&
+                      !(fullDocument.isEvent && value === 0)
+                    ) {
+                      deactivate =
+                        value !== fullDocument.value || alarmTime !== null
+                      if (alarmTime !== null && !fullDocument.alarmDisabled)
+                        alarmDoc = AlarmList.alarmDocument(fullDocument, {
+                          value,
+                          valueString,
+                          alarmText: AlarmList.digitalAlarmText(
+                            fullDocument,
+                            value,
+                            valueString
+                          ),
+                          active: AlarmList.digitalAlarmActive(
+                            fullDocument.alarmState,
+                            value
+                          ),
+                          ...almTimes,
+                        })
+                    }
+                    alarmWriter.write(
+                      AlarmList.alarmOps(fullDocument._id, deactivate, alarmDoc, dt)
+                    )
                   }
 
                   // historianPeriod<0 or update is not for historical record, excludes from historian

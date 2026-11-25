@@ -37,6 +37,8 @@ const RIGHTS = {
   ackAlarms: 'may acknowledge alarms and silence the beep',
   disableAlarms: 'may inhibit point alarms',
   cimEngineering: 'may import/activate CIM models and edit measurement bindings (CIM-EMS)',
+  viewSecEvents: 'may open the Security Events viewer (secEvents)',
+  editDisplays: 'may list, open and save the SVG displays (SVG editor; admins always may; limited to displayList when set)',
 }
 
 const roleRights = z.object({
@@ -52,6 +54,8 @@ const roleRights = z.object({
   ackAlarms: z.boolean().optional(),
   disableAlarms: z.boolean().optional(),
   cimEngineering: z.boolean().optional(),
+  viewSecEvents: z.boolean().optional(),
+  editDisplays: z.boolean().optional(),
   group1List: z.array(z.string()).optional().describe('Visible group1 (stations); empty = all'),
   group1CommandList: z.array(z.string()).optional().describe('group1 allowed for commands; empty = all'),
   displayList: z.array(z.string()).optional().describe('Allowed displays; empty = all'),

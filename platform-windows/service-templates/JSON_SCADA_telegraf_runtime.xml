@@ -1,0 +1,19 @@
+<service>
+  <id>JSON_SCADA_telegraf_runtime</id>
+  <name>JSON_SCADA_telegraf_runtime</name>
+  <description>JSON-SCADA telegraf_runtime</description>
+  <executable>{root}\platform-windows\telegraf-runtime\telegraf.exe</executable>
+  <arguments>--config "{root}\conf\telegraf.conf"</arguments>
+  <workingdirectory>{root}\platform-windows\telegraf-runtime</workingdirectory>
+  <startmode>Automatic</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>telegraf_runtime</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

@@ -15,6 +15,9 @@
         "ackEvents": true,
         "ackAlarms": true,
         "disableAlarms": true,
+        "viewSecEvents": true,
+        "cimEngineering": true,
+        "editDisplays": true,
         "group1List": [],
         "displayList": [],
         "maxSessionDays": 3,
@@ -36,6 +39,28 @@
         "ackEvents": true,
         "ackAlarms": true,
         "disableAlarms": true,
+        "group1List": [],
+        "displayList": [],
+        "maxSessionDays": 3,
+        "group1CommandList": []
+    }
+    {
+        "_id": {
+            "$oid": "5f6640587c0983837b6d07a3"
+        },
+        "name": "security",
+        "isAdmin": false,
+        "changePassword": true,
+        "sendCommands": false,
+        "enterAnnotations": false,
+        "enterNotes": false,
+        "enterManuals": false,
+        "enterLimits": false,
+        "substituteValues": false,
+        "ackEvents": false,
+        "ackAlarms": false,
+        "disableAlarms": false,
+        "viewSecEvents": true,
         "group1List": [],
         "displayList": [],
         "maxSessionDays": 3,

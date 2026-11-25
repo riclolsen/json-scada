@@ -77,6 +77,7 @@ db.protocolConnections.insertOne({
   topics: ['PLC1_FLOW|hr:4:float32_cdab', 'PLC1_STAT|hr:20:uint16[10]'],
 
   keepProtocolRunningWhileInactive: false,
+  peerIdentification: true,
   stats: null
 })
 ```
@@ -94,6 +95,7 @@ the wrong type takes the default.
 | `enabled` | `true` | Only enabled connections are loaded. |
 | `commandsEnabled` | `true` | When `false`, commands for the connection are ignored and not acknowledged. |
 | `keepProtocolRunningWhileInactive` | `false` | When `true`, the connection keeps polling on the standby node of a redundant pair. Commands are still executed only on the active node. |
+| `peerIdentification` | `true` | Identify the device on every connection into `stats.peerIdentity` and report changes of its identity as security events. See [Peer identification](#peer-identification). |
 
 ### Transport
 
@@ -330,7 +332,73 @@ While the node is active, every 5 seconds the driver writes the connection's `st
 | `exceptions` | Exception responses. |
 | `lastError` | Text of the last failure. |
 | `giCount` | Integrity cycles run. |
+| `peerIdentity` | The device's identity, when `peerIdentification` is on. See [Peer identification](#peer-identification). |
 | `nodeName`, `timeTag` | The node that wrote the stats, and when. |
+
+## Peer identification
+
+With `peerIdentification` on (the default), each time a connection is established the driver
+identifies the device as soon as it first answers a poll:
+
+- for each unit id it polls (at most 8), Read Device Identification (FC43/14, regular
+  category: `VendorName`, `ProductCode`, `MajorMinorRevision`, `VendorUrl`, `ProductName`,
+  `ModelName`, `UserApplicationName`), or Report Server ID (FC17) when the device refuses FC43 (compared without the run indicator status byte,
+  so a device that stops or starts is not a changed identity).
+  A unit that does not answer ends the identification of the others. These requests use the
+  connection's `timeoutMs`, are not retried, and count in no statistic;
+- in the TCP and TLS modes, the MAC address of the device's IP from the operating system's
+  neighbour (ARP) table. A device behind a router shows the router's MAC;
+- in the TLS modes, the device's certificate.
+
+The identity goes to `stats.peerIdentity`. `keys` holds what is compared: on a new
+connection a change of a unit's identification, of the MAC address or of the certificate is
+reported as a security event (`peer.identity_changed`, `peer.mac_changed`, `tls.cert_changed`).
+The comparison starts from the identity stored in `stats`, so a change across a driver
+restart is seen too. The first identification is reported as `peer.identified`.
+
+```json
+{
+  "collectedAt": "2026-11-22T12:00:00Z",
+  "address": "192.168.0.20:502",
+  "ip": "192.168.0.20",
+  "mac": "00:1a:2b:3c:4d:5e",
+  "units": [
+    {
+      "unitId": 1,
+      "method": "FC43/14",
+      "conformityLevel": 130,
+      "objects": { "VendorName": "ACME", "ProductCode": "PLC-100", "MajorMinorRevision": "V2.10" }
+    }
+  ],
+  "keys": [
+    { "k": "unit:1", "v": "ACME | PLC-100 | V2.10" },
+    { "k": "mac", "v": "00:1a:2b:3c:4d:5e" }
+  ]
+}
+```
+
+## Security events
+
+The driver reports unexpected or suspicious conditions to the `secEvents` collection (see
+`docs/schema.md`), listed by the Security Events viewer of the Admin UI. go-modbus's client
+reports no events of its own; these come from the driver, except where the source is the
+library's log of a mismatched response.
+
+| Kind | When |
+|---|---|
+| `tls.cert_rejected`, `tls.handshake_failed` | The device's certificate was refused (with its subject, issuer and fingerprint when known), or the handshake failed otherwise. |
+| `peer.identified`, `peer.identity_changed`, `peer.mac_changed`, `tls.cert_changed` | First identification of the device, and changes of it (see [Peer identification](#peer-identification)). |
+| `access.object_nonexistent` | The device answered ILLEGAL DATA ADDRESS to a configured read (once per block and connection). |
+| `access.unrecognized_service` | The device answered ILLEGAL FUNCTION to a configured read. |
+| `proto.bad_response`, `proto.bad_frame`, `proto.unit_mismatch`, `proto.txn_mismatch` | A malformed response (MBAP length, protocol id), a bad CRC or LRC or a short frame, a response from another unit id, a response with an unexpected transaction id (not reported shortly after a timeout, when it is a late answer). |
+| `cmd.object_unknown` | A command with an address or ASDU that does not parse, or answered ILLEGAL DATA ADDRESS by the device. |
+| `cmd.rejected` | A command refused by the driver (read-only area, invalid value) or by the device (another exception). |
+| `cmd.stale_time` | A command older than its expiry: not executed (replayed or delayed). |
+| `flood.controls` | More than 10 commands to the device within 10 seconds. |
+| `cmd.unnecessary` | An ON/OFF command to the state its supervised point already was in (the command tag's `supervisedOfCommand`, read from `realtimeData`; only a value last updated before the command was sent counts). Checked in the background; the command is still sent without delay. |
+
+A repeating condition (a link that keeps refusing a certificate, a noisy serial line) is
+reported once every 10 minutes, with the number of occurrences in `count`.
 
 ## Troubleshooting
 

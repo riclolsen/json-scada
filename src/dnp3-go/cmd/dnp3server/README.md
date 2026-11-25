@@ -35,9 +35,10 @@ MongoDB, point mapping, automatic address assignment, statistics and commands.
 12. [Device attributes](#device-attributes)
 13. [Time](#time)
 14. [Statistics](#statistics)
-15. [Logging and troubleshooting](#logging-and-troubleshooting)
-16. [Behaviours worth knowing](#behaviours-worth-knowing)
-17. [Testing](#testing)
+15. [Security events and peer identification](#security-events-and-peer-identification)
+16. [Logging and troubleshooting](#logging-and-troubleshooting)
+17. [Behaviours worth knowing](#behaviours-worth-knowing)
+18. [Testing](#testing)
 
 ## Building
 
@@ -184,6 +185,7 @@ One document in `protocolConnections` per outstation:
 | `description` | | Free text; reported to masters as the device location. |
 | `enabled` | `false` | Only enabled connections are loaded. |
 | `commandsEnabled` | `false` | Accept controls from the master. When `false`, every control is answered `NOT_SUPPORTED`. |
+| `peerIdentification` | `true` | Record each master that connects (address, MAC address, certificate, link address) in `stats.peerIdentity` and report changes of its MAC address, link address and certificate. When `false`, no MAC address is looked up and no identity is stored. See [Security events and peer identification](#security-events-and-peer-identification). |
 | `autoCreateTags` | `false` | Assign DNP3 addresses to tags that have none. See [Automatic destinations](#automatic-destinations). |
 | `topics` | `[]` | Restricts which tags automatic assignment may pick: only tags whose `group1` **contains** one of the strings. Empty means every tag. Used only when `autoCreateTags` is on. |
 | `hoursShift` | `0` | Hours added to the time stamp of every event of this connection. Combined with the destination's own `protocolDestinationHoursShift`. |
@@ -535,7 +537,7 @@ For a control at index N on a connection, the command tag is the tag with:
 | Situation | Answer to the master |
 | --- | --- |
 | `commandsEnabled` is `false` | `NOT_SUPPORTED` |
-| No such command tag | `NOT_SUPPORTED` |
+| No such command tag, or the tag has no destination at the index | `NOT_SUPPORTED` |
 | The tag has `enabled: false` | `BLOCKED` |
 | The database is unreachable, or the command could not be queued | `DOWNSTREAM_FAIL` |
 | Control relay output block without an operation (no on/off/latch/pulse) | `FORMAT_ERROR` |
@@ -644,12 +646,73 @@ Every 5 seconds the driver refreshes the keep-alive on its instance document (se
 | `numHeaderCrcError`, `numBodyCrcError` | Link frames rejected for a bad header or body checksum. |
 | `confirmTimeouts` | Times a master did not confirm an event response in time. |
 | `eventsQueued` | Events waiting in the buffer, not yet confirmed by a master. |
+| `peerIdentity` | With `peerIdentification`: the master connected now and the masters seen. See [Security events and peer identification](#security-events-and-peer-identification). |
 
 The frame and CRC counters come from the decoder shared by every connection on the same endpoint,
 so they are per endpoint.
 
 `isConnected` follows the transport, not traffic: a master that polls once every five minutes is
 still connected between polls.
+
+## Security events and peer identification
+
+The driver writes cyber-security events to the `secEvents` collection (see
+[docs/schema.md](../../../../docs/schema.md#secevents-collection); the Admin UI Security Events
+viewer lists them). Each connection has a report-only go-dnp3 security policy: nothing is refused
+because of it.
+
+### Peer identification
+
+DNP3 gives an outstation no standard way to ask a master who it is, so with `peerIdentification`
+(the default) the driver records what the connection shows of the master in
+`stats.peerIdentity`:
+
+| Field | Meaning |
+| --- | --- |
+| `clients` | The master connected now (empty when none): `address`, `ip`, `mac`, `macSource`, `tls`, `linkAddress`, `connectedAt`. |
+| `known` | The last identity of every master IP seen, at most 64: `ip`, `linkAddress`, `mac`, `macSource`, `tlsSha256`, `tlsSubject`, `lastSeen`. |
+
+`mac` comes from the operating system's neighbour table (`macSource` `neighbor`; a `gateway` MAC
+is the router's, not the master's). `linkAddress` is the master's link address, the connection's
+`remoteLinkAddress`. `known` seeds the change detection when the driver starts, so a MAC address
+or certificate change across a restart is reported too.
+
+### Events
+
+Detected by go-dnp3 (`source: "library"`), among others:
+
+- TLS: the master's certificate refused (`tls.cert_rejected`), plaintext or another protocol on a
+  TLS port, weak parameters, certificates close to expiry;
+- MAC address changes for the master's IP (`peer.mac_changed`), certificate changes
+  (`tls.cert_changed`), a different link address from the same IP (`peer.link_addr_changed`);
+- link frames with bad CRCs or lengths, frames for another outstation (`link.foreign_dest`), from
+  an unexpected source address, in the wrong direction, transport discards;
+- malformed requests, unknown or unsupported function codes and objects, reads of points that do
+  not exist (`access.unknown_point`), bad qualifiers and ranges (`proto.*`);
+- repeated or reused request sequence numbers (`seq.*`); an operate without its select, one that
+  does not match it, a select abandoned, a repeated control (`cmd.*`);
+- cold and warm restarts, clock steps, disabling unsolicited reporting, class, deadband,
+  attribute and other parameter writes, freezes, configuration saves, file transfers
+  (`ctrl.*`, `file.*`), command and request floods (`flood.*`);
+- controls go-dnp3 refused itself (`cmd.rejected`, `cmd.local_mode`).
+
+Routine informational events (connections opening and closing, accepted controls, clock writes)
+are not stored.
+
+Detected by the driver (`source: "driver"`):
+
+- `conn.unexpected`: a connection from an address not in `ipAddresses`, refused;
+- `peer.identified`: the first connection from a master IP;
+- `cmd.object_unknown`: a control for an index with no command tag, or a tag with no destination
+  there; `cmd.wrong_type`: a control relay output block for an index whose command tag takes an
+  analog output, or the reverse; `cmd.rejected`: a control refused for another reason
+  (`commandsEnabled` false, the tag disabled, a `NUL` operation or the reserved trip/close code,
+  the database unavailable or the command not queued). `commandStatus` is the answer of
+  [Lookup](#lookup); the event carries the tag, the object (`g12v1 #5`), the function (`SELECT`,
+  `OPERATE`) and the control as text. The same refusal of the same object from the same
+  master address is stored once a minute, with the count, and go-dnp3's own report of it is not stored besides;
+- `cmd.unnecessary`: a control relay output block that would put its supervised point in the
+  state it already was in when the control arrived.
 
 ## Logging and troubleshooting
 

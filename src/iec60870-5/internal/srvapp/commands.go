@@ -25,10 +25,14 @@ package srvapp
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/riclolsen/go-iecp5/asdu"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"iec60870-5/internal/conv"
 	"iec60870-5/internal/model"
@@ -116,6 +120,7 @@ func (e *Engine) HandleCommandASDU(srv *Conn, replyTo asdu.Connect, pack *asdu.A
 		if cmd.Value != asdu.DCOOn && cmd.Value != asdu.DCOOff {
 			e.negativeCon(replyTo, pack)
 			jslog.Log(jslog.LevelBasic, "%s  Invalid double state command %d", conName, cmd.Value)
+			srv.Sec.Refused(replyTo, pack, int(cmd.Ioa), "", "invalid double command state")
 			srv.clearSelect(replyTo)
 			return true
 		}
@@ -133,6 +138,7 @@ func (e *Engine) HandleCommandASDU(srv *Conn, replyTo asdu.Connect, pack *asdu.A
 		if cmd.Value != asdu.SCOStepUP && cmd.Value != asdu.SCOStepDown {
 			e.negativeCon(replyTo, pack)
 			jslog.Log(jslog.LevelBasic, "%s  Invalid step state command %d", conName, cmd.Value)
+			srv.Sec.Refused(replyTo, pack, int(cmd.Ioa), "", "invalid step command state")
 			srv.clearSelect(replyTo)
 			return true
 		}
@@ -232,11 +238,18 @@ func (e *Engine) HandleRead(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU, io
 	if !e.IsMongoLive.Load() {
 		return
 	}
-	point, dst := e.findMappedPoint(srv, int(pack.CommonAddr), int(ioa), 0)
+	point, dst, ferr := e.mappedPoint(srv, int(pack.CommonAddr), int(ioa), 0)
 	if point == nil {
 		e.negativeCon(replyTo, pack)
 		jslog.Log(jslog.LevelBasic, "%s  Request to read object not found, address: %d", conName, int(ioa))
 		srv.clearSelect(replyTo)
+		if ferr == nil { // nothing maps it (not a database failure)
+			if e.knownCA(srv, int(pack.CommonAddr)) {
+				srv.Sec.UnknownRead(replyTo, pack, int(ioa))
+			} else {
+				srv.Sec.UnknownCA(replyTo, pack, "read")
+			}
+		}
 		return
 	}
 	e.positiveCon(replyTo, pack)
@@ -255,6 +268,13 @@ func (e *Engine) HandleRead(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU, io
 // destination; asduType 0 matches any type (C_RD). All conditions must hold
 // on the same protocolDestinations entry.
 func (e *Engine) findMappedPoint(srv *Conn, ca, ioa, asduType int) (*model.RtDataPoint, *model.ProtocolDestination) {
+	p, d, _ := e.mappedPoint(srv, ca, ioa, asduType)
+	return p, d
+}
+
+// mappedPoint is findMappedPoint; the error is set when the database could
+// not tell (nil with no point: nothing maps the address).
+func (e *Engine) mappedPoint(srv *Conn, ca, ioa, asduType int) (*model.RtDataPoint, *model.ProtocolDestination, error) {
 	// address fields are matched as number or string (they may be configured
 	// with either representation)
 	elem := bson.M{
@@ -272,34 +292,89 @@ func (e *Engine) findMappedPoint(srv *Conn, ca, ioa, asduType int) (*model.RtDat
 	if err := e.DB().Collection(jsmongo.RealtimeDataCollectionName).FindOne(ctx, filter).Decode(&point); err != nil {
 		conName := srv.Cfg.Name + " - "
 		jslog.Log(jslog.LevelBasic, "%s  Error finding command point for CA %d, IOA %d, ASDU %d: %s", conName, ca, ioa, asduType, err.Error())
-		return nil, nil
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return nil, nil, nil
+		}
+		return nil, nil, err
 	}
 	for i := range point.ProtocolDestinations {
 		d := &point.ProtocolDestinations[i]
 		if int(d.ConnectionNumber) == int(srv.Cfg.ProtocolConnectionNumber) &&
 			int(d.CommonAddress) == ca && int(d.ObjectAddress) == ioa &&
 			(asduType == 0 || int(d.ASDU) == asduType) {
-			return &point, d
+			return &point, d, nil
 		}
 	}
-	return nil, nil
+	return nil, nil, nil
+}
+
+// knownCA reports whether a tag is mapped to the common address on this
+// connection; true when the database cannot tell.
+func (e *Engine) knownCA(srv *Conn, ca int) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	n, err := e.DB().Collection(jsmongo.RealtimeDataCollectionName).CountDocuments(ctx,
+		bson.M{"protocolDestinations": bson.M{"$elemMatch": bson.M{
+			"protocolDestinationConnectionNumber": srv.Cfg.ProtocolConnectionNumber,
+			"protocolDestinationCommonAddress":    jsmongo.AddrMatch(ca),
+		}}}, options.Count().SetLimit(1))
+	return err != nil || n > 0
+}
+
+// isGlobalCA reports the broadcast common address. go-iecp5 decodes the
+// 1-octet broadcast address 255 as GlobalCommonAddr too.
+func isGlobalCA(replyTo asdu.Connect, ca asdu.CommonAddr) bool {
+	if ca == asdu.GlobalCommonAddr {
+		return true
+	}
+	p := replyTo.Params()
+	return p != nil && p.CommonAddrSize == 1 && ca == 0xFF
 }
 
 // forwardCommand runs the full validation flow and inserts the command
 // into commandsQueue (port of the C# server AsduReceiveHandler).
 func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU, req cmdRequest) {
 	conName := srv.Cfg.Name + " - "
+	received := time.Now() // the unnecessary-command check compares with the state before this
+	// commandsEnabled and the test bit concern what operates the process
+	// (C_CI counter interrogation and C_RP reset process go on as before)
+	operates := asdu.IsProcessCommand(pack.Type) || asdu.IsParameter(pack.Type)
+	if operates && !srv.Cfg.CommandsEnabledVal() {
+		e.negativeCon(replyTo, pack)
+		jslog.Log(jslog.LevelBasic, "%s  Command rejected, commands are disabled for this connection", conName)
+		srv.clearSelect(replyTo)
+		srv.Sec.Refused(replyTo, pack, req.objAddr, "", "commands are disabled for this connection")
+		return
+	}
+	if operates && pack.Coa.IsTest {
+		// a test command must not operate the process: not forwarded
+		e.negativeCon(replyTo, pack)
+		jslog.Log(jslog.LevelBasic, "%s  Command rejected, test bit set", conName)
+		srv.clearSelect(replyTo)
+		srv.Sec.Refused(replyTo, pack, req.objAddr, "", "command with the test bit set")
+		return
+	}
 	if !e.IsMongoLive.Load() {
 		e.negativeCon(replyTo, pack)
 		jslog.Log(jslog.LevelBasic, "%s  Command rejected, MongoDB not available", conName)
+		srv.Sec.Refused(replyTo, pack, req.objAddr, "", "database not available")
 		return
 	}
 
-	point, dst := e.findMappedPoint(srv, int(pack.CommonAddr), req.objAddr, int(pack.Type))
+	point, dst, ferr := e.mappedPoint(srv, int(pack.CommonAddr), req.objAddr, int(pack.Type))
 	if point == nil {
 		e.negativeCon(replyTo, pack)
 		jslog.Log(jslog.LevelBasic, "%s  Command not found!", conName)
 		srv.clearSelect(replyTo)
+		if ferr != nil {
+			srv.Sec.Refused(replyTo, pack, req.objAddr, "", "database error looking for the command's point")
+		} else if asdu.IsProcessCommand(pack.Type) || asdu.IsParameter(pack.Type) {
+			if e.knownCA(srv, int(pack.CommonAddr)) {
+				srv.Sec.UnknownCommand(replyTo, pack, req.objAddr)
+			} else {
+				srv.Sec.UnknownCA(replyTo, pack, "command")
+			}
+		}
 		return
 	}
 	jslog.Log(jslog.LevelBasic, "%s  Command found.", conName)
@@ -317,6 +392,7 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 		e.negativeCon(replyTo, pack)
 		jslog.Log(jslog.LevelBasic, "%s  Select tried but not expected!", conName)
 		srv.clearSelect(replyTo)
+		srv.Sec.Refused(replyTo, pack, req.objAddr, point.Tag, "select of a command configured without select-before-operate")
 		return
 	}
 
@@ -325,6 +401,7 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 		e.negativeCon(replyTo, pack)
 		jslog.Log(jslog.LevelBasic, "%s  QU/QL command qualifier not expected: %d, %d wanted", conName, req.dur, dstdur)
 		srv.clearSelect(replyTo)
+		srv.Sec.Refused(replyTo, pack, req.objAddr, point.Tag, fmt.Sprintf("command qualifier %d, %d expected", req.dur, dstdur))
 		return
 	}
 
@@ -350,6 +427,7 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 			jslog.Log(jslog.LevelBasic, "%s  Command with time outside the %v window (age %v)", conName, TimeToExpireCommandsWithTime, age)
 			e.negativeCon(replyTo, pack)
 			srv.clearSelect(replyTo)
+			srv.Sec.StaleTime(replyTo, pack, req.objAddr, srctag, req.cmdTime, TimeToExpireCommandsWithTime)
 			return
 		}
 	}
@@ -365,6 +443,7 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 		// execute without a valid select of this point by this master
 		e.negativeCon(replyTo, pack)
 		jslog.Log(jslog.LevelBasic, "%s  Tried execute without select first!", conName)
+		srv.Sec.ExecuteWithoutSelect(replyTo, pack, req.objAddr, srctag)
 		return
 	}
 	srv.clearSelect(replyTo)
@@ -454,7 +533,9 @@ func (e *Engine) forwardCommand(srv *Conn, replyTo asdu.Connect, pack *asdu.ASDU
 	if _, err := e.DB().Collection(jsmongo.CommandsQueueCollectionName).InsertOne(ctx, cmdDoc); err != nil {
 		jslog.Log(jslog.LevelBasic, "%s", "  Exception Mongo: "+err.Error())
 		e.negativeCon(replyTo, pack) // not forwarded
+		srv.Sec.Refused(replyTo, pack, req.objAddr, srctag, "the command could not be queued: database error")
 		return
 	}
 	e.positiveCon(replyTo, pack)
+	srv.Sec.Forwarded(replyTo, pack, req.objAddr, srctag, srcpointkey, val, received)
 }

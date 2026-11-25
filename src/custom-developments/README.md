@@ -85,8 +85,8 @@ The apps are served by the realtime server under `/custom-developments/<folder>/
     sudo supervisorctl restart server_realtime_auth
     ```
 
-    ```cmd
-    nssm restart JSON_SCADA_server_realtime_auth
+    ```powershell
+    Restart-Service JSON_SCADA_server_realtime_auth
     ```
 
 8. Access the app in your browser under 'Custom Developments', reload the page to see the changes.

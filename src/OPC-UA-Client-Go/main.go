@@ -36,6 +36,7 @@ import (
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmodel"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -62,6 +63,10 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	secNodeName = cfg.NodeName
+	secWriter = jssecevents.NewWriter(0)
+	go secWriter.Run(ctx, cfg)
+
 	initRedundancy(ctx, cfg, conns)
 	go redundancy.Run(ctx)
 
@@ -77,7 +82,7 @@ func main() {
 	}
 
 	// The C# driver polls the console for Esc; a driver under supervisord
-	// or NSSM is stopped with a signal instead (deviation D10).
+	// or WinSW is stopped with a signal instead (deviation D10).
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, os.Interrupt, syscall.SIGTERM)
 
@@ -96,6 +101,10 @@ func main() {
 			case <-closed:
 			case <-time.After(10 * time.Second):
 				jslog.Log(jslog.LevelNoLog, "Sessions did not close in time, exiting anyway.")
+			}
+			select { // the security events still queued are stored
+			case <-secWriter.Done():
+			case <-time.After(3 * time.Second):
 			}
 			jslog.Flush()
 			os.Exit(0)

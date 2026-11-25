@@ -19,6 +19,7 @@ import (
 
 	"modbus-go/internal/drv"
 	"modbus-go/internal/mbcore"
+	"modbus-go/internal/mbsec"
 
 	"github.com/otfabric/go-modbus"
 	"github.com/riclolsen/json-scada/src/go-common/jscommands"
@@ -99,6 +100,7 @@ func (c *Connection) HandleCommand(ctx context.Context, doc bson.M) {
 	}
 	// Ignore stale commands, so a restart does not replay them.
 	if ts := jsmongo.GetTime(doc, "timeTag"); !ts.IsZero() && time.Since(ts) > jscommands.DefaultExpiry {
+		c.secCommandStale(doc, ts)
 		c.ack(ctx, doc, false, "command expired")
 		return
 	}
@@ -120,17 +122,25 @@ func fieldStr(doc bson.M, k string) string {
 }
 
 func (c *Connection) executeCommand(ctx context.Context, cl *modbus.Client, doc bson.M) (bool, string) {
+	refuse := func(kind, desc string) (bool, string) {
+		c.secCommandRefused(doc, kind, desc, nil)
+		return false, desc
+	}
+	failed := func(err error) (bool, string) {
+		c.secCommandRefused(doc, "", "", err)
+		return false, ErrText(err)
+	}
 	addr, err := mbcore.ParseObjectAddress(fieldStr(doc, "protocolSourceObjectAddress"), c.Cfg.UseModiconAddresses)
 	if err != nil {
-		return false, err.Error()
+		return refuse(mbsec.KindCmdObjectUnknown, err.Error())
 	}
 	if !mbcore.IsWritableArea(addr.Area) {
-		return false, fmt.Sprintf("area %s is read-only", addr.Area)
+		return refuse(mbsec.KindCmdRejected, fmt.Sprintf("area %s is read-only", addr.Area))
 	}
 	asduStr, _ := doc["protocolSourceASDU"].(string)
 	asdu, err := mbcore.ParseAsdu(asduStr, addr.Area, c.Cfg.Defaults())
 	if err != nil {
-		return false, err.Error()
+		return refuse(mbsec.KindCmdObjectUnknown, err.Error())
 	}
 	ca, hasCA := doc["protocolSourceCommonAddress"]
 	unit := clampUnitDefault1(jsNumber(ca, hasCA))
@@ -149,8 +159,9 @@ func (c *Connection) executeCommand(ctx context.Context, cl *modbus.Client, doc 
 
 	digital := mbcore.IsBitArea(addr.Area) || addr.HasBit() || asdu.Type == mbcore.TypeBool
 	if digital && math.IsNaN(rawValue) {
-		return false, "invalid value for an ON/OFF command: " + fieldStr(doc, "value")
+		return refuse(mbsec.KindCmdRejected, "invalid value for an ON/OFF command: "+fieldStr(doc, "value"))
 	}
+	c.secCommand(ctx, doc, rawValue, digital)
 
 	switch {
 	case asdu.Type == mbcore.TypeBool && !mbcore.IsBitArea(addr.Area) && !addr.HasBit():
@@ -197,7 +208,7 @@ func (c *Connection) executeCommand(ctx context.Context, cl *modbus.Client, doc 
 			return e
 		})
 		if err != nil {
-			return false, ErrText(err)
+			return failed(err)
 		}
 		if on {
 			word |= 1 << bit
@@ -218,7 +229,7 @@ func (c *Connection) executeCommand(ctx context.Context, cl *modbus.Client, doc 
 		}
 		wire, err := mbcore.Encode(asdu.Type, v, asdu.Perm, asdu.Str)
 		if err != nil {
-			return false, err.Error()
+			return refuse(mbsec.KindCmdRejected, err.Error())
 		}
 		if asdu.RegCount == 1 && asdu.Type != mbcore.TypeString {
 			w := uint16(wire[0])<<8 | uint16(wire[1])
@@ -245,12 +256,12 @@ func (c *Connection) executeCommand(ctx context.Context, cl *modbus.Client, doc 
 		sleepCtx(ctx, msDur(c.Cfg.InterRequestDelayMs))
 		c.gate.release()
 		if err != nil && !errors.Is(err, modbus.ErrRequestTimedOut) && !errors.Is(err, context.DeadlineExceeded) {
-			return false, ErrText(err)
+			return failed(err)
 		}
 		return true, "OK (broadcast, no confirmation)"
 	}
 	if err := c.exec(ctx, true, unit, pdu, op); err != nil {
-		return false, ErrText(err)
+		return failed(err)
 	}
 	return true, "OK"
 }

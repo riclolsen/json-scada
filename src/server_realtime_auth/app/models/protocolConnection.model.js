@@ -66,6 +66,11 @@ const ProtocolConnection = mongoose.model(
     // OPC-UA, TELEGRAF_LISTENER, MQTT-SPARKPLUG-B, IEC61850, PLC4X, OPC-DA, ICCP, DNP3_SERVER, DNP3, IEC61850_SERVER, ICCP, IEC60870-5-104_SERVER, IEC60870-5-104, IEC60870-5-101_SERVER, IEC60870-5-101, MODBUS
     autoCreateTags: { type: Boolean, default: true },
 
+    // IEC61850, IEC61850_SERVER, MODBUS, MODBUS_SERVER, IEC60870-5-104, IEC60870-5-104_SERVER,
+    // IEC60870-5-101, IEC60870-5-103, ICCP, ICCP_SERVER: identify the peer on every connection
+    // (stats.peerIdentity) and report identity changes as security events
+    peerIdentification: { type: Boolean, default: true },
+
     // OPC-UA, OPC-DA, OPC-DA_SERVER, ICCP
     autoCreateTagPublishingInterval: { type: Double, min: 0, default: 5.0 },
 
@@ -203,6 +208,15 @@ const ProtocolConnection = mongoose.model(
     stringEncoding: { type: String, default: 'latin1' },
     // interpret plain numeric addresses as 1-based Modicon refs (40001 -> hr:0)
     useModiconAddresses: { type: Boolean, default: false },
+
+    // SUNSPEC discovery and automatic tag creation
+    unitIds: { type: [Double], default: undefined },
+    modelIds: { type: [Double], default: undefined },
+    baseAddresses: { type: [Double], default: undefined },
+    registerType: { type: String, enum: ['holding', 'input'] },
+    maxModels: { type: Double, min: 1 },
+    autoCreateCommandTags: Boolean,
+    autoCreateUnimplemented: Boolean,
 
     // MODBUS - polling and request shaping
     pollingInterval: { type: Double, min: 0, default: 1000.0 },

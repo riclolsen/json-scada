@@ -74,6 +74,7 @@ A instance for this driver can have many server ports defined that must be descr
 - _**description**_ [String] - Description for the purpose of a connection. Just documental. **Optional parameter**.
 - _**enabled**_ [Boolean] - Controls the enabling of the conenction. Use false here to disable the connection. **Mandatory parameter**.
 - _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
+- _**peerIdentification**_ [Boolean] - Records the peer's identity in _stats.peerIdentity_ when the connection is (re)established, and reports its changes as security events. Default: true. **Optional parameter**.
 - _**ipAddressLocalBind**_ [String] - Bind IP address and port for the server. Use 127.0.0.1:2404 for just local connections on port 2404. Use 0.0.0.0:2404 lo listen on all interfaces. Port must not repeat for other connections on the same computer (as only one listen socket can be opened for each TCP port on same machine). **Mandatory parameter**.
 - _**ipAddresses**_ [Array of Strings] - Array of IP addresses for clients allowed to connect to the server. Keep empty array to accept any client. **Mandatory parameter**.
 - _**localLinkAddress**_ [Double] - Local link address for the connection (originator address). **Mandatory parameter**.
@@ -186,6 +187,10 @@ When enabled, the driver scans _realtimeData_ once at startup and, for every tag
 - Tags of other _type_ values (string, json, ...) have no IEC 60870-5 representation and are skipped; their count is logged at the end of the distribution.
 
 Once created, the destinations can be edited normally (ASDU type, interrogation group, kconv, hours shift, SBO, ...). Set _autoCreateTags_ back to `false` when the mapping is stable.
+
+## Security events
+
+The driver reports unexpected or suspicious conditions to the _secEvents_ collection, listed by the Security Events viewer of the Admin UI: the driver refuses and reports masters not in `ipAddresses` (`conn.unexpected`) and over `maxClientConnections`, reads of nonexistent objects and common addresses, scans, unknown or refused commands (with the reason), execute without select, stale time-tagged commands, file transfer requests and unnecessary commands; go-iecp5 reports TLS failures, sequence errors, malformed APDUs, control actions (reset process, parameter changes) and floods. With _peerIdentification_ on, the driver records each master's address, IP, MAC address and TLS certificate (`clients`, and `known` for the last 64 master IPs) in _stats.peerIdentity_ and reports a change between connections, also across driver restarts. See [Security events and peer identification](../../README.md#security-events-and-peer-identification) for the event kinds and the _stats.peerIdentity_ document.
 
 ## Command Line Arguments
 

@@ -18,7 +18,7 @@
 // Client for the AdminUI backend API (server_realtime_auth, /Invoke/auth/*).
 // Configuration changes and OS service (process) management go through this API
 // instead of writing MongoDB directly, so they get the same validation,
-// protocol defaults, auto-restart scheduling, NSSM/supervisord service control
+// protocol defaults, auto-restart scheduling, WinSW/supervisord service control
 // and userActions audit trail as changes made in the AdminUI.
 
 import Log from './logger.js'

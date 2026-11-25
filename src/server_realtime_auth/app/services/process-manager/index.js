@@ -16,7 +16,7 @@
  */
 
 // Process manager facade. Single entry point used by the controllers: selects the
-// platform backend (NSSM on Windows, supervisord on Linux), serializes all service
+// platform backend (WinSW on Windows, supervisord on Linux), serializes all service
 // operations, checks node ownership, and computes the spec hash used for idempotency.
 
 'use strict'
@@ -24,7 +24,7 @@
 const crypto = require('node:crypto')
 const catalog = require('./driver-catalog')
 const paths = require('./paths')
-const nssm = require('./nssm')
+const winsw = require('./winsw')
 const supervisor = require('./supervisor')
 const Log = require('../../../simple-logger')
 const LoadConfig = require('../../../load-config')
@@ -55,17 +55,17 @@ function backend() {
   if (!isEnabled()) return null
   const b = pmCfg().backend || 'auto'
   if (b === 'none') return null
-  if (b === 'nssm') return nssm
+  if (b === 'winsw' || b === 'nssm') return winsw // 'nssm': value of older releases
   if (b === 'supervisor') {
     supervisor.configure(cfg())
     return supervisor
   }
-  if (process.platform === 'win32') return nssm
+  if (process.platform === 'win32') return winsw
   supervisor.configure(cfg())
   return supervisor
 }
 
-// --- serialization: NSSM and supervisorctl are not concurrency-safe per service ---
+// --- serialization: WinSW/sc and supervisorctl are not concurrency-safe per service ---
 let queue = Promise.resolve()
 function enqueue(fn) {
   const p = queue.then(fn, fn)

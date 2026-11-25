@@ -39,7 +39,7 @@ const (
 	CopyrightMessage   = "{json:scada} OPC-UA Client Driver (Go) - Copyright 2020-2026 Ricardo L. Olsen"
 	ProtocolDriverName = "OPC-UA"
 	DriverVersion      = "0.2.1"
-	LibraryVersion     = "gopcua v0.9.1"
+	LibraryVersion     = "gopcua v0.9.1 + security events (github.com/riclolsen/opcua d13e326)"
 )
 
 // Queue and key-allocation limits, same values as the C# driver.
@@ -129,6 +129,9 @@ type OPCUAConnection struct {
 	SecurityMode                    string
 	SecurityPolicy                  string
 	AutoAcceptUntrustedCertificates bool
+	PeerIdentification              bool // identify the server on every session (default true)
+
+	sec *connSec // security events and the server's identity (secevents.go)
 
 	// Runtime state, guarded by mu: the connection goroutine writes it
 	// while the MongoDB writer and the command dispatcher read it.
@@ -180,6 +183,14 @@ type OPCValue struct {
 	DisplayName                string
 	ParentName                 string
 	Path                       string
+
+	// From the variable's EngineeringUnits and EURange (or InstrumentRange,
+	// NumberRange) properties, for a new analog tag's unit and its
+	// lololoLimit/hihihiLimit (deviation D39).
+	Unit      string
+	HasRange  bool
+	RangeLow  float64
+	RangeHigh float64
 }
 
 // --- connection runtime accessors ----------------------------------------
@@ -353,7 +364,9 @@ func connectionFromDoc(doc bson.M) *OPCUAConnection {
 		SecurityMode:                    jsmongo.GetString(doc, "securityMode", "None"),
 		SecurityPolicy:                  jsmongo.GetString(doc, "securityPolicy", "None"),
 		AutoAcceptUntrustedCertificates: jsmongo.GetBool(doc, "autoAcceptUntrustedCertificates", true),
+		PeerIdentification:              jsmongo.GetBool(doc, "peerIdentification", true),
 
+		sec:               newConnSec(),
 		InsertedAddresses: map[string]bool{},
 		NodeIdsDetails:    map[string]*NodeDetails{},
 		OpcSubscriptions:  map[float64][]*monItem{},
@@ -367,6 +380,7 @@ func connectionFromDoc(doc bson.M) *OPCUAConnection {
 	if id, ok := doc["_id"].(bson.ObjectID); ok {
 		c.ID = id
 	}
+	c.seedIdentity(jsmongo.GetDoc(jsmongo.GetDoc(doc, "stats"), "peerIdentity"))
 	return c
 }
 

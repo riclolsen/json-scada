@@ -71,6 +71,7 @@ Each instance for this driver can have many client connection defined that must 
 - _**description**_ [String] - Description for the purpose of a connection. Just documental. **Optional parameter**.
 - _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 - _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
+- _**peerIdentification**_ [Boolean] - Records the peer's identity in _stats.peerIdentity_ when the connection is (re)established, and reports its changes as security events. Default: true. **Optional parameter**.
 - _**portName**_ [String] - Comm port name, e.g. "COM1", "/dev/ttyS0", or `host:port` (numeric port) to carry the FT1.2 frames over TCP. **Mandatory parameter**.
 - _**baudRate**_ [Double] - Comm port baud rate. **Mandatory parameter**.
 - _**parity**_ [String] - Comm port parity Even|None|Odd|Mark|Space. **Mandatory parameter**.
@@ -129,6 +130,10 @@ The optional connection parameter _**autoCreateTags**_ [Boolean, default false] 
 - Only monitored (supervised) points are created; command tags are never auto-created and must be configured manually.
 
 Once the tags exist you can rename, group, scale (`kconv1`/`kconv2`) and edit them normally. Set _autoCreateTags_ back to `false` when the address map is stable.
+
+## Security events
+
+The driver reports unexpected or suspicious conditions to the _secEvents_ collection, listed by the Security Events viewer of the Admin UI: go-iecp5 checks the FT1.2 link (frames, FCB repeats, foreign link addresses); the driver adds the end of initialisation of the device, the commands it did not send or the device refused (with the tag), stale queued commands, command floods and unnecessary commands. With _peerIdentification_ on, the driver records the device's address (the TCP peer of a terminal server, or the serial port), link address, IP, MAC address and TLS certificate in _stats.peerIdentity_ and reports a change between connections, also across driver restarts. See [Security events and peer identification](../../README.md#security-events-and-peer-identification) for the event kinds and the _stats.peerIdentity_ document.
 
 ## Command Line Arguments
 

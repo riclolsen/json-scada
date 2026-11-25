@@ -31,6 +31,7 @@ const { ObjectId, Double } = require('mongodb')
 const { getPgPool } = require('./pg-pool') // historian pool shared with /Invoke/
 const { authJwt } = require('./app/middlewares')
 const { propertyProblem } = require('./app/services/point-properties')
+const AlarmList = require('./app/services/alarm-list')
 const {
   findCommandPoint,
   commandRefusal,
@@ -44,6 +45,11 @@ const Log = require('./simple-logger')
 const API_AP = process.env.JS_GRAPHQL_AP || '/apollo'
 const COLL_REALTIME = 'realtimeData'
 const COLL_SOE = 'soeData'
+const COLL_ALARMS = 'alarmsData'
+// acknowledgement of alarmsData documents
+const alarmAckUpdate = (username) => ({
+  $set: { ack: 1, timeTagAck: new Date(), ackUser: username ?? null },
+})
 const COLL_COMMANDS = 'commandsQueue'
 const beepPointKey = -1
 const EventsRemoveGuardSeconds = 20
@@ -318,6 +324,19 @@ const typeDefs = `#graphql
     "Currently alarmed or out-of-normal points (like the persistentAlarms filter of the /Invoke API)."
     activeAlarms(group1: String, group2: String, limit: Int = 1000): [Tag!]!
 
+    "Alarm list (alarmsData). REALTIME: alarms not acknowledged or still active, newest first; HISTORICAL: alarms raised from timeBegin (default 24 h ago) to timeEnd (default now), oldest first."
+    alarms(
+      mode: AlarmListMode = REALTIME
+      timeBegin: DateTime
+      timeEnd: DateTime
+      group1List: [String!]
+      priorityMax: Float
+      "Case-insensitive substring of the tag, description, station or alarm text."
+      text: String
+      unackedOnly: Boolean = false
+      limit: Int = 5000
+    ): [Alarm!]!
+
     "Query sequence of events (SOE) data. Defaults to the last hour when no time range is given."
     soeEvents(filter: SoeFilter, limit: Int = 1000, ascending: Boolean = false): [SoeEvent!]!
 
@@ -465,7 +484,11 @@ const typeDefs = `#graphql
     annotation: String
     notes: String
     loLimit: Float
+    loloLimit: Float
+    lololoLimit: Float
     hiLimit: Float
+    hihiLimit: Float
+    hihihiLimit: Float
     hysteresis: Float
     alarmDisabled: Boolean
     "Set together with newValue to substitute (manually enter) the point value."
@@ -498,6 +521,9 @@ const typeDefs = `#graphql
     ackEvents: Boolean
     ackAlarms: Boolean
     disableAlarms: Boolean
+    cimEngineering: Boolean
+    viewSecEvents: Boolean
+    editDisplays: Boolean
     group1List: [String]
     group1CommandList: [String]
     displayList: [String]
@@ -590,6 +616,40 @@ const typeDefs = `#graphql
     updatesCnt: Float
     zeroDeadband: Float
     sourceDataUpdate: SourceDataUpdate
+  }
+
+  enum AlarmListMode {
+    REALTIME
+    HISTORICAL
+  }
+
+  "One alarm occurrence of the alarm list (alarmsData)."
+  type Alarm {
+    alarmId: ID!
+    tag: String
+    pointKey: Float
+    group1: String
+    group2: String
+    description: String
+    type: String
+    priority: Float
+    value: Float
+    valueString: String
+    alarmText: String
+    "Analog alarms: 1..3 above hi/hihi/hihihiLimit, -1..-3 below lo/lolo/lololoLimit."
+    alarmRange: Float
+    "Time the alarm was raised."
+    timeTag: DateTime
+    timeTagAtSource: DateTime
+    timeTagAtSourceOk: Boolean
+    "True while the alarm condition lasts."
+    active: Boolean
+    "0=unacknowledged, 1=acknowledged."
+    ack: Int
+    timeTagAck: DateTime
+    ackUser: String
+    "Time the alarm condition ended."
+    timeTagNormal: DateTime
   }
 
   type SoeEvent {
@@ -686,6 +746,9 @@ const typeDefs = `#graphql
     ackEvents: Boolean
     ackAlarms: Boolean
     disableAlarms: Boolean
+    cimEngineering: Boolean
+    viewSecEvents: Boolean
+    editDisplays: Boolean
     group1List: [String]
     group1CommandList: [String]
     displayList: [String]
@@ -1171,6 +1234,28 @@ const resolvers = {
       )
     },
 
+    alarms: async (_, args, ctx) => {
+      const g = AUTH ? ctx.rights?.group1List || [] : []
+      const mdb = nativeDb()
+      if (!mdb) throw gqlError('Database unavailable!')
+      const r = await AlarmList.listAlarms(
+        mdb,
+        {
+          mode: args.mode === 'HISTORICAL' ? 'historical' : 'realtime',
+          ...(args.timeBegin ? { timeBegin: args.timeBegin.toISOString() } : {}),
+          ...(args.timeEnd ? { timeEnd: args.timeEnd.toISOString() } : {}),
+          group1: args.group1List || [],
+          priorityMax: args.priorityMax ?? undefined,
+          text: args.text ?? undefined,
+          unackedOnly: args.unackedOnly === true,
+          limit: args.limit,
+        },
+        g
+      )
+      if (r.error) throw gqlError(r.error, 'BAD_USER_INPUT')
+      return r.alarms.map((a) => ({ ...a, alarmId: a._id }))
+    },
+
     soeEvents: async (_, { filter, limit, ascending }, ctx) => {
       filter = filter || {}
       const useSourceTime = filter.useSourceTime === true
@@ -1650,6 +1735,10 @@ const resolvers = {
 
       switch (action) {
         case 'ACK_ALL_ALARMS': {
+          // the alarm list, then the alarmed flag of the points
+          await mdb
+            .collection(COLL_ALARMS)
+            .updateMany({ ack: 0, ...gf }, alarmAckUpdate(ctx.username))
           result = await mdb
             .collection(COLL_REALTIME)
             .updateMany({ alarmed: true, ...gf }, { $set: { alarmed: false } })
@@ -1686,6 +1775,14 @@ const resolvers = {
           if (!tagOrId)
             throw gqlError('A tagOrId is required for this action!', 'BAD_USER_INPUT')
           const findPoint = findPointQuery(ctx, tagOrId, true)
+          // all the alarms of the point in the alarm list
+          const point = await mdb
+            .collection(COLL_REALTIME)
+            .findOne(findPoint, { projection: { _id: 1 } })
+          if (point)
+            await mdb
+              .collection(COLL_ALARMS)
+              .updateMany({ pointKey: point._id, ack: 0 }, alarmAckUpdate(ctx.username))
           result = await mdb
             .collection(COLL_REALTIME)
             .updateOne(findPoint, { $set: { alarmed: false } })
@@ -1791,7 +1888,9 @@ const resolvers = {
         requireTokenRight(ctx, 'enterNotes', 'User has no right to enter notes!')
         if (prevData.notes !== properties.notes) set.notes = properties.notes
       }
-      for (const lim of ['loLimit', 'hiLimit', 'hysteresis']) {
+      for (const lim of [
+        'loLimit', 'loloLimit', 'lololoLimit', 'hiLimit', 'hihiLimit', 'hihihiLimit', 'hysteresis',
+      ]) {
         if (lim in properties && properties[lim] !== null) {
           requireTokenRight(ctx, 'enterLimits', 'User has no right to enter limits!')
           if (prevData[lim] !== properties[lim]) set[lim] = new Double(properties[lim])
@@ -1825,8 +1924,7 @@ const resolvers = {
       if (prevData.type === 'analog') {
         if (
           'alarmDisabled' in set ||
-          'hiLimit' in set ||
-          'loLimit' in set ||
+          Object.keys(set).some((k) => k.endsWith('Limit')) ||
           'hysteresis' in set
         ) {
           // merge on the server: a copy read earlier could overwrite what a

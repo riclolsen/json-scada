@@ -42,7 +42,8 @@
     "customDevelopments": "Custom Developments",
     "open": "Open",
     "cimEms": "CIM-EMS",
-    "svgedit": "SVG Editor"
+    "svgedit": "SVG Editor",
+    "secEventsViewer": "Security Events"
   },
   "tabularViewer": {
     "station": "Station",
@@ -91,9 +92,15 @@
       "value": "Value",
       "state": "State",
       "quality": "Quality",
-      "hiLimit": "High Limit",
-      "loLimit": "Low Limit",
+      "hiLimit": "High Limit (HI)",
+      "loLimit": "Low Limit (LO)",
+      "hihiLimit": "High Limit 2 (HIHI)",
+      "hihihiLimit": "High Limit 3 (HIHIHI)",
+      "loloLimit": "Low Limit 2 (LOLO)",
+      "lololoLimit": "Low Limit 3 (LOLOLO)",
       "hysteresis": "Hysteresis",
+      "alarmRange": "Alarm Range",
+      "limitsOrder": "Limits out of order (LOLOLO ≤ LOLO ≤ LO ≤ HI ≤ HIHI ≤ HIHIHI)",
       "annotation": "Blocking Annotation",
       "notes": "Documental Notes",
       "alarmDisabled": "Alarm Disabled",
@@ -170,6 +177,72 @@
       "date": "Date",
       "time": "Initial Time",
       "filter": "Filter"
+    }
+  },
+  "alarmsViewer": {
+    "alarms": "alarms",
+    "unackedOnly": "Unacked only",
+    "modes": {
+      "normal": "Normal",
+      "aggregated": "Aggregated",
+      "historical": "Historical"
+    },
+    "columns": {
+      "time": "Time",
+      "alarm": "Alarm",
+      "state": "State",
+      "priority": "Priority",
+      "normalTime": "Normal Time",
+      "ackTime": "Ack Time",
+      "ackUser": "Ack User"
+    },
+    "state": {
+      "active": "Active",
+      "normal": "Normal"
+    },
+    "hist": {
+      "from": "From",
+      "to": "To",
+      "filter": "Filter",
+      "filterHint": "tag, description, text",
+      "find": "Find",
+      "limited": "Showing the first {n} alarms only: narrow the period or the filter."
+    }
+  },
+  "secEvents": {
+    "title": "Security Events",
+    "from": "From",
+    "to": "To",
+    "now": "now",
+    "minSeverity": "Minimum severity",
+    "category": "Category",
+    "filterHint": "kind, peer, object, detail",
+    "find": "Find",
+    "autoRefresh": "Auto refresh",
+    "exportCsv": "Export CSV",
+    "showFrom": "Show from {s} up",
+    "events": "events",
+    "limited": "Showing the newest {n} events only: narrow the period or the filter.",
+    "noData": "No security events",
+    "noRight": "Your roles do not grant the View Security Events right.",
+    "unavailable": "Database unavailable",
+    "severities": {
+      "info": "Info",
+      "notice": "Notice",
+      "warning": "Warning",
+      "alert": "Alert",
+      "critical": "Critical"
+    },
+    "columns": {
+      "time": "Time",
+      "severity": "Severity",
+      "kind": "Event",
+      "connection": "Connection",
+      "peer": "Peer",
+      "object": "Object",
+      "action": "Action",
+      "detail": "Detail",
+      "source": "Source"
     }
   },
   "login": {
@@ -315,7 +388,11 @@
         "total": "Roles",
         "admin": "Admin roles",
         "unused": "Unassigned"
-      }
+      },
+      "viewSecEvents": "View Security Events",
+      "viewSecEventsHint": "Can open the Security Events viewer (connection, certificate, identity and command anomalies reported by the protocol drivers).",
+      "editDisplays": "Edit Displays",
+      "editDisplaysHint": "Can list, open and save the SVG displays in the SVG Editor (admins always can). With a display list, only those displays."
     },
     "protocolDriverInstances": {
       "title": "Protocol Driver Instances",
@@ -742,6 +819,28 @@
       "serverUnitIds": "Server Unit Ids",
       "serverUnitIdsTitle": "Unit ids (slave addresses) served",
       "serverUnitIdsHint": "Type a number and press Enter. Range 0 to 255.",
+      "sunspecParameters": "SunSpec Parameters",
+      "unitIds": "Unit Ids",
+      "unitIdsTitle": "SunSpec devices (Modbus unit ids) to discover",
+      "unitIdsHint": "Type a number and press Enter. Range 1 to 255. Empty: unit 1.",
+      "baseAddresses": "Base Addresses",
+      "baseAddressesTitle": "Register addresses probed for the SunS marker",
+      "baseAddressesHint": "Type a number and press Enter. Empty: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",
+      "modelIds": "Model Ids",
+      "modelIdsTitle": "SunSpec models that get automatic tags",
+      "modelIdsHint": "Type a model id and press Enter (e.g. 1, 103, 160). Empty: every discovered model.",
+      "registerType": "Register Type",
+      "registerTypeTitle": "Registers holding the SunSpec map",
+      "registerTypeHint": "holding (function 3, almost every device) or input (function 4, read-only).",
+      "maxModels": "Max Models",
+      "maxModelsTitle": "Most model headers read from a chain",
+      "maxModelsHint": "Integer number, at least 1. Default 256.",
+      "autoCreateCommandTags": "Auto create command tags: ",
+      "autoCreateCommandTagsTrue": "True",
+      "autoCreateCommandTagsFalse": "False",
+      "autoCreateUnimplemented": "Auto create tags for unimplemented points: ",
+      "autoCreateUnimplementedTrue": "True",
+      "autoCreateUnimplementedFalse": "False",
       "strictUnitId": "Strict unit id: ",
       "strictUnitIdTrue": "True",
       "strictUnitIdFalse": "False",
@@ -802,7 +901,9 @@
         "total": "Connections",
         "tags": "Tags",
         "invalidTags": "Invalid tags"
-      }
+      },
+      "peerIdentification": "Identify peer (security events): ",
+      "peerIdentificationHint": "Read the identity of the peer (vendor, model, firmware, MAC address, certificate) on every connection into the connection statistics, and report changes of it as security events."
     },
     "userActions": {
       "title": "User Actions",
@@ -850,6 +951,13 @@
       "editOrigin": "Origin",
       "editType": "Type",
       "editHistorianDeadBand": "Historian Dead-band (%)",
+      "editHihihiLimit": "High Limit 3 (HIHIHI)",
+      "editHihiLimit": "High Limit 2 (HIHI)",
+      "editHiLimit": "High Limit (HI)",
+      "editLoLimit": "Low Limit (LO)",
+      "editLoloLimit": "Low Limit 2 (LOLO)",
+      "editLololoLimit": "Low Limit 3 (LOLOLO)",
+      "editHysteresis": "Hysteresis",
       "editHistorianPeriod": "Historian Integrity Period (seconds)",
       "editAlarmState": "Alarm State",
       "editAlarmStateOff": "OFF",
@@ -1016,7 +1124,15 @@
       "pruneExecute": "Delete",
       "pruneConfirmText": "The selected configuration is deleted for good. Export a backup first if you may need it again.",
       "pruneTypeToConfirm": "Type {word} to confirm",
-      "pruneDone": "Configuration cleaned up"
+      "pruneDone": "Configuration cleaned up",
+      "retentionTitle": "Data retention",
+      "retentionHint": "Days kept for the events (SOE), the alarms and the historical data; the excess is removed once a day. Unacknowledged or active alarms are kept.",
+      "retentionSoe": "Events (SOE)",
+      "retentionAlarms": "Alarms",
+      "retentionHist": "Historical data",
+      "retentionDays": "days",
+      "retentionRule": "A whole number of days from {min} to {max}",
+      "retentionSecEvents": "Security events"
     },
     "cimEms": {
       "readOnly": "Read-only view: model upload, activation, binding approval and downloads need a role with the CIM-EMS engineering right.",
@@ -1221,8 +1337,12 @@
     "reset": "Reset view and follow live",
     "downloadCsv": "Download CSV",
     "current": "Current value",
-    "hiLimit": "High limit",
-    "loLimit": "Low limit",
+    "hiLimit": "High limit (HI)",
+    "loLimit": "Low limit (LO)",
+    "hihiLimit": "High limit 2 (HIHI)",
+    "hihihiLimit": "High limit 3 (HIHIHI)",
+    "loloLimit": "Low limit 2 (LOLO)",
+    "lololoLimit": "Low limit 3 (LOLOLO)",
     "noData": "No data in this period",
     "noPoint": "No point given (use ?point=<key or tag>)",
     "notFound": "Point not found"
@@ -1247,5 +1367,18 @@
       "analytics": "Analytics",
       "engineering": "Engineering"
     }
+  },
+  "customDev": {
+    "subtitle": "Web apps built in src/custom-developments: dashboards, faceplates and special views.",
+    "search": "Search apps",
+    "open": "Open",
+    "openNewWindow": "Open in a new window",
+    "back": "Back to the list",
+    "retry": "Retry",
+    "empty": "No custom development yet",
+    "emptyHint": "Build an app in a folder of src/custom-developments (npm install && npm run build) and restart server_realtime_auth.",
+    "noMatch": "No app matches the search.",
+    "noDescription": "No description",
+    "built": "Built {date}"
   }
 }

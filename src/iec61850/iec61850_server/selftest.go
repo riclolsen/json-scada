@@ -19,7 +19,7 @@
 // Self test: build and serve a synthetic model without MongoDB, so the
 // model can be browsed with any IEC 61850 client.
 //
-//	iec61850-server selftest [port [bulkPoints]]
+//	iec61850_server selftest [port [bulkPoints]]
 
 package main
 

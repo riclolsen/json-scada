@@ -50,6 +50,8 @@ type rcbState struct {
 	// segment seen. Only the association's reader goroutine touches these.
 	segEntryID []byte
 	segLast    uint32
+	lastSeq    uint32 // last report sequence number, for the replay check
+	seqSeen    bool
 }
 
 // rcbToMMS splits an RCB reference into the MMS domain and item id:
@@ -318,7 +320,7 @@ func installReportDiagnostics(conn *Iec61850Connection) func() {
 		return func() {}
 	}
 	return cli.MMS().OnInformationReport(func(ir *mms.InformationReport) {
-		if jslog.Level() < jslog.LevelDetailed || len(ir.Values) == 0 {
+		if len(ir.Values) == 0 || ir.Values[0].Type() != mms.TypeVisibleString {
 			return
 		}
 		rptID := ir.Values[0].Text()
@@ -327,6 +329,7 @@ func installReportDiagnostics(conn *Iec61850Connection) func() {
 		conn.mu.Unlock()
 		if !known {
 			jslog.Log(jslog.LevelDetailed, "%s Unmatched report RptID '%s'", conn.Name, rptID)
+			conn.secUnmatchedReport(rptID)
 		}
 	})
 }

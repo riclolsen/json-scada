@@ -73,6 +73,7 @@ A instance for this driver can have many server ports defined that must be descr
 - _**description**_ [String] - Description for the purpose of a connection. Just documental. **Optional parameter**.
 - _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 - _**commandsEnabled**_ [Boolean] - Allows to disable commands (messages in control direction) for a connection. Use false here to disable commands. **Mandatory parameter**.
+- _**peerIdentification**_ [Boolean] - Not used by this driver: the masters of a 101 link are not identified. **Optional parameter**.
 - _**portName**_ [String] - Comm port name, e.g. "COM1", "/dev/ttyS0", or `host:port` (numeric port) to carry the FT1.2 frames over TCP. **Mandatory parameter**.
 - _**baudRate**_ [Double] - Comm port baud rate. **Mandatory parameter**.
 - _**parity**_ [String] - Comm port parity Even|None|Odd|Mark|Space. **Mandatory parameter**.
@@ -174,6 +175,10 @@ When enabled, the driver scans _realtimeData_ once at startup and, for every tag
 - Tags of other _type_ values (string, json, ...) have no IEC 60870-5 representation and are skipped; their count is logged at the end of the distribution.
 
 Once created, the destinations can be edited normally (ASDU type, interrogation group, kconv, hours shift, SBO, ...). Set _autoCreateTags_ back to `false` when the mapping is stable.
+
+## Security events
+
+The driver reports unexpected or suspicious conditions to the _secEvents_ collection, listed by the Security Events viewer of the Admin UI: the driver reports reads of nonexistent objects and common addresses, scans, unknown or refused commands (with the reason), execute without select, stale time-tagged commands, file transfer requests and unnecessary commands; go-iecp5 reports the link layer (foreign or unexpected link addresses, FCB repeats, malformed frames), control actions and floods. See [Security events and peer identification](../../README.md#security-events-and-peer-identification) for the event kinds and the _stats.peerIdentity_ document.
 
 ## Command Line Arguments
 

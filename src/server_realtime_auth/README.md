@@ -253,6 +253,12 @@ Response as defined in https://reference.opcfoundation.org/Core/docs/Part4/7.20.
 
 When the StatusCode for the command is 0 (Good) the command was acknowledged ok.
 
+### Alarm List Service
+
+`POST /Invoke/auth/listAlarms` (signed-in user, token cookie) answers the alarm list of the Alarms Viewer as `{ "error": false, "alarms": [], "limited": false }` (`limited` true when the row limit was reached). Body: `mode` (`"realtime"` or `"historical"`), `timeBegin`, `timeEnd` (ISO dates, historical), `group1` (station list), `priorityMax`, `text`, `unackedOnly`, `limit`, with the same meaning and limits as the GraphQL _alarms_ query. Each alarm carries the _alarmsData_ fields, `_id` as a string. Realtime results require a matching point key and tag in _realtimeData_. Historical results include occurrences for deleted tags.
+
+To acknowledge one alarm, send the WriteRequest alarm acknowledgement (AckOneAlarm) of its point with `{ "_Properties": { "alarm_id": "<_id>" } }` as the written value properties; without `alarm_id` every unacknowledged alarm of the point is acknowledged. The point's _alarmed_ flag is cleared when it has no unacknowledged alarm left.
+
 ### Read History Service Request
 
 At most 1000 NodesToRead; each tag is read once, and at most 200000 values are returned in all (a repeated node counts again).
@@ -278,6 +284,7 @@ The schema is self-documenting: use introspection or point any GraphQL client (A
 - _**tag(tag) / tagById(id)**_ - Single point lookup by tag name or numeric point key.
 - _**groups1(limit, skip) / groups2(group1, limit, skip)**_ - Distinct station/bay names with point counts.
 - _**activeAlarms(group1, group2, limit)**_ - Currently alarmed or out-of-normal points (like the persistentAlarms filter of the /Invoke API).
+- _**alarms(mode, timeBegin, timeEnd, group1List, priorityMax, text, unackedOnly, limit)**_ - The alarm list (_alarmsData_, one entry per alarm occurrence). Mode REALTIME (default): the alarms not acknowledged or still active, newest first (default 5000). Mode HISTORICAL: every alarm raised from _timeBegin_ to _timeEnd_ (default the last 24 h), oldest first (default 10000, at most 100000). _text_ is a case-insensitive substring of tag, description, alarm text or station (at most 200 characters). Restricted to the user's stations.
 - _**soeEvents(filter, limit, ascending)**_ - Sequence of Events query with time range, station list, priority and tag filters; optional per-tag aggregation with counts; optional filtering/sorting by source timestamp.
 - _**historicalData(tags, timeBegin, timeEnd, limit)**_ - Historical values from the PostgreSQL/TimescaleDB historian, restricted to points the user can access; _limit_ is the maximum number of values per tag (at most 50000, 500000 in one answer).
 - _**commandStatus(commandHandle)**_ - Track command acknowledgment (PENDING/ACK_OK/ACK_FAIL/CANCELLED). A user sees its own commands; other commands only for points in a station (group1) it can see, special "$$" commands of others only when not restricted to some stations, admins all (others answer null, as for an unknown handle; the same applies to the /Invoke/ command acknowledgement read).
@@ -288,7 +295,7 @@ The schema is self-documenting: use introspection or point any GraphQL client (A
 
 - _**issueCommand(tagOrId, value, valueString)**_ - Issue a command (control). Requires the _sendCommands_ right and permission for the point's group1 (station). Returns a _commandHandle_ to track acknowledgment via the _commandStatus_ query. Command tags beginning with "$$" are queued directly without a point lookup. Commands are logged to the SOE list and to the user actions audit trail.
 - _**ackEvents(action, tag, eventId)**_ - Acknowledge or remove SOE events (ACK_ONE_EVENT, ACK_POINT_EVENTS, ACK_ALL_EVENTS, REMOVE_ONE_EVENT, REMOVE_POINT_EVENTS, REMOVE_ALL_EVENTS). Requires the _ackEvents_ right.
-- _**ackAlarms(action, tagOrId)**_ - Acknowledge alarms or silence beep (ACK_ONE_ALARM, ACK_ALL_ALARMS, SILENCE_BEEP). Requires the _ackAlarms_ right.
+- _**ackAlarms(action, tagOrId)**_ - Acknowledge alarms or silence beep (ACK_ONE_ALARM: every unacknowledged alarm of the point, ACK_ALL_ALARMS, SILENCE_BEEP). Acknowledges the _alarmsData_ entries and clears the point's _alarmed_ summary flag. Requires the _ackAlarms_ right.
 - _**updateTagProperties(tagOrId, properties)**_ - Update point annotation, notes, limits, alarm disabling, or substitute (manually enter) the value. Each property requires its respective user right (_enterAnnotations_, _enterNotes_, _enterLimits_, _disableAlarms_, _substituteValues_). Annotations are at most 2000 characters, notes 10000, the hysteresis is not below zero (the same rules apply to /Invoke/ property writes, where a refused write answers _BadTypeMismatch_ and changes nothing). Changes are audited and generate SOE events where applicable.
 
 ### Examples
@@ -395,6 +402,8 @@ When enabled, the user roles (Role Based Access Control - RBAC) and rights are c
 - _**ackEvents**_ [Boolean] - right to acknowledge and eliminate events.
 - _**ackAlarms**_ [Boolean] - right to acknowledge and eliminate alarms.
 - _**disableAlarms**_ [Boolean] - right to disable/enable alarms for points.
+- _**viewSecEvents**_ [Boolean] - right to open the Security Events viewer (`POST /Invoke/auth/listSecEvents`, the `secEvents` collection). Not implied by _isAdmin_.
+- _**editDisplays**_ [Boolean] - right to list, open and save the SVG displays with the SVG Editor (`/Invoke/auth/listDisplays`, `openDisplay`, `saveDisplay`), only the displays of _displayList_ when it is not empty. Admins always have it.
 - _**group1List**_ [Array of String] - right to access only a limited set of data (from a group1 list). An empty list means no restrictions on groups.
 - _**displayList**_ [Array of String] - right to access only a limited set of displays. An empty list means no restrictions on displays.
 - _**maxSessionDays**_ [Double] - time in days for the maximum session period (after this, the JWT access token expires).
@@ -409,7 +418,7 @@ To each user can be attributed a set of roles. Each right in each user role are 
 - _**JS_CONFIG_FILE**_ [String] - JSON SCADA config file name. **Default="../../conf/json-scada.json"**.
 - _**JS_TRUSTED_PROXIES**_ [String] - Comma separated addresses of reverse proxies whose _X-Real-IP_ / _X-Forwarded-For_ headers are believed (client address for the sign-in throttling, the audit trail and the command originator). **Default="127.0.0.1,::1,::ffff:127.0.0.1"** (a proxy on this host). Exact addresses only (no ranges). A proxy on another host (or another container) must be listed, written as the server sees it (e.g. `::ffff:10.0.0.5` for an IPv4 peer on a dual-stack socket); otherwise every user appears to come from the proxy address and 5 failed sign-ins of anyone lock that user name for every client of the proxy. Never list an address that clients can connect from directly.
 - _**JS_ALLOW_FRAMING**_ [Boolean] - Use "true" to let other sites show the pages of this server in frames. **Default="false"**: pages are sent with _X-Frame-Options: SAMEORIGIN_ (the proxied apps such as Grafana keep their own policy). All responses carry _X-Content-Type-Options: nosniff_ and _Referrer-Policy: same-origin_.
-- _**JS_JWT_SECRET**_ [String] - Signing key for the JWT session tokens. Must be unique per installation and kept private: whoever knows it can forge a valid admin token. **When not set, a random secret is generated at each start (a warning is logged): sessions then end when the server restarts. The value in ./app/config/auth.config.js is public (it is in the repository) and is never used for signing.** The docker demo generates one in demo-docker/.env (see demo-docker/generate-env.sh), the Windows services get one from platform-windows/create_services.bat and the supervisor setup from platform-ubuntu-2404/start_server_realtime_auth.sh.
+- _**JS_JWT_SECRET**_ [String] - Signing key for the JWT session tokens. Must be unique per installation and kept private: whoever knows it can forge a valid admin token. **When not set, a random secret is generated at each start (a warning is logged): sessions then end when the server restarts. The value in ./app/config/auth.config.js is public (it is in the repository) and is never used for signing.** The docker demo generates one in demo-docker/.env (see demo-docker/generate-env.sh), the Windows services get one from platform-windows/create_services.bat and the supervisor setup from platform-ubuntu/start_server_realtime_auth.sh.
 - _**JS_SERVER_REALTIME_AUTH_READ_FROM_SECONDARY**_ [String] - Use "TRUE" to change the preferred read to a secondary MongoDB server. By default all read operations are directed to the primary server.
 
 #### Access control notes

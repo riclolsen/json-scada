@@ -464,43 +464,57 @@ const deadBandCache = new Map() // last-sent analog values for dead-band
       Log.log('Outbound - watching realtimeData value changes')
     }
 
-    if (ParsedFilters.soeRules.length > 0 && Options.notifySoe !== false) {
-      const soePipeline = [
-        { $match: { operationType: 'insert' } },
-      ]
-      soeChangeStream = soeColl.watch(soePipeline, {
-        fullDocument: 'updateLookup',
-      })
-      soeChangeStream.on('error', () => {
-        Log.log('MongoDB - ChangeStream error (soeData)')
-      })
-      soeChangeStream.on('change', (change) => {
-        if (!Redundancy.ProcessStateIsActive()) return
-        const ev = change.fullDocument
-        if (!ev) return
-        if (!Filters.MatchSoe(ev, ParsedFilters.soeRules)) return
-        if (!Pusher || !Pusher.hasTargets()) return
-        Pusher.push(
-          makeEnvelope('soeEvent', {
-            events: [
-              {
-                tag: ev.tag,
-                pointKey: ev.pointKey ? parseInt(ev.pointKey) : null,
-                eventText: ev.eventText,
-                priority: ev.priority,
-                group1: ev.group1 || '',
-                description: ev.description || '',
-                invalid: ev.invalid === true,
-                ack: ev.ack,
-                timeTag: ev.timeTag || null,
-                timeTagAtSource: ev.timeTagAtSource || null,
-              },
-            ],
-          })
-        )
-      })
-      Log.log('Outbound - watching soeData events')
-    }
+    if (ParsedFilters.soeRules.length > 0 && Options.notifySoe !== false)
+      watchSoe(soeColl)
+  }
+
+  // soeData events; the stream is reopened when it ends while connected
+  // (e.g. cs_data_processor renames an old capped soeData once to make it a
+  // normal collection, which invalidates the stream)
+  function watchSoe(soeColl) {
+    const soePipeline = [{ $match: { operationType: 'insert' } }]
+    const cs = soeColl.watch(soePipeline, { fullDocument: 'updateLookup' })
+    soeChangeStream = cs
+    cs.on('error', () => {
+      Log.log('MongoDB - ChangeStream error (soeData)')
+    })
+    cs.on('close', () => {
+      setTimeout(() => {
+        if (soeChangeStream !== cs || !clientMongo) return // disconnected meanwhile
+        Log.log('MongoDB - reopening the soeData change stream')
+        try {
+          watchSoe(soeColl)
+        } catch (e) {
+          Log.log('MongoDB - ChangeStream error (soeData): ' + e.message)
+        }
+      }, 5000)
+    })
+    cs.on('change', (change) => {
+      if (!Redundancy.ProcessStateIsActive()) return
+      const ev = change.fullDocument
+      if (!ev) return
+      if (!Filters.MatchSoe(ev, ParsedFilters.soeRules)) return
+      if (!Pusher || !Pusher.hasTargets()) return
+      Pusher.push(
+        makeEnvelope('soeEvent', {
+          events: [
+            {
+              tag: ev.tag,
+              pointKey: ev.pointKey ? parseInt(ev.pointKey) : null,
+              eventText: ev.eventText,
+              priority: ev.priority,
+              group1: ev.group1 || '',
+              description: ev.description || '',
+              invalid: ev.invalid === true,
+              ack: ev.ack,
+              timeTag: ev.timeTag || null,
+              timeTagAtSource: ev.timeTagAtSource || null,
+            },
+          ],
+        })
+      )
+    })
+    Log.log('Outbound - watching soeData events')
   }
 
   async function pushIntegritySnapshot(rtColl) {

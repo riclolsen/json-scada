@@ -74,6 +74,7 @@ type Processor struct {
 	histCh   chan histEntry
 	sqlRtCh  chan string
 	soeCh    chan bson.D
+	alarmCh  chan alarmOp
 
 	digitalUpdatesCount int64
 	digitalMu           sync.Mutex
@@ -91,6 +92,7 @@ func NewProcessor(cfg Config) *Processor {
 		histCh:   make(chan histEntry, cfg.WriteQueueSize),
 		sqlRtCh:  make(chan string, cfg.WriteQueueSize),
 		soeCh:    make(chan bson.D, cfg.WriteQueueSize),
+		alarmCh:  make(chan alarmOp, cfg.WriteQueueSize),
 		seed:     maphash.MakeSeed(),
 	}
 }
@@ -256,6 +258,9 @@ func (p *Processor) handleChange(ev changeEvent) {
 
 	isSOE := false
 	alarmRange := 0.0
+	rangeEscalated := false     // to a more severe limit level
+	analogRangeChanged := false // ends the active alarms of the point
+	limitAlarmText := ""        // text of a new limit alarm
 
 	// consider SOE when a digital change carries a source timestamp, or an
 	// analog marked as isEvent does
@@ -427,26 +432,14 @@ func (p *Processor) handleChange(ev changeEvent) {
 			hysteresis = fd.numOr("hysteresis", 0)
 		}
 
-		// check for limits
-		if fd.has("hiLimit") && !fd.isNull("hiLimit") &&
-			fd.has("loLimit") && !fd.isNull("loLimit") && !alarmDisabled {
-			hiLimit := fd.numOr("hiLimit", math.NaN())
-			loLimit := fd.numOr("loLimit", math.NaN())
+		// check for limits (all the configured levels, see limits.go)
+		if hasLimits(fd) && !alarmDisabled {
 			prevRange, prevRangeOk := fd.num("alarmRange")
-
-			switch {
-			case value > hiLimit+hysteresis:
-				alarmRange = 1
-			case value < loLimit-hysteresis:
-				alarmRange = -1
-			case value < hiLimit-hysteresis && value > loLimit+hysteresis:
+			r := alarmRangeOf(fd, value, hysteresis)
+			alarmRange = float64(r.rng)
+			rangeEscalated = r.escalated
+			if r.normal {
 				alarmed = false
-				alarmRange = 0
-			default:
-				// keep the old range when in the hysteresis band
-				if fd.truthy("alarmRange") {
-					alarmRange = prevRange
-				}
 			}
 
 			// SOE entry when the analog alarm condition changes.
@@ -472,7 +465,13 @@ func (p *Processor) handleChange(ev changeEvent) {
 					flag = " \U0001F197"
 					ack = 1 // enter as acknowledged when normalized
 				}
-				eventText := jsFixedString(value, 3) + " " + unit + arrow + flag
+				label := ""
+				if alarmRange != 0 {
+					label = " " + rangeLabel(int(alarmRange))
+				}
+				eventText := jsFixedString(value, 3) + " " + unit + arrow + flag + label
+				analogRangeChanged = true
+				limitAlarmText = eventText
 				p.emitSoe(bson.D{
 					{Key: "tag", Value: tag},
 					{Key: "pointKey", Value: rawOrNil(fd.idValue())},
@@ -487,6 +486,11 @@ func (p *Processor) handleChange(ev changeEvent) {
 					{Key: "ack", Value: ack},
 				})
 			}
+		}
+
+		// alarms disabled: the limit alarms of the point end
+		if alarmDisabled && fd.truthy("alarmRange") {
+			analogRangeChanged = true
 		}
 
 		// analogs produce SOE events when marked isEvent and the valid value
@@ -535,7 +539,8 @@ func (p *Processor) handleChange(ev changeEvent) {
 	if !alarmDisabled && alarmed {
 		if !fd.truthy("alarmed") ||
 			(docType == "digital" && (!fdValueOk || value != fdValue)) ||
-			(docType == "digital" && isSOE) {
+			(docType == "digital" && isSOE) ||
+			rangeEscalated {
 			alarmTime = time.Now()
 			hasAlarmTime = true
 		}
@@ -562,7 +567,8 @@ func (p *Processor) handleChange(ev changeEvent) {
 		if !alarmDisabled {
 			if (alarmed && isSOE && isEventStrictTrue && docType == "digital" && value != 0) ||
 				(alarmed && isEventStrictFalse && docType == "digital") ||
-				(alarmed && fdAlarmedIsFalse) {
+				(alarmed && fdAlarmedIsFalse) ||
+				(alarmed && rangeEscalated) {
 				// a new alarm, update the beep point
 				Log(LogLevelNormal, "NEW BEEP, tag: %s", tag)
 				priority, priorityOk := fd.num("priority")
@@ -608,6 +614,38 @@ func (p *Processor) handleChange(ev changeEvent) {
 					sourceTime: sourceTimeTag, hasSource: hasSourceTimeTag,
 				})
 			}
+		}
+
+		// alarm list (alarmsData): end the earlier alarms of the point when
+		// its condition changed, register the new alarm
+		{
+			op := alarmOp{pointKey: rawOrNil(fd.idValue()), now: dt}
+			fields := alarmFields{
+				value:             value,
+				valueString:       valueString,
+				timeTag:           dt,
+				timeTagAtSource:   rawOrNil(sdu.lookup("timeTagAtSource")),
+				timeTagAtSourceOk: rawOrNil(sdu.lookup("timeTagAtSourceOk")),
+			}
+			switch {
+			case docType == "analog":
+				op.deactivate = analogRangeChanged
+				if analogRangeChanged && alarmRange != 0 && !alarmDisabled {
+					fields.alarmText = limitAlarmText
+					fields.alarmRange = alarmRange
+					fields.active = true
+					op.doc = alarmDocument(fd, fields)
+				}
+			case docType == "digital" && !(isEventTruthy && value == 0):
+				op.deactivate = !fdValueOk || value != fdValue || hasAlarmTime
+				if hasAlarmTime && !alarmDisabled {
+					fields.alarmText = digitalAlarmText(fd, value, valueString)
+					st, stOk := fd.num("alarmState")
+					fields.active = digitalAlarmActive(st, stOk, value)
+					op.doc = alarmDocument(fd, fields)
+				}
+			}
+			p.emitAlarm(op)
 		}
 
 		// historianPeriod < 0, or an update flagged as not for the historian,

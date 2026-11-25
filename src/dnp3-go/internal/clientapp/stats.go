@@ -70,6 +70,9 @@ func (e *Engine) writeStats(ctx context.Context, db *mongo.Database) {
 			"numHeaderCrcError": int64(busStats.HeaderCRCErrors),
 			"numBodyCrcError":   int64(busStats.BodyCRCErrors),
 		}
+		if id := conn.Sec.PeerIdentity(); id != nil {
+			stats["peerIdentity"] = id
+		}
 
 		entries = append(entries, jsstats.Entry{
 			ConnectionNumber: conn.ProtocolConnectionNumber,

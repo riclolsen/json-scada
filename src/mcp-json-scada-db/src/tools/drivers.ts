@@ -71,7 +71,7 @@ const instanceSettings = z.object({
       managed: z
         .boolean()
         .optional()
-        .describe('Create/control an OS service (NSSM/supervisord) for it'),
+        .describe('Create/control an OS service (WinSW/supervisord) for it'),
       startMode: z.enum(['auto', 'manual']).optional(),
       autoRestartOnConfigChange: z.boolean().optional(),
     })

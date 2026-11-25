@@ -37,10 +37,11 @@ the tag's `value`, alarms, history and everything else to the JSON-SCADA data pr
 10. [Time synchronisation](#time-synchronisation)
 11. [Redundancy](#redundancy)
 12. [Statistics](#statistics)
-13. [Large outstations](#large-outstations)
-14. [Logging and troubleshooting](#logging-and-troubleshooting)
-15. [Behaviours worth knowing](#behaviours-worth-knowing)
-16. [Testing](#testing)
+13. [Security events and peer identification](#security-events-and-peer-identification)
+14. [Large outstations](#large-outstations)
+15. [Logging and troubleshooting](#logging-and-troubleshooting)
+16. [Behaviours worth knowing](#behaviours-worth-knowing)
+17. [Testing](#testing)
 
 ## Building
 
@@ -189,6 +190,7 @@ One document in `protocolConnections` per outstation:
 | `commandsEnabled` | `true` | When `false`, commands for this connection are cancelled, and no command tags are created automatically. |
 | `autoCreateTags` | `false` | Create a tag for every point the outstation reports that has none. See [Automatic tag creation](#automatic-tag-creation). |
 | `enableUnsolicited` | `true` | Enable unsolicited reporting (classes 1, 2, 3) on the outstation at startup. When `false`, the driver disables it, and events arrive only by polling. |
+| `peerIdentification` | `true` | On every connection, read the outstation's device attributes (group 0) into `stats.peerIdentity` and report changes of its identity, MAC address and certificate. When `false`, no attributes are read, no MAC address is looked up and no identity is stored. See [Security events and peer identification](#security-events-and-peer-identification). |
 
 #### Link layer
 
@@ -615,12 +617,84 @@ Every 5 seconds the active node writes a `stats` sub-document into each connecti
 | `numLinkFrameRx` | Link frames received without error. |
 | `numLinkFrameTx` | **Requests issued** by the master (tasks run). Nothing counts frames on the way out, so this counts requests. |
 | `numHeaderCrcError`, `numBodyCrcError` | Link frames rejected for a bad header or body checksum. |
+| `peerIdentity` | With `peerIdentification`: what the outstation said about itself on the last connection. See [Security events and peer identification](#security-events-and-peer-identification). |
 
 The frame and CRC counters come from the decoder shared by the connections on one channel, so
 connections on the same multi-drop endpoint report the same numbers.
 
 The reason a connection would not open is logged with the failure, for example
 `Connection attempt failed: channel: opening COM3: Serial port not found`.
+
+## Security events and peer identification
+
+The driver writes cyber-security events to the `secEvents` collection (see
+[docs/schema.md](../../../../docs/schema.md#secevents-collection); the Admin UI Security Events
+viewer lists them). Each connection has a report-only go-dnp3 security policy: nothing is refused
+because of it.
+
+### Peer identification
+
+With `peerIdentification` (the default), every time a connection comes up the driver reads the
+outstation's device attributes (group 0, variation 254: all of set 0) and writes what it learned
+to `stats.peerIdentity`:
+
+| Field | Meaning |
+| --- | --- |
+| `vendor`, `model` | Manufacturer name (attribute 252), product name and model (250). |
+| `hardwareVersion`, `softwareVersion` | Hardware (243) and software or firmware (242) version. |
+| `serialNumber`, `dnp3Subset` | Serial number (248), DNP3 subset and conformance (249). |
+| `deviceName`, `deviceId`, `location` | The user-assigned device name (247), ID code (246) and location (245). |
+| `configId`, `configVersion`, `configSignature` | Configuration ID (196), version (197) and signature (200). |
+| `attributes` | Every standard attribute read: `variation`, `name`, `value` (at most 64). |
+| `method` | `attributes`; `unsupported` when the outstation has no attributes; `error` when the read failed (`error` says why). |
+| `address`, `ip`, `mac`, `macSource`, `tls` | The peer as the connection saw it: address, IP, MAC address from the operating system's neighbour table (`macSource` `neighbor`; a `gateway` MAC is the router's, not the outstation's), and the TLS session and certificate. |
+| `linkAddress` | The outstation's link address. |
+| `connectedAt`, `collectedAt` | When the connection opened and when the attributes were read. |
+| `keys` | The compared values (`k`, `v`). |
+
+The address, MAC address and certificate are written as soon as the connection is up, the
+attributes once the outstation answers. They are asked on every connection, also of an outstation
+that answered it has none: the device behind the address may have been replaced. Its refusal is
+not stored as a security event. Fields an outstation does not report are absent.
+
+### Events
+
+Detected by go-dnp3 (`source: "library"`), among others:
+
+- connections that fail (`conn.dial_failed`, at most one event per 10 minutes while the outstation
+  stays unreachable, with the count), link status probes with no answer;
+- TLS: the outstation's certificate refused (`tls.cert_rejected`), ours refused by the outstation,
+  plaintext or another protocol on a TLS port, weak parameters, certificates close to expiry;
+- MAC address changes for the outstation's IP (`peer.mac_changed`), certificate changes
+  (`tls.cert_changed`), a different link address from the same IP (`peer.link_addr_changed`);
+- link frames with bad CRCs or lengths, frames for no station on the channel
+  (`link.foreign_dest`), wrong direction or unexpected sources, transport discards;
+- malformed, misdirected and inconsistent responses (`proto.*`), stale and repeated response
+  sequence numbers, duplicated unsolicited responses, responses nobody asked for, unsolicited
+  data after reporting was disabled (`seq.*`, `unsol.*`), unsolicited floods;
+- the outstation restarting outside startup, reporting a corrupt configuration, device trouble,
+  local control or lost events (`remote.*`), and refusing a request (`remote.rejected`).
+
+Routine informational events (connections opening and closing, accepted commands, clock writes)
+are not stored. The MAC, link address and certificate history is kept per connection, seeded
+from `stats.peerIdentity`, so a change across a restart is reported too.
+
+Detected by the driver (`source: "driver"`):
+
+- `peer.identified` at the first identification (none when an identity was already stored), `peer.identity_changed` when an attribute in the
+  table above changes (`objectRef` names it, `previous` and `value` give both values), compared
+  with the stored identity, so across restarts too;
+- `cmd.rejected`: a command the outstation refused (`value` is its status; `NOT_SUPPORTED` may
+  mean no such output or operation, or controls disabled there), or one not sent
+  (`commandsEnabled` false, an object address outside 0–65535); `cmd.wrong_type`: a
+  setpoint its variation cannot carry, or a group that is neither 12 nor 41; `cmd.stale_time`: a
+  command older than its expiry, not sent;
+- `flood.commands`: more than 10 commands to the outstation within 10 s;
+- `cmd.unnecessary`: a CROB to the state its supervised point already was in when it was sent.
+
+The command events carry the tag, the object (`g12v1 #5`) and the command value. go-dnp3's own
+`remote.rejected` for a control's status is not stored besides the driver's; a request the
+outstation refuses as a whole (an IIN error) is go-dnp3's `remote.rejected` alone.
 
 ## Large outstations
 

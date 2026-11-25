@@ -5,6 +5,7 @@
       :logged-in-user="loggedInUser || ''"
       :isLDAPUser="isLDAPUser"
       :is-admin="isAdmin"
+      :rights="userRights"
       :theme="theme"
       :locale="currentLocale"
       :available-locales="availableLocales"
@@ -60,7 +61,7 @@ import AppSidebar from './components/AppSidebar.vue'
 
 const THEME_STORAGE_KEY = 'user-theme'
 
-const version = ref('v0.71-alpha')
+const version = ref('v0.72-alpha')
 const router = useRouter()
 const route = useRoute()
 const vuetifyTheme = useTheme()
@@ -132,16 +133,22 @@ const confirmNewPassword = ref('')
 const currentPassword = ref('')
 const errorMessage = ref('')
 
-// admin-only menu entries follow the signed-in user's rights (cookie)
-const isAdmin = computed(() => {
-  if (!loggedInUser.value) return false
+// admin-only and right-gated menu entries follow the signed-in user's
+// rights: the cookie written at sign-in, overridden by the current boolean
+// rights answered by the periodic session check (role changes made later)
+const liveRights = ref(null)
+const userRights = computed(() => {
+  if (!loggedInUser.value) return {}
+  let rights
   try {
     const ck = parseCookie(document.cookie)
-    return !!JSON.parse(ck['json-scada-user'] || '{}')?.rights?.isAdmin
+    rights = JSON.parse(ck['json-scada-user'] || '{}')?.rights || {}
   } catch (e) {
-    return false
+    rights = {}
   }
+  return liveRights.value ? { ...rights, ...liveRights.value } : rights
 })
+const isAdmin = computed(() => !!userRights.value.isAdmin)
 
 const availableLocales = [
   { title: 'English', value: 'en' },
@@ -172,6 +179,7 @@ const toggleTheme = () => {
 }
 
 const setLoggedInUser = (username) => {
+  liveRights.value = null // the new sign-in cookie is current
   loggedInUser.value = username
   let ck = parseCookie(document.cookie)
   if ('json-scada-user' in ck) {
@@ -181,6 +189,7 @@ const setLoggedInUser = (username) => {
 }
 
 const logout = () => {
+  liveRights.value = null
   loggedInUser.value = null
   fetch('/Invoke/auth/signout', {
     method: 'POST',
@@ -289,6 +298,9 @@ function checkLogin() {
       if ('ok' in data && data.ok) {
         if (loggedInUser.value !== ck.username)
           loggedInUser.value = ck.username
+        // current rights (older servers answer none: the cookie's are kept)
+        if (data.rights && typeof data.rights === 'object')
+          liveRights.value = data.rights
         // console.log('User is logged in')
       } else if (data.unavailable) {
         // server database briefly unavailable: keep the session, check again later

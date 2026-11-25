@@ -187,6 +187,20 @@ func (m *PointMap) endReloadLocked() {
 
 func writeKey(unit int, a mbcore.Area, off int) string { return fmt.Sprintf("%d:%s:%d", unit, a, off) }
 
+// KnowsUnit reports a unit listed in serverUnitIds or with mapped points,
+// whatever strictUnitId says.
+func (m *PointMap) KnowsUnit(unit int) bool {
+	for _, u := range m.cfg.ServerUnitIDs {
+		if u == unit {
+			return true
+		}
+	}
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	_, ok := m.units[unit]
+	return ok
+}
+
 // AcceptsUnit applies strictUnitId: a unit is served when it is listed in
 // serverUnitIds or has mapped points.
 func (m *PointMap) AcceptsUnit(unit int) bool {

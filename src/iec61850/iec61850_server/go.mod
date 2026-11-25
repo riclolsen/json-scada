@@ -3,7 +3,7 @@ module iec61850_server
 go 1.26.5
 
 require (
-	github.com/dscsystems/go-iec61850 v0.7.1
+	github.com/dscsystems/go-iec61850 v0.8.0
 	github.com/riclolsen/json-scada/src/go-common v0.0.0
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
 	go.mongodb.org/mongo-driver/v2 v2.8.0

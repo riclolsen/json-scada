@@ -51,6 +51,18 @@ func drainRt(p *Processor) []*rtUpdate {
 	}
 }
 
+func drainAlarms(p *Processor) []alarmOp {
+	var out []alarmOp
+	for {
+		select {
+		case op := <-p.alarmCh:
+			out = append(out, op)
+		default:
+			return out
+		}
+	}
+}
+
 func drainSoe(p *Processor) []bson.D {
 	var out []bson.D
 	for {
@@ -307,6 +319,111 @@ func TestAnalogConversionAndHighLimitAlarm(t *testing.T) {
 	}
 }
 
+// An unacknowledged HI alarm that goes to HIHI is a new alarm: it beeps
+// again, gets a new alarm time and a HIHI event.
+func TestAnalogLimitEscalation(t *testing.T) {
+	p := newTestProcessor(t)
+	fd := baseAnalog()
+	for i := range fd {
+		switch fd[i].Key {
+		case "alarmed":
+			fd[i].Value = true
+		case "alarmRange":
+			fd[i].Value = 1.0
+		case "priority":
+			fd[i].Value = 1.0
+		case "value":
+			fd[i].Value = 52.0
+		}
+	}
+	fd = append(fd, bson.E{Key: "hihiLimit", Value: 55.0}, bson.E{Key: "hihihiLimit", Value: nil})
+	sdu := bson.D{
+		{Key: "valueAtSource", Value: 30.0}, // 30*2 + 1 = 61 > 55 + 1
+		{Key: "timeTag", Value: time.Now()},
+	}
+	p.handleChange(mkChange("update", fd, sdu))
+
+	ups := drainRt(p)
+	var point, beep *rtUpdate
+	for _, u := range ups {
+		if v, _ := setField(u.set, "valueString"); v == "Beep Active" {
+			beep = u
+		} else if _, ok := setField(u.set, "alarmRange"); ok {
+			point = u
+		}
+	}
+	if point == nil {
+		t.Fatalf("no point update in %d updates", len(ups))
+	}
+	if v, _ := setField(point.set, "alarmRange"); v != 2.0 {
+		t.Errorf("alarmRange = %v, want 2", v)
+	}
+	if v, _ := setField(point.set, "alarmed"); v != true {
+		t.Errorf("alarmed = %v, want true", v)
+	}
+	if _, ok := setField(point.set, "timeTagAlarm"); !ok {
+		t.Error("timeTagAlarm not set on escalation")
+	}
+	if beep == nil {
+		t.Error("no beep on escalation")
+	}
+	soe := drainSoe(p)
+	if len(soe) != 1 {
+		t.Fatalf("expected the limit alarm SOE, got %d", len(soe))
+	}
+	if txt, _ := setField(soe[0], "eventText"); txt != "61 MW \u2909 \U0001F6A9 HIHI" {
+		t.Errorf("eventText = %q", txt)
+	}
+	alms := drainAlarms(p)
+	if len(alms) != 1 || !alms[0].deactivate || alms[0].doc == nil {
+		t.Fatalf("alarm list: %+v", alms)
+	}
+	if v, _ := setField(alms[0].doc, "alarmText"); v != "61 MW \u2909 \U0001F6A9 HIHI" {
+		t.Errorf("alarmText = %q", v)
+	}
+	if v, _ := setField(alms[0].doc, "alarmRange"); v != 2.0 {
+		t.Errorf("alarm alarmRange = %v", v)
+	}
+	if v, _ := setField(alms[0].doc, "active"); v != true {
+		t.Errorf("alarm active = %v", v)
+	}
+
+	// back between hiLimit and hihiLimit (out of the band): HI, no new beep
+	fd2 := baseAnalog()
+	for i := range fd2 {
+		switch fd2[i].Key {
+		case "alarmed":
+			fd2[i].Value = true
+		case "alarmRange":
+			fd2[i].Value = 2.0
+		case "priority":
+			fd2[i].Value = 1.0
+		case "value":
+			fd2[i].Value = 61.0
+		}
+	}
+	fd2 = append(fd2, bson.E{Key: "hihiLimit", Value: 55.0})
+	sdu2 := bson.D{
+		{Key: "valueAtSource", Value: 26.0}, // 26*2 + 1 = 53 < 55 - 1
+		{Key: "timeTag", Value: time.Now()},
+	}
+	p.handleChange(mkChange("update", fd2, sdu2))
+	for _, u := range drainRt(p) {
+		if v, _ := setField(u.set, "valueString"); v == "Beep Active" {
+			t.Error("beep on de-escalation")
+		} else if v, ok := setField(u.set, "alarmRange"); ok && v != 1.0 {
+			t.Errorf("alarmRange = %v, want 1", v)
+		}
+	}
+	soe = drainSoe(p)
+	if len(soe) != 1 {
+		t.Fatalf("expected the limit SOE, got %d", len(soe))
+	}
+	if txt, _ := setField(soe[0], "eventText"); txt != "53 MW \u2908 \U0001F6A9 HI" {
+		t.Errorf("eventText = %q", txt)
+	}
+}
+
 func TestAnalogQualifierAndDeadBand(t *testing.T) {
 	p := newTestProcessor(t)
 	fd := baseAnalog()
@@ -442,5 +559,66 @@ func TestInsertProducesRealtimeSQLOnly(t *testing.T) {
 	}
 	if !strings.Contains(sql[0], "to_json(") {
 		t.Errorf("insert SQL row should wrap the document in to_json: %s", sql[0])
+	}
+}
+
+// A digital change registers an alarm, active when in the alarm state,
+// and ends the earlier alarms of the point; no change, no alarm.
+func TestDigitalAlarmList(t *testing.T) {
+	p := newTestProcessor(t)
+	fd := bson.D{
+		{Key: "_id", Value: 301.0},
+		{Key: "tag", Value: "KAW2~CB1~ST"},
+		{Key: "type", Value: "digital"},
+		{Key: "value", Value: 0.0},
+		{Key: "valueString", Value: "OPEN"},
+		{Key: "alarmed", Value: false},
+		{Key: "alarmDisabled", Value: false},
+		{Key: "alarmState", Value: 1.0},
+		{Key: "isEvent", Value: false},
+		{Key: "invalid", Value: false},
+		{Key: "stateTextTrue", Value: "CLOSED"},
+		{Key: "stateTextFalse", Value: "OPEN"},
+		{Key: "eventTextTrue", Value: "CLOSE"},
+		{Key: "eventTextFalse", Value: "OPEN"},
+		{Key: "unit", Value: ""},
+		{Key: "group1", Value: "KAW2"},
+		{Key: "priority", Value: 2.0},
+		{Key: "updatesCnt", Value: 1.0},
+		{Key: "timeTag", Value: time.Now().Add(-time.Minute)},
+	}
+	p.handleChange(mkChange("update", fd, bson.D{
+		{Key: "valueAtSource", Value: 1.0},
+		{Key: "timeTag", Value: time.Now()},
+	}))
+	alms := drainAlarms(p)
+	if len(alms) != 1 || !alms[0].deactivate || alms[0].doc == nil {
+		t.Fatalf("alarm list: %+v", alms)
+	}
+	if v, _ := setField(alms[0].doc, "alarmText"); v != "CLOSE" {
+		t.Errorf("alarmText = %q", v)
+	}
+	if v, _ := setField(alms[0].doc, "active"); v != true {
+		t.Errorf("active = %v, want true (alarmState 1, value 1)", v)
+	}
+	if _, ok := setField(alms[0].doc, "alarmRange"); ok {
+		t.Error("alarmRange on a digital alarm")
+	}
+
+	// same value again: no alarm
+	for i := range fd {
+		switch fd[i].Key {
+		case "value":
+			fd[i].Value = 1.0
+		case "alarmed":
+			fd[i].Value = true
+		}
+	}
+	p.handleChange(mkChange("update", fd, bson.D{
+		{Key: "valueAtSource", Value: 1.0},
+		{Key: "timeTag", Value: time.Now()},
+	}))
+	if alms := drainAlarms(p); len(alms) != 0 {
+		t.Errorf("unchanged value: %+v", alms)
 	}
 }

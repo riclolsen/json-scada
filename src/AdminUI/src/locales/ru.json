@@ -42,7 +42,8 @@
     "customDevelopments": "Индивидуальные разработки",
     "open": "Открыть",
     "cimEms": "CIM-EMS",
-    "svgedit": "Редактор SVG"
+    "svgedit": "Редактор SVG",
+    "secEventsViewer": "События безопасности"
   },
   "tabularViewer": {
     "station": "Станция",
@@ -91,9 +92,15 @@
       "value": "Ценить",
       "state": "Состояние",
       "quality": "Качество",
-      "hiLimit": "Высокий лимит",
-      "loLimit": "Нижний предел",
+      "hiLimit": "Высокий лимит (HI)",
+      "loLimit": "Нижний предел (LO)",
+      "hihiLimit": "Высокий лимит 2 (HIHI)",
+      "hihihiLimit": "Высокий лимит 3 (HIHIHI)",
+      "loloLimit": "Нижний предел 2 (LOLO)",
+      "lololoLimit": "Нижний предел 3 (LOLOLO)",
       "hysteresis": "Гистерезис",
+      "alarmRange": "Диапазон тревоги",
+      "limitsOrder": "Пределы не по порядку (LOLOLO ≤ LOLO ≤ LO ≤ HI ≤ HIHI ≤ HIHIHI)",
       "annotation": "Блокирующая аннотация",
       "notes": "Примечания к документу",
       "alarmDisabled": "Сигнализация отключена",
@@ -170,6 +177,72 @@
       "date": "Дата",
       "time": "Начальное время",
       "filter": "Фильтр"
+    }
+  },
+  "alarmsViewer": {
+    "alarms": "тревог",
+    "unackedOnly": "Только неквитированные",
+    "modes": {
+      "normal": "Нормальный",
+      "aggregated": "Агрегированные",
+      "historical": "Архив"
+    },
+    "columns": {
+      "time": "Время",
+      "alarm": "Тревога",
+      "state": "Состояние",
+      "priority": "Приоритет",
+      "normalTime": "Время нормы",
+      "ackTime": "Время квит.",
+      "ackUser": "Квитировал"
+    },
+    "state": {
+      "active": "Активна",
+      "normal": "Норма"
+    },
+    "hist": {
+      "from": "С",
+      "to": "По",
+      "filter": "Фильтр",
+      "filterHint": "тег, описание, текст",
+      "find": "Найти",
+      "limited": "Показаны только первые {n} тревог: сузьте период или фильтр."
+    }
+  },
+  "secEvents": {
+    "title": "События безопасности",
+    "from": "С",
+    "to": "По",
+    "now": "сейчас",
+    "minSeverity": "Мин. важность",
+    "category": "Категория",
+    "filterHint": "тип, узел, объект, подробности",
+    "find": "Найти",
+    "autoRefresh": "Автообновление",
+    "exportCsv": "Экспорт CSV",
+    "showFrom": "Показать от {s}",
+    "events": "событий",
+    "limited": "Показаны только {n} последних событий: сузьте период или фильтр.",
+    "noData": "Нет событий безопасности",
+    "noRight": "Ваши роли не дают права «Просмотр событий безопасности».",
+    "unavailable": "База данных недоступна",
+    "severities": {
+      "info": "Инфо",
+      "notice": "Уведомление",
+      "warning": "Предупреждение",
+      "alert": "Тревога",
+      "critical": "Критично"
+    },
+    "columns": {
+      "time": "Время",
+      "severity": "Важность",
+      "kind": "Событие",
+      "connection": "Соединение",
+      "peer": "Узел",
+      "object": "Объект",
+      "action": "Действие",
+      "detail": "Подробности",
+      "source": "Источник"
     }
   },
   "login": {
@@ -315,7 +388,11 @@
         "total": "Роли",
         "admin": "Роли администратора",
         "unused": "Не назначены"
-      }
+      },
+      "viewSecEvents": "Просмотр событий безопасности",
+      "viewSecEventsHint": "Может открывать просмотр событий безопасности (аномалии соединений, сертификатов, идентификации и команд от драйверов протоколов).",
+      "editDisplays": "Редактирование отображений",
+      "editDisplaysHint": "Может просматривать список, открывать и сохранять SVG-отображения в редакторе SVG (администраторы — всегда). При заданном списке отображений — только их."
     },
     "protocolDriverInstances": {
       "title": "Экземпляры драйвера протокола",
@@ -742,6 +819,28 @@
       "serverUnitIds": "Unit id сервера",
       "serverUnitIdsTitle": "Обслуживаемые unit id (адреса подчинённых)",
       "serverUnitIdsHint": "Введите число и нажмите Enter. Диапазон от 0 до 255.",
+      "sunspecParameters": "Параметры SunSpec",
+      "unitIds": "Unit ID",
+      "unitIdsTitle": "Обнаруживаемые устройства SunSpec (Modbus unit id)",
+      "unitIdsHint": "Введите число и нажмите Enter. Диапазон 1–255. Пусто: устройство 1.",
+      "baseAddresses": "Базовые адреса",
+      "baseAddressesTitle": "Адреса регистров, проверяемые на маркер SunS",
+      "baseAddressesHint": "Введите число и нажмите Enter. Пусто: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",
+      "modelIds": "ID моделей",
+      "modelIdsTitle": "Модели SunSpec с автоматическими тегами",
+      "modelIdsHint": "Введите ID модели и нажмите Enter (напр. 1, 103, 160). Пусто: все обнаруженные модели.",
+      "registerType": "Тип регистров",
+      "registerTypeTitle": "Регистры с картой SunSpec",
+      "registerTypeHint": "holding (функция 3, почти все устройства) или input (функция 4, только чтение).",
+      "maxModels": "Макс. моделей",
+      "maxModelsTitle": "Максимум заголовков моделей, читаемых из цепочки",
+      "maxModelsHint": "Целое число, не менее 1. По умолчанию 256.",
+      "autoCreateCommandTags": "Автосоздание тегов команд: ",
+      "autoCreateCommandTagsTrue": "Да",
+      "autoCreateCommandTagsFalse": "Нет",
+      "autoCreateUnimplemented": "Создавать теги для нереализованных точек: ",
+      "autoCreateUnimplementedTrue": "Да",
+      "autoCreateUnimplementedFalse": "Нет",
       "strictUnitId": "Строгий unit id: ",
       "strictUnitIdTrue": "Истинный",
       "strictUnitIdFalse": "ЛОЖЬ",
@@ -802,7 +901,9 @@
         "total": "Соединения",
         "tags": "Теги",
         "invalidTags": "Недостоверные теги"
-      }
+      },
+      "peerIdentification": "Идентифицировать узел (события безопасности): ",
+      "peerIdentificationHint": "При каждом подключении записывает идентификацию узла (производитель, модель, прошивка, MAC-адрес, сертификат) в статистику соединения и сообщает о её изменениях как о событиях безопасности."
     },
     "userActions": {
       "title": "Действия пользователя",
@@ -850,6 +951,13 @@
       "editOrigin": "Источник",
       "editType": "Тип",
       "editHistorianDeadBand": "Зона нечувствительности историка (%)",
+      "editHihihiLimit": "Высокий лимит 3 (HIHIHI)",
+      "editHihiLimit": "Высокий лимит 2 (HIHI)",
+      "editHiLimit": "Высокий лимит (HI)",
+      "editLoLimit": "Нижний предел (LO)",
+      "editLoloLimit": "Нижний предел 2 (LOLO)",
+      "editLololoLimit": "Нижний предел 3 (LOLOLO)",
+      "editHysteresis": "Гистерезис",
       "editHistorianPeriod": "Период целостности историка (секунды)",
       "editAlarmState": "Состояние тревоги",
       "editAlarmStateOff": "ВЫКЛ",
@@ -1016,7 +1124,15 @@
       "pruneExecute": "Удалить",
       "pruneConfirmText": "Выбранная конфигурация удаляется безвозвратно. Если она может понадобиться, сначала экспортируйте резервную копию.",
       "pruneTypeToConfirm": "Введите {word} для подтверждения",
-      "pruneDone": "Конфигурация очищена"
+      "pruneDone": "Конфигурация очищена",
+      "retentionTitle": "Хранение данных",
+      "retentionHint": "Срок хранения событий (SOE), тревог и архивных данных в днях; избыток удаляется раз в сутки. Неквитированные и активные тревоги сохраняются.",
+      "retentionSoe": "События (SOE)",
+      "retentionAlarms": "Тревоги",
+      "retentionHist": "Архивные данные",
+      "retentionDays": "дн.",
+      "retentionRule": "Целое число дней от {min} до {max}",
+      "retentionSecEvents": "События безопасности"
     },
     "cimEms": {
       "readOnly": "Только просмотр: загрузка и активация моделей, утверждение привязок и скачивание требуют роли с правом инженера CIM-EMS.",
@@ -1221,8 +1337,12 @@
     "reset": "Сбросить вид и следовать в реальном времени",
     "downloadCsv": "Скачать CSV",
     "current": "Текущее значение",
-    "hiLimit": "Верхний предел",
-    "loLimit": "Нижний предел",
+    "hiLimit": "Верхний предел (HI)",
+    "loLimit": "Нижний предел (LO)",
+    "hihiLimit": "Верхний предел 2 (HIHI)",
+    "hihihiLimit": "Верхний предел 3 (HIHIHI)",
+    "loloLimit": "Нижний предел 2 (LOLO)",
+    "lololoLimit": "Нижний предел 3 (LOLOLO)",
     "noData": "Нет данных за этот период",
     "noPoint": "Точка не указана (используйте ?point=<ключ или тег>)",
     "notFound": "Точка не найдена"
@@ -1247,5 +1367,18 @@
       "analytics": "Аналитика",
       "engineering": "Инжиниринг"
     }
+  },
+  "customDev": {
+    "subtitle": "Веб-приложения, собранные в src/custom-developments: панели, фейсплейты и специальные виды.",
+    "search": "Поиск приложений",
+    "open": "Открыть",
+    "openNewWindow": "Открыть в новом окне",
+    "back": "Назад к списку",
+    "retry": "Повторить",
+    "empty": "Пользовательских разработок пока нет",
+    "emptyHint": "Соберите приложение в папке src/custom-developments (npm install && npm run build) и перезапустите server_realtime_auth.",
+    "noMatch": "Нет приложений, соответствующих поиску.",
+    "noDescription": "Нет описания",
+    "built": "Собрано {date}"
   }
 }

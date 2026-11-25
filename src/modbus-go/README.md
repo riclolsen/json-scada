@@ -1,7 +1,8 @@
 # Modbus Client and Server Drivers (Go)
 
 Go drivers for Modbus in {json:scada}, built on
-[go-modbus](https://github.com/otfabric/go-modbus) (MIT). They replace the former Node.js
+[go-modbus](https://github.com/riclolsen/go-modbus) (MIT; a fork of
+[otfabric/go-modbus](https://github.com/otfabric/go-modbus) with security events). They replace the former Node.js
 drivers in `src/modbus` (sources removed in 0.69) and keep their configuration: the same
 protocol driver names, the same `protocolConnections` and `realtimeData` fields and defaults,
 the same command-line arguments and environment variables, and the same service names.
@@ -10,10 +11,16 @@ the same command-line arguments and environment variables, and the same service 
 |---|---|---|---|---|
 | Client (master) | `MODBUS` | `bin/modbus-client` | `modbusclient` / `JSON_SCADA_modbusclient` | [cmd/modbusclient/README.md](cmd/modbusclient/README.md) |
 | Server (slave) | `MODBUS_SERVER` | `bin/modbus-server` | `modbusserver` / `JSON_SCADA_modbusserver` | [cmd/modbusserver/README.md](cmd/modbusserver/README.md) |
+| SunSpec client | `SUNSPEC` | `bin/sunspec-client` | `sunspecclient` / `JSON_SCADA_sunspecclient` | [cmd/sunspecclient/README.md](cmd/sunspecclient/README.md) |
 
 The driver READMEs are the operator references: configuration, tags, behaviour, statistics
 and troubleshooting. This page covers what both share, how they are built, and how they
 differ from the former Node.js drivers.
+
+The SunSpec client (new, no Node.js predecessor) uses
+[go-sunspec](https://github.com/riclolsen/go-sunspec) over the same go-modbus transports: it
+discovers each device's SunSpec model chain, creates the tags of the discovered points and
+shares the Modbus client's lifecycle, TLS bridge and security event writer.
 
 ## Transports
 
@@ -117,10 +124,11 @@ Go 1.26 or later. From this directory:
 ```bash
 go build -ldflags="-s -w" -o ../../bin/modbus-client ./cmd/modbusclient
 go build -ldflags="-s -w" -o ../../bin/modbus-server ./cmd/modbusserver
+go build -ldflags="-s -w" -o ../../bin/sunspec-client ./cmd/sunspecclient
 ```
 
 `build.bat` does the same on Windows. The platform build scripts and the Docker image build
-both binaries.
+the three binaries.
 
 The module uses `src/go-common` through a `replace` directive and is listed in `src/go.work`.
 
@@ -146,16 +154,24 @@ it, and the drivers add them around it:
   has them served by the library and sends the RTU response, or nothing for a broadcast.
 - **Commands ahead of polling.** Commands run one at a time, in arrival order. A command waits
   only for the request in progress, not for the poll cycle.
+- **Security events and peer identification.** Both drivers write security events to the
+  `secEvents` collection and record the peer's identity in `stats.peerIdentity`
+  (`peerIdentification`, on by default); see the driver READMEs. The server maps the library's
+  events (`ServerConfig.Security`) to the real master through the front-end's address map and
+  drops its connection events, which name the loopback; the front-end, the handler and the
+  PDU tap report the rest.
 
 The code:
 
 | Package | Contents |
 |---|---|
-| `cmd/modbusclient`, `cmd/modbusserver` | Entry points |
+| `cmd/modbusclient`, `cmd/modbusserver`, `cmd/sunspecclient` | Entry points |
 | `internal/mbcore` | Value codec and byte orders, addresses and ASDUs, CRC and RTU framing, request descriptions. No MongoDB. |
 | `internal/mbnet` | TLS settings, the client bridge, the server front-end and RTU gateway, serial ports |
 | `internal/drv` | Command line, config file, instance document, logging adapters, BSON conversions |
-| `internal/clientapp` | The `MODBUS` driver |
+| `internal/mbsec` | Security event kinds, their classification and the mapping of go-modbus's events onto `secEvents` documents |
+| `internal/clientapp` | The `MODBUS` driver, and the client lifecycle (`Run`) the `SUNSPEC` driver shares |
+| `internal/sunspecapp` | The `SUNSPEC` driver: discovery, point addresses, automatic tags, polling, point writes, security events |
 | `internal/serverapp` | The `MODBUS_SERVER` driver |
 | `internal/loopback` | Client against server tests |
 
@@ -225,10 +241,13 @@ No configuration changes are needed. To switch a node:
    - Windows (an existing installation; `platform-windows/create_services.bat` already defines
      the services this way):
 
-     ```bat
-     nssm set JSON_SCADA_modbusclient Application C:\json-scada\bin\modbus-client.exe
-     nssm set JSON_SCADA_modbusclient AppParameters 1 1 c:\json-scada\conf\json-scada.json
-     nssm set JSON_SCADA_modbusclient AppDirectory C:\json-scada\bin
+     edit `C:\json-scada\platform-windows\services\JSON_SCADA_modbusclient.xml` (WinSW, read at
+     each service start):
+
+     ```xml
+     <executable>C:\json-scada\bin\modbus-client.exe</executable>
+     <arguments>1 1 "C:\json-scada\conf\json-scada.json"</arguments>
+     <workingdirectory>C:\json-scada\bin</workingdirectory>
      ```
 
      and the same for `JSON_SCADA_modbusserver` with `modbus-server.exe`.
@@ -264,7 +283,10 @@ The tests need no MongoDB and no hardware:
   the Node.js tests), the write relay.
 - `internal/loopback`: the client polling the server and sending commands to it over TCP,
   RTU over TCP, TLS and RTU over TLS, with certificates generated for the test.
-- `TestReadmeDocumentsEveryConfigKey` (client and server) fails when a configuration key the
+- `internal/sunspecapp`: the SunSpec client against an in-process go-sunspec device on a
+  loopback port (discovery, automatic tags, polling, commands, security events), addresses and
+  value conversion.
+- `TestReadmeDocumentsEveryConfigKey` (Modbus client and server, SunSpec client) fails when a configuration key the
   code reads is missing from the driver README.
 
 Interoperability with other Modbus tools, for a manual check:

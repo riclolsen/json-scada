@@ -16,9 +16,19 @@
           </div>
 
           <template v-if="info.isAnalog">
-            <v-text-field v-model="info.hiLimit" :label="$t('tabularViewer.dlg.hiLimit')" type="number" density="compact" variant="outlined" hide-details class="mb-2" :disabled="!userHasRight('enterLimits')"></v-text-field>
-            <v-text-field v-model="info.loLimit" :label="$t('tabularViewer.dlg.loLimit')" type="number" density="compact" variant="outlined" hide-details class="mb-2" :disabled="!userHasRight('enterLimits')"></v-text-field>
-            <v-text-field v-model="info.hysteresis" :label="$t('tabularViewer.dlg.hysteresis')" type="number" density="compact" variant="outlined" hide-details class="mb-2" :disabled="!userHasRight('enterLimits')"></v-text-field>
+            <div v-if="rangeLabel" class="mb-2">
+              <b>{{ $t('tabularViewer.dlg.alarmRange') }}:</b> {{ rangeLabel }}
+            </div>
+            <!-- out-of-range alarm limits, from the most severe high to the most severe low -->
+            <v-row dense class="mb-0">
+              <v-col v-for="k in limitFields" :key="k" cols="6" class="py-1">
+                <v-text-field v-model="info.limits[k]" :label="$t('tabularViewer.dlg.' + k)" type="number" density="compact" variant="outlined" hide-details :disabled="!userHasRight('enterLimits')"></v-text-field>
+              </v-col>
+            </v-row>
+            <v-text-field v-model="info.hysteresis" :label="$t('tabularViewer.dlg.hysteresis')" type="number" density="compact" variant="outlined" hide-details class="mb-2 mt-1" :disabled="!userHasRight('enterLimits')"></v-text-field>
+            <div v-if="limitsError" class="text-error text-body-small mb-2">
+              {{ $t('tabularViewer.dlg.limitsOrder') }}
+            </div>
           </template>
 
           <v-textarea v-model="info.annotation" :label="$t('tabularViewer.dlg.annotation')" rows="2" density="compact" variant="outlined" hide-details class="mb-2" :disabled="!userHasRight('enterAnnotations')" @update:model-value="updateCommandBlocked"></v-textarea>
@@ -51,7 +61,7 @@
           <v-btn variant="text" @click="openTrend(info.point)">{{ $t('tabularViewer.dlg.trend') }}</v-btn>
           <v-btn variant="text" @click="openCurves(info.point)">{{ $t('tabularViewer.dlg.curves') }}</v-btn>
           <v-spacer></v-spacer>
-          <v-btn color="success" variant="tonal" @click="saveProperties">{{ $t('common.save') }}</v-btn>
+          <v-btn color="success" variant="tonal" :disabled="limitsError" @click="saveProperties">{{ $t('common.save') }}</v-btn>
           <v-btn variant="text" @click="open = false">{{ $t('common.cancel') }}</v-btn>
         </v-card-actions>
       </v-card>
@@ -170,14 +180,34 @@ const info = reactive({
   isAnalog: false,
   canSubstitute: false,
   commandBlocked: false,
-  hiLimit: '',
-  loLimit: '',
+  limits: Object.fromEntries(
+    [...opc.HiLimitFields, ...opc.LoLimitFields].map((k) => [k, ''])
+  ),
   hysteresis: '',
   annotation: '',
   notes: '',
   alarmDisabled: false,
   newValue: undefined,
 })
+// shown in pairs: high levels left, low levels right, most severe first
+const limitFields = [
+  'hihihiLimit', 'lololoLimit',
+  'hihiLimit', 'loloLimit',
+  'hiLimit', 'loLimit',
+]
+// limits from the most severe low to the most severe high: the given ones
+// must not decrease
+const limitOrder = [...opc.LoLimitFields].reverse().concat(opc.HiLimitFields)
+const limitsError = computed(() => {
+  const given = limitOrder
+    .map((k) => parseFloat(info.limits[k]))
+    .filter((v) => !isNaN(v))
+  return given.some((v, i) => i > 0 && v < given[i - 1])
+})
+const rangeLabel = computed(() =>
+  info.point ? opc.alarmRangeLabel(info.point.alarmRange) : ''
+)
+
 const command = reactive({
   open: false,
   point: null,
@@ -209,8 +239,8 @@ async function loadPoint(pointKey) {
   info.point = p
   info.isAnalog = (p.flags & Flags.ANALOG) !== 0
   info.qualityText = decodeQuality(p.flags, qmsg())
-  info.hiLimit = isFinite(p.hiLimit) ? p.hiLimit : ''
-  info.loLimit = isFinite(p.loLimit) ? p.loLimit : ''
+  for (const k of Object.keys(info.limits))
+    info.limits[k] = isFinite(p[k]) ? p[k] : ''
   info.hysteresis = p.hysteresis ?? ''
   info.annotation = p.annotation || ''
   info.notes = p.notes || ''
@@ -225,6 +255,7 @@ async function loadPoint(pointKey) {
     const upd = await opc.readPoints([info.point.key], true, cfg())
     if (upd.length) {
       info.point.valueStr = upd[0].valueStr
+      info.point.alarmRange = upd[0].alarmRange
       info.qualityText = decodeQuality(upd[0].flags, qmsg())
     }
   }, 2000)
@@ -236,17 +267,19 @@ function updateCommandBlocked() {
 
 async function saveProperties() {
   const p = info.point
-  const li = parseFloat(info.loLimit)
-  const ls = parseFloat(info.hiLimit)
   const hs = parseFloat(info.hysteresis)
   const propsToWrite = {
     alarmDisabled: !!info.alarmDisabled,
     annotation: info.annotation,
-    loLimit: isNaN(li) ? -Number.MAX_VALUE : li,
-    hiLimit: isNaN(ls) ? Number.MAX_VALUE : ls,
     hysteresis: isNaN(hs) ? 0 : hs,
     notes: info.notes,
   }
+  // only an analog has limits; an empty limit is written as null (no limit)
+  if (info.isAnalog)
+    for (const k of Object.keys(info.limits)) {
+      const v = parseFloat(info.limits[k])
+      propsToWrite[k] = isNaN(v) ? null : v
+    }
   if (info.newValue !== undefined && info.newValue !== '') {
     const nv = parseFloat(info.newValue)
     if (!isNaN(nv)) {

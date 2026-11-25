@@ -24,6 +24,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strings"
@@ -32,6 +33,7 @@ import (
 
 	"github.com/riclolsen/go-iecp5/cs101"
 	"github.com/riclolsen/go-iecp5/cs103"
+	"github.com/riclolsen/go-iecp5/secevent"
 	"go.bug.st/serial"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -39,6 +41,7 @@ import (
 	"iec60870-5/internal/cliapp"
 	"iec60870-5/internal/conv103"
 	"iec60870-5/internal/cs101util"
+	"iec60870-5/internal/iecsec"
 	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
 	"iec60870-5/internal/mongoutil"
@@ -47,11 +50,12 @@ import (
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 	"github.com/riclolsen/json-scada/src/go-common/jsredundancy"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 )
 
 const (
 	protocolDriverName = "IEC60870-5-103"
-	driverVersion      = "0.5.0"
+	driverVersion      = "0.6.0"
 )
 
 // redundancy arbitrates the active node; command execution gates on it.
@@ -62,6 +66,9 @@ type conn103 struct {
 	cfg     model.ConnCfg
 	engConn *cliapp.Conn
 	config  cs103.Config
+	// disp delivers go-iecp5's security events of every client this
+	// connection creates to engConn.Sec
+	disp *secevent.Dispatcher
 
 	mu  sync.Mutex
 	cli *cs103.Client
@@ -87,6 +94,11 @@ func (h *cliHandler) ingest(a *cs103.ASDU) {
 	res := conv103.Decode(a, int(h.c.cfg.ProtocolConnectionNumber))
 	h.e.EnqueueValues(res.Values)
 	h.e.EnqueueAcks(res.Acks)
+	for _, ack := range res.Acks {
+		if !ack.Ack {
+			h.c.engConn.Sec.Refused103(int(a.CommonAddr), ack.ObjectAddress)
+		}
+	}
 }
 
 func (h *cliHandler) TimeTaggedHandler(a *cs103.ASDU, _ cs103.TimeTaggedInfo) error {
@@ -100,6 +112,23 @@ func (h *cliHandler) MeasurandsHandler(a *cs103.ASDU, _ cs103.MeasurandsInfo) er
 func (h *cliHandler) IdentificationHandler(a *cs103.ASDU, info cs103.IdentificationInfo) error {
 	jslog.Log(jslog.LevelBasic, "%s - Device %d identification: %q (COL %d)",
 		h.c.cfg.Name, int(a.CommonAddr), info.ASCII, int(info.Col))
+	ca := int(a.CommonAddr)
+	ascii := strings.TrimRight(info.ASCII, " \x00")
+	soft := hex.EncodeToString(info.Extra)
+	h.c.engConn.Sec.AddDevice(fmt.Sprintf("CA %d", ca), bson.M{
+		"commonAddress": ca, "identification": ascii, "compatibilityLevel": int(info.Col),
+		"softwareId": soft, "fun": int(info.Fun), "inf": int(info.Inf), "cause": int(a.Coa),
+	}, []iecsec.Key{{K: fmt.Sprintf("ident:%d", ca), V: fmt.Sprintf("%d|%s|%s", info.Col, ascii, soft),
+		Label: fmt.Sprintf("device %d identification", ca)}})
+	switch a.Coa {
+	case cs103.CauseStartRestart, cs103.CausePowerOn:
+		what := "start/restart"
+		if a.Coa == cs103.CausePowerOn {
+			what = "power on"
+		}
+		h.c.engConn.Sec.Restarted(ca, what, "the device reports "+what+" (IEC 103 identification, cause "+fmt.Sprint(int(a.Coa))+")",
+			bson.M{"commonAddress": ca, "cause": int(a.Coa), "typeId": int(a.Type)})
+	}
 	return nil
 }
 func (h *cliHandler) GITerminationHandler(a *cs103.ASDU, scn byte) error {
@@ -189,8 +218,10 @@ func startClient(c *conn103, e *cliapp.Engine) error {
 	if jslog.Level() >= jslog.LevelDebug {
 		cli.SetLogMode(true)
 	}
+	cli.SetCyberDispatcher(c.disp)
 	cli.SetOnConnectHandler(func(cl *cs103.Client) {
 		jslog.Log(jslog.LevelBasic, "%s", c.cfg.Name+" - Connected (link alive)")
+		c.engConn.Sec.Connected(c.cfg.PortName, int(c.config.LinkAddress), iecsec.ConnOf(cl.Port()))
 	})
 	cli.SetConnectionLostHandler(func(cl *cs103.Client, err error) {
 		jslog.Log(jslog.LevelBasic, "%s - Connection lost: %v", c.cfg.Name, err)
@@ -198,6 +229,7 @@ func startClient(c *conn103, e *cliapp.Engine) error {
 	})
 	cli.SetConnectErrorHandler(func(cl *cs103.Client, err error) {
 		jslog.Log(jslog.LevelBasic, "%s - Connect error: %v", c.cfg.Name, err)
+		c.engConn.Sec.CertRefused(c.cfg.PortName, err)
 	})
 	cli.SetOnDeviceActiveHandler(func(cl *cs103.Client, addr byte) {
 		jslog.Log(jslog.LevelBasic, "%s - Device %d link active", c.cfg.Name, int(addr))
@@ -314,6 +346,9 @@ func main() {
 	}
 
 	engine := cliapp.New(cfg, protocolDriverName, instanceNumber, redundancy.Active)
+	// security events: one writer for the process, one reporter per connection
+	secWriter := jssecevents.NewWriter(0)
+	go secWriter.Run(context.Background(), cfg)
 	var conns []*conn103
 	for _, cc := range connCfgs {
 		c := &conn103{cfg: cc}
@@ -323,6 +358,11 @@ func main() {
 			os.Exit(-1)
 		}
 		engConn := &cliapp.Conn{Cfg: cc}
+		rep := &iecsec.Reporter{W: secWriter, Role: "client", Protocol: "iec103", Ident: cc.PeerIdentificationVal(),
+			Origin: jssecevents.Origin{ProtocolDriver: protocolDriverName, ProtocolDriverInstanceNumber: instanceNumber,
+				ProtocolConnectionNumber: int(cc.ProtocolConnectionNumber), ConnectionName: cc.Name, NodeName: cfg.NodeName}}
+		engConn.Sec = iecsec.NewClient(rep, iecsec.StoredIdentity(cc.Stats), false)
+		c.disp = secevent.NewDispatcher(rep.Sink(), secevent.Options{})
 		engConn.IsConnected = func() bool {
 			cli := c.client()
 			return cli != nil && cli.IsLinkActive()
@@ -356,12 +396,7 @@ func main() {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			_, _ = collConns.UpdateOne(ctx,
 				bson.M{"protocolConnectionNumber": c.cfg.ProtocolConnectionNumber},
-				bson.M{"$set": bson.M{"stats": bson.M{
-					"nodeName":       cfg.NodeName,
-					"timeTag":        time.Now(),
-					"linkLayerState": state,
-					"isConnected":    linkActive,
-				}}})
+				bson.M{"$set": bson.M{"stats": cliapp.LinkStats(c.engConn, cfg.NodeName, state, linkActive)}})
 			cancel()
 		}
 	}

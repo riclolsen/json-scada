@@ -28,6 +28,7 @@ import (
 	"syscall"
 	"time"
 
+	"dnp3-go/internal/dnp3sec"
 	"dnp3-go/internal/dnp3util"
 
 	"github.com/riclolsen/json-scada/src/go-common/jsredundancy"
@@ -35,6 +36,7 @@ import (
 	"github.com/riclolsen/json-scada/src/go-common/jsconfig"
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 
 	dnp3 "github.com/dscsystems/go-dnp3"
 	"github.com/dscsystems/go-dnp3/master"
@@ -57,6 +59,8 @@ const (
 	timeSyncPeriod = 60 * time.Second
 	// statsPeriod is how often connection statistics are refreshed.
 	statsPeriod = 5 * time.Second
+	// identifyTimeout bounds the read of an outstation's device attributes.
+	identifyTimeout = 30 * time.Second
 )
 
 // Engine is the running driver.
@@ -109,6 +113,16 @@ func Run(args jsconfig.Args, cfg jsconfig.Config) {
 	e.conns = conns
 	for _, c := range conns {
 		e.byNum[c.ProtocolConnectionNumber] = c
+	}
+
+	// Security events go to secEvents; each connection reports under its own
+	// identity, its bus under the first connection's.
+	secWriter := jssecevents.NewWriter(0)
+	go secWriter.Run(ctx, cfg)
+	for _, c := range conns {
+		c.setupSecurity(secWriter, jssecevents.Origin{ProtocolDriver: ProtocolDriverName,
+			ProtocolDriverInstanceNumber: args.InstanceNumber, ProtocolConnectionNumber: c.ProtocolConnectionNumber,
+			ConnectionName: c.Name, NodeName: cfg.NodeName})
 	}
 
 	if err := e.buildChannels(); err != nil {
@@ -180,6 +194,7 @@ func (e *Engine) buildChannels() error {
 			Channel:           c.ChannelSpec(),
 			AllowedRemoteIPs:  nil, // a master does not filter its peers
 			ScanHint:          c.shortestScanPeriod(),
+			Security:          c.policy,
 		})
 	}
 
@@ -216,6 +231,7 @@ func (e *Engine) startSessions(ctx context.Context) {
 			KeepAlive:          keepAlivePeriod,
 			IntegrityOnStartup: true,
 			Log:                jslog.NewStackLogger(conn.Name),
+			Security:           conn.policy,
 		}
 		if conn.EnableUnsolicited {
 			cfg.DisableUnsolOnStartup = false
@@ -307,5 +323,57 @@ func (e *Engine) observeLink(conn *Connection) bool {
 	case !was && now:
 		jslog.Log(jslog.LevelBasic, "%s - Channel state: OPEN", conn.Name)
 	}
+	if now {
+		if n := session.Stats().Connections; n != conn.identifiedConn {
+			conn.identifiedConn = n
+			go identify(conn, session, n)
+		}
+	}
 	return false
+}
+
+// setupSecurity gives a connection its security reporter, state and go-dnp3
+// policy.
+func (c *Connection) setupSecurity(w *jssecevents.Writer, origin jssecevents.Origin) {
+	rep := dnp3sec.NewReporter(w, origin, "client", c.PeerIdentification)
+	rep.Drop = dnp3sec.DropClientRefusals
+	c.Sec = dnp3sec.NewClient(rep, c.storedIdentity)
+	c.policy = rep.Policy()
+}
+
+// peerWait bounds the wait for go-dnp3 to describe an outstation that just
+// connected: the session reports Connected before its MAC lookup (bounded at
+// 200 ms) is done.
+const peerWait = 3 * time.Second
+
+// identify records the outstation of connection n of a session, which just
+// came up: its address, MAC and certificate as go-dnp3 saw them, and the
+// device attributes (group 0) it reports about itself. It gives up when the
+// session has reconnected meanwhile: that connection is identified itself.
+func identify(conn *Connection, session *master.Session, n uint64) {
+	if conn.Sec == nil || session == nil {
+		return
+	}
+	p, ok := session.PeerInfo()
+	for deadline := time.Now().Add(peerWait); !ok && time.Now().Before(deadline); {
+		time.Sleep(50 * time.Millisecond)
+		p, ok = session.PeerInfo()
+	}
+	if !ok {
+		jslog.Log(jslog.LevelDetailed, "%s - The outstation's address is not known", conn.Name)
+	}
+	if session.Stats().Connections != n {
+		return
+	}
+	gen, read := conn.Sec.Connected(p, conn.RemoteLinkAddress)
+	if !read {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), identifyTimeout)
+	defer cancel()
+	attrs, err := session.ReadAttributes(ctx)
+	if err != nil {
+		jslog.Log(jslog.LevelDetailed, "%s - Device attributes not read: %v", conn.Name, err)
+	}
+	conn.Sec.Attributes(gen, attrs, err)
 }

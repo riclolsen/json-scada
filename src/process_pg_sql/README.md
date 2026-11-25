@@ -83,7 +83,8 @@ It replaces all the `PG*` settings above.
 
 * Linux (supervisor): `platform-*/process_pg_hist.ini` and `process_pg_rtdata.ini`,
   logs in `log/process_pg_hist.log` and `log/process_pg_rtdata.log`.
-* Windows (NSSM): services `JSON_SCADA_process_hist` and `JSON_SCADA_process_rtdata` in
-  `platform-windows/create_services.bat`. The installer repoints existing services from the
-  old batch files on upgrade.
+* Windows (WinSW): services `JSON_SCADA_process_hist` and `JSON_SCADA_process_rtdata`, defined in
+  `platform-windows/service-templates/`, logs in `log\process_pg_hist.out.log` and
+  `log\process_pg_rtdata.out.log`. The installer recreates services still running the old batch
+  files from these templates on upgrade.
 * Docker: the image installs the Ubuntu 24.04 `.ini` files.

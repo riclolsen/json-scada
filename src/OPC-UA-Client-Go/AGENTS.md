@@ -18,8 +18,12 @@ MongoDB semantics, no .NET runtime dependency. The C# driver has been removed fr
 ## Local Contracts
 
 - **Language:** Go 1.26, module `opcua-client`, flat `package main`
-- **Library:** `github.com/gopcua/opcua` v0.9.1 (MIT, pure Go) — **pin the version**, the API is
-  pre-v1. Plus `software.sslmate.com/src/go-pkcs12` for `.pfx` files, and the local
+- **Library:** `github.com/gopcua/opcua` v0.9.1 (MIT, pure Go), replaced in `go.mod` by the
+  `github.com/riclolsen/opcua` fork at a pinned commit of its `main` (the gopcua module path is
+  kept, so imports do not change): it adds the `secevent` package, `opcua.SecurityEventHandler`,
+  `Client.RemoteMAC` and stricter secure channel checks. **Pin the commit**, the API is pre-v1;
+  bump it with `go mod edit -replace github.com/gopcua/opcua=github.com/riclolsen/opcua@<commit>`
+  and `go mod tidy`, and keep `LibraryVersion` (`config.go`) naming it. Plus `software.sslmate.com/src/go-pkcs12` for `.pfx` files, and the local
   `src/go-common` module (a `replace` in `go.mod`, so the driver builds only inside the repository).
 - **Binary:** `opcua-client(.exe)` — must differ from the C# `OPC-UA-Client(.exe)` so both can
   live in `bin/`. Do not rename it to anything that collides case-insensitively on Windows.
@@ -30,8 +34,10 @@ MongoDB semantics, no .NET runtime dependency. The C# driver has been removed fr
   - `security.go` — certificates, PKCS#12/PEM loading, self-signed generation, the UA XML subset
   - `session.go` — endpoint discovery and selection, client options, connect/retry loop
     (← `ConsoleClient()`)
-  - `browse.go` — address space walk (← `BrowseFullAddressSpaceAsync`)
-  - `autotag.go` — the autoCreateTags read pass, browse-path splitting
+  - `browse.go` — address space walk (← `BrowseFullAddressSpaceAsync`); `refEntry.Parent` links a
+    property to its variable
+  - `autotag.go` — the autoCreateTags read pass, browse-path splitting, unit and range properties
+    folded into the parent's tag (`metadataProps`, never tagged)
   - `subscribe.go` — subscriptions, the notification pump (← `OnNotification`), per-item flood cap
   - `diagnostics.go` — per-session/per-subscription server diagnostics, never tagged or monitored
   - `uaconv.go` — value conversion (← `ConvertOpcValue`)
@@ -39,23 +45,25 @@ MongoDB semantics, no .NET runtime dependency. The C# driver has been removed fr
   - `tags_creation.go` — automatic tag documents (← `TagsCreation.cs`)
   - `mongo_commands.go` — command change stream and dispatch (← `MongoCommands.cs`)
   - `commandconv.go` — checked numeric conversion of command values (rounding, range, JSON arrays)
-  - `redundancy.go` — active/standby arbitration (← `Redundancy.cs`)
+  - `redundancy.go` — active/standby arbitration (← `Redundancy.cs`), connection stats
+  - `secevents.go` — security events (`secEvents`) and the server's identity
+    (`stats.peerIdentity`): the library event handler, identification, command and node checks
   - `robustness_test.go` — session health, rediscovery, typed commands, writer drain
 - **Tests:** `*_test.go`, plus `testdata/*.golden` — change-detectors for the auto-created tag
   document and the `sourceDataUpdate` write. Regenerate only deliberately:
   `go test -run TestGoldenTagDoc -update`, then review the diff.
 - **Build:** `go build -ldflags="-s -w" -o ../../bin/opcua-client`
 - **Config:** `conf/json-scada.json` plus MongoDB documents; CLI `<instance> <logLevel> <configFile>`
-- **Platform integration:** `opcua_goclient.ini` supervisor units (`platform-rhel*`,
-  `platform-ubuntu-*`), the `JSON_SCADA_opcuagoclient` NSSM service (`platform-windows`), and the
+- **Platform integration:** `opcua_goclient.ini` supervisor units (`platform-rhel`,
+  `platform-ubuntu`), the `JSON_SCADA_opcuagoclient` WinSW service (`platform-windows`), and the
   `opcuago` variant of the `OPC-UA` entry in
   `src/server_realtime_auth/app/services/process-manager/driver-catalog.js`
-- **Connection stats:** `updateConnectionStats` (`redundancy.go`) writes `stats.isConnected` = session state `opcua.Connected` for every connection; the C# parity heartbeat (`nodeName`, `timeTag`) is otherwise unchanged
+- **Connection stats:** `updateConnectionStats` (`redundancy.go`) writes `stats.isConnected` = session state `opcua.Connected` for every connection, and `stats.peerIdentity` when the connection has one; the C# parity heartbeat (`nodeName`, `timeTag`) is otherwise unchanged
 
 ## Work Guidance
 
 - Behaviour of the former C# driver is the specification; its quirks are reproduced on purpose
-  and marked `parity:` in comments. Intentional differences are numbered (D1 to D35) and listed in
+  and marked `parity:` in comments. Intentional differences are numbered (D1 to D39) and listed in
   `DEVIATIONS.md`, each marked `deviation Dn` at its code site — add to that list
   rather than silently diverging.
 - Keep `README.md` true. It states behaviour to users (defaults, `cancelReason` values, the topic
@@ -74,7 +82,8 @@ MongoDB semantics, no .NET runtime dependency. The C# driver has been removed fr
   `SecurityFromEndpoint` only fills in its `PolicyID`, so `SecurityFromEndpoint` must come last.
   Reversed, every connection silently authenticates anonymously.
 - Never read connection state through `opcua.StateChangedCh`: the client sends to that channel
-  synchronously and a slow reader stalls the client. `StateChangedFunc` may only log.
+  synchronously and a slow reader stalls the client. `StateChangedFunc` may only log and
+  notify the `identifySignal`, which never blocks.
 - `ua.StatusCode` has no `IsGood`; use `statusIsGood` (severity bits 30-31).
 - The notification pump must never block — it only converts and enqueues.
 - Everything a session starts (the pumps) runs on the session context created in `connectionLoop`
@@ -83,14 +92,36 @@ MongoDB semantics, no .NET runtime dependency. The C# driver has been removed fr
   `connectionLoop` rebuild. `setupSubscriptions` errors rebuild too, at most `maxSetupFailures` times.
 - `watchClient` ends a session on state loss, a pump-reported subscription error, or silence
   (`sessionHealth`, D28); the heartbeat item uses the reserved client handle `heartbeatHandle`.
+- **Security events** (`secevents.go`): the library handler (`opcua.SecurityEventHandler`) runs on
+  the protocol goroutines, so it only filters, throttles and queues. Identification runs on the
+  session context in `identifyLoop`, triggered by a non-blocking signal from `StateChangedFunc`
+  on every `Connected` (the client reconnects by itself) and once after `connectOnce`. The MAC
+  history is the driver's `connSec.changes`, seeded from `stats.peerIdentity`: the library's
+  own lives in one `opcua.Client`, which `connectionLoop` rebuilds, so its `connection.mac_changed`
+  is stored only when the driver's history agrees it is new. With `peerIdentification` off no
+  identity is stored, events carry no peer IP (the secEvents writer would look up its MAC), and
+  the handler goes on a `opcua.DefaultDialer()` with `Events` and no `MACs`, so connecting does
+  no lookup; the fork's `uacp.Conn.Emit` still looks one up for a connection's first event, which
+  only a library option could stop.
+- Each `opcua.Client` has its own `identifySignal` (built in `connectOnce`, notified by its
+  `StateChangedFunc`); `identifyLoop` publishes a result only while the signal's generation is
+  the one it read under, so a superseded or cancelled read is discarded. History keys are per
+  configured endpoint URL (`field|url`) and the MAC per IP (`mac|ip`): failover between
+  `endpointURLs` must not look like a change or a restart.
+- Command auditing never delays or outlives a command: the expiry is checked again right before
+  `Write`/`Call`, method classification (`classifyMethod`, cached per connection) runs in a
+  goroutine after the call, and `valueString` is never put in an event. A bad service result
+  arrives as a `ua.StatusCode` error (`serviceStatus`); transport statuses are not refusals.
 - Before `reloadConnectionTags`, wait for the writer with `waitWriterIdle` (D29); `main` waits for
   the connection loops on shutdown (D32).
 
 ## Verification
 
 - `go test ./...` — conversions, tag documents (including the golden files), browse paths, topic
-  matching, command conversions, discovery backoff, and loopback runs (browse, autotag, subscribe,
-  write) against an in-process gopcua server. No MongoDB or device needed.
+  matching, command conversions, discovery backoff, security events and server identification
+  (`secevents_test.go`), and loopback runs (browse, autotag, unit and range in
+  `engmeta_test.go`, subscribe, write, identify) against an in-process gopcua server. No MongoDB or
+  device needed.
 - `go vet ./...` and `gofmt -l .` must be clean.
 - `go test -race` can report a race inside gopcua's in-process test server (`server/node.go`,
   reached from `setServerValue` in `loopback_test.go`) in the two loopback acquisition tests; it is

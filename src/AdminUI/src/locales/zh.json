@@ -42,7 +42,8 @@
     "customDevelopments": "定制开发",
     "open": "打开",
     "cimEms": "CIM-EMS",
-    "svgedit": "SVG编辑器"
+    "svgedit": "SVG编辑器",
+    "secEventsViewer": "安全事件"
   },
   "tabularViewer": {
     "station": "车站",
@@ -91,9 +92,15 @@
       "value": "价值",
       "state": "状态",
       "quality": "质量",
-      "hiLimit": "高限",
-      "loLimit": "低限",
+      "hiLimit": "高限 (HI)",
+      "loLimit": "低限 (LO)",
+      "hihiLimit": "高限 2 (HIHI)",
+      "hihihiLimit": "高限 3 (HIHIHI)",
+      "loloLimit": "低限 2 (LOLO)",
+      "lololoLimit": "低限 3 (LOLOLO)",
       "hysteresis": "滞后现象",
+      "alarmRange": "报警范围",
+      "limitsOrder": "限值顺序错误 (LOLOLO ≤ LOLO ≤ LO ≤ HI ≤ HIHI ≤ HIHIHI)",
       "annotation": "阻塞注释",
       "notes": "文件注释",
       "alarmDisabled": "警报已禁用",
@@ -170,6 +177,72 @@
       "date": "日期",
       "time": "初始时间",
       "filter": "筛选"
+    }
+  },
+  "alarmsViewer": {
+    "alarms": "条报警",
+    "unackedOnly": "仅未确认",
+    "modes": {
+      "normal": "普通的",
+      "aggregated": "汇总",
+      "historical": "历史"
+    },
+    "columns": {
+      "time": "时间",
+      "alarm": "报警",
+      "state": "状态",
+      "priority": "优先级",
+      "normalTime": "恢复时间",
+      "ackTime": "确认时间",
+      "ackUser": "确认用户"
+    },
+    "state": {
+      "active": "活动",
+      "normal": "正常"
+    },
+    "hist": {
+      "from": "从",
+      "to": "到",
+      "filter": "过滤",
+      "filterHint": "标签、描述、文本",
+      "find": "查找",
+      "limited": "仅显示前 {n} 条报警：请缩小时间段或过滤条件。"
+    }
+  },
+  "secEvents": {
+    "title": "安全事件",
+    "from": "从",
+    "to": "到",
+    "now": "现在",
+    "minSeverity": "最低严重性",
+    "category": "类别",
+    "filterHint": "类型、对端、对象、详情",
+    "find": "查找",
+    "autoRefresh": "自动刷新",
+    "exportCsv": "导出 CSV",
+    "showFrom": "显示 {s} 及以上",
+    "events": "个事件",
+    "limited": "仅显示最新的 {n} 个事件：请缩小时间段或筛选条件。",
+    "noData": "没有安全事件",
+    "noRight": "您的角色未授予“查看安全事件”权限。",
+    "unavailable": "数据库不可用",
+    "severities": {
+      "info": "信息",
+      "notice": "通知",
+      "warning": "警告",
+      "alert": "警报",
+      "critical": "严重"
+    },
+    "columns": {
+      "time": "时间",
+      "severity": "严重性",
+      "kind": "事件",
+      "connection": "连接",
+      "peer": "对端",
+      "object": "对象",
+      "action": "动作",
+      "detail": "详情",
+      "source": "来源"
     }
   },
   "login": {
@@ -315,7 +388,11 @@
         "total": "角色",
         "admin": "管理员角色",
         "unused": "未分配"
-      }
+      },
+      "viewSecEvents": "查看安全事件",
+      "viewSecEventsHint": "可以打开安全事件查看器（协议驱动报告的连接、证书、身份和命令异常）。",
+      "editDisplays": "编辑显示画面",
+      "editDisplaysHint": "可以在SVG编辑器中列出、打开和保存SVG显示画面（管理员始终可以）。设置了显示列表时仅限这些画面。"
     },
     "protocolDriverInstances": {
       "title": "协议驱动程序实例",
@@ -742,6 +819,28 @@
       "serverUnitIds": "服务器单元 ID",
       "serverUnitIdsTitle": "提供服务的单元 ID（从站地址）",
       "serverUnitIdsHint": "输入数字后按回车。范围 0 到 255。",
+      "sunspecParameters": "SunSpec 参数",
+      "unitIds": "单元 ID",
+      "unitIdsTitle": "要发现的 SunSpec 设备（Modbus 单元 ID）",
+      "unitIdsHint": "输入数字并按回车。范围 1 到 255。为空：单元 1。",
+      "baseAddresses": "基地址",
+      "baseAddressesTitle": "探测 SunS 标记的寄存器地址",
+      "baseAddressesHint": "输入数字并按回车。为空：0, 40000, 50000, 1, 39999, 40001, 49999, 50001。",
+      "modelIds": "模型 ID",
+      "modelIdsTitle": "自动创建标签的 SunSpec 模型",
+      "modelIdsHint": "输入模型 ID 并按回车（如 1, 103, 160）。为空：所有已发现的模型。",
+      "registerType": "寄存器类型",
+      "registerTypeTitle": "存放 SunSpec 映射的寄存器",
+      "registerTypeHint": "holding（功能码 3，几乎所有设备）或 input（功能码 4，只读）。",
+      "maxModels": "最大模型数",
+      "maxModelsTitle": "从模型链读取的最大模型头数",
+      "maxModelsHint": "整数，至少为 1。默认 256。",
+      "autoCreateCommandTags": "自动创建命令标签：",
+      "autoCreateCommandTagsTrue": "是",
+      "autoCreateCommandTagsFalse": "否",
+      "autoCreateUnimplemented": "为未实现的点创建标签：",
+      "autoCreateUnimplementedTrue": "是",
+      "autoCreateUnimplementedFalse": "否",
       "strictUnitId": "严格单元 ID： ",
       "strictUnitIdTrue": "真的",
       "strictUnitIdFalse": "错误的",
@@ -802,7 +901,9 @@
         "total": "连接",
         "tags": "标签",
         "invalidTags": "无效标签"
-      }
+      },
+      "peerIdentification": "识别对端（安全事件）：",
+      "peerIdentificationHint": "每次连接时将对端身份（厂商、型号、固件、MAC 地址、证书）读入连接统计，并将其变化报告为安全事件。"
     },
     "userActions": {
       "title": "用户操作",
@@ -850,6 +951,13 @@
       "editOrigin": "起源",
       "editType": "类型",
       "editHistorianDeadBand": "历史死区 (%)",
+      "editHihihiLimit": "高限 3 (HIHIHI)",
+      "editHihiLimit": "高限 2 (HIHI)",
+      "editHiLimit": "高限 (HI)",
+      "editLoLimit": "低限 (LO)",
+      "editLoloLimit": "低限 2 (LOLO)",
+      "editLololoLimit": "低限 3 (LOLOLO)",
+      "editHysteresis": "滞后现象",
       "editHistorianPeriod": "历史学家完整性周期（秒）",
       "editAlarmState": "报警状态",
       "editAlarmStateOff": "离开",
@@ -1016,7 +1124,15 @@
       "pruneExecute": "删除",
       "pruneConfirmText": "所选配置将被永久删除。如可能还需要，请先导出备份。",
       "pruneTypeToConfirm": "输入 {word} 以确认",
-      "pruneDone": "配置已清理"
+      "pruneDone": "配置已清理",
+      "retentionTitle": "数据保留",
+      "retentionHint": "事件 (SOE)、报警和历史数据的保留天数；超出部分每天清除一次。未确认或活动的报警会保留。",
+      "retentionSoe": "事件 (SOE)",
+      "retentionAlarms": "报警",
+      "retentionHist": "历史数据",
+      "retentionDays": "天",
+      "retentionRule": "{min} 到 {max} 之间的整数天数",
+      "retentionSecEvents": "安全事件"
     },
     "cimEms": {
       "readOnly": "只读视图：上传和激活模型、批准绑定以及下载需要具有 CIM-EMS 工程权限的角色。",
@@ -1221,8 +1337,12 @@
     "reset": "重置视图并实时跟随",
     "downloadCsv": "下载 CSV",
     "current": "当前值",
-    "hiLimit": "上限",
-    "loLimit": "下限",
+    "hiLimit": "上限 (HI)",
+    "loLimit": "下限 (LO)",
+    "hihiLimit": "上限 2 (HIHI)",
+    "hihihiLimit": "上限 3 (HIHIHI)",
+    "loloLimit": "下限 2 (LOLO)",
+    "lololoLimit": "下限 3 (LOLOLO)",
     "noData": "此时间段内无数据",
     "noPoint": "未指定点（使用 ?point=<键或标签>）",
     "notFound": "未找到该点"
@@ -1247,5 +1367,18 @@
       "analytics": "分析",
       "engineering": "工程"
     }
+  },
+  "customDev": {
+    "subtitle": "在 src/custom-developments 中构建的 Web 应用：仪表板、面板和专用视图。",
+    "search": "搜索应用",
+    "open": "打开",
+    "openNewWindow": "在新窗口中打开",
+    "back": "返回列表",
+    "retry": "重试",
+    "empty": "还没有自定义开发",
+    "emptyHint": "在 src/custom-developments 的文件夹中构建应用（npm install && npm run build），然后重启 server_realtime_auth。",
+    "noMatch": "没有与搜索匹配的应用。",
+    "noDescription": "无描述",
+    "built": "构建于 {date}"
   }
 }

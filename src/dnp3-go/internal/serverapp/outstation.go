@@ -296,6 +296,7 @@ func (e *Engine) newOutstation(conn *Connection, tags []bson.M) *outstation.Sess
 		// counts and sizes go-dnp3 derives (see attributes.go).
 		Attributes: deviceAttributes(conn, cfg),
 		Log:        jslog.NewStackLogger(conn.Name),
+		Security:   conn.policy,
 	}
 	if conn.ConnectionMode == "SERIAL" {
 		ocfg.UseLinkConfirms = true
@@ -303,13 +304,10 @@ func (e *Engine) newOutstation(conn *Connection, tags []bson.M) *outstation.Sess
 		ocfg.LinkTimeout = linkTimeout
 	}
 
-	// A connection with commands disabled gets no command handler, which makes
-	// the library install its RejectingCommandHandler and answer NOT_SUPPORTED
-	// to every control — the same result the C++ server produces.
-	var handler outstation.CommandHandler
-	if conn.CommandsEnabled {
-		handler = &commandHandler{engine: e, conn: conn}
-	}
+	// A connection with commands disabled refuses every control with
+	// NOT_SUPPORTED, as the library's RejectingCommandHandler and the C++
+	// server do; the handler does it so the refusal is reported with why.
+	handler := &commandHandler{engine: e, conn: conn, disabled: !conn.CommandsEnabled}
 
 	station := outstation.New(ocfg, application{conn: conn}, handler)
 

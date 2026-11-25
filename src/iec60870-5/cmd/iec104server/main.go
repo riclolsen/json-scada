@@ -24,7 +24,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"net/netip"
 	"os"
 	"strings"
 	"sync"
@@ -32,8 +34,11 @@ import (
 
 	"github.com/riclolsen/go-iecp5/asdu"
 	"github.com/riclolsen/go-iecp5/cs104"
+	"github.com/riclolsen/go-iecp5/secevent"
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
+	"iec60870-5/internal/iecsec"
 	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
 	"iec60870-5/internal/mongoutil"
@@ -42,11 +47,12 @@ import (
 
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 )
 
 const (
 	protocolDriverName = "IEC60870-5-104_SERVER"
-	driverVersion      = "0.4.0"
+	driverVersion      = "0.5.0"
 )
 
 // srv104 holds the runtime state of one served IEC 104 connection.
@@ -108,6 +114,27 @@ func (s *srv104) ipAllowed(remote string) bool {
 	return false
 }
 
+// allowedPeers is ipAddresses as networks for go-iecp5's admission, which
+// then refuses (and reports) an unexpected master before the TLS handshake
+// or any byte is read. Nil when any master is accepted, or when an entry is
+// not an IP address (the driver's own check in the connection handler then
+// applies alone).
+func (s *srv104) allowedPeers() []netip.Prefix {
+	if len(s.cfg.IPAddresses) == 0 || s.cfg.IPAddresses[0] == "*" {
+		return nil
+	}
+	var out []netip.Prefix
+	for _, a := range s.cfg.IPAddresses {
+		ip, err := netip.ParseAddr(strings.TrimSpace(a))
+		if err != nil {
+			return nil
+		}
+		ip = ip.Unmap()
+		out = append(out, netip.PrefixFrom(ip, ip.BitLen()))
+	}
+	return out
+}
+
 // updateConnStats updates the protocolConnections stats subdocument
 // (port of the C# ConnectionEventHandler).
 func (s *srv104) updateConnStats(remote, state string) {
@@ -116,20 +143,28 @@ func (s *srv104) updateConnStats(remote, state string) {
 	endpointKey := strings.ReplaceAll(remote, ".", "_") // avoid dotted field paths
 	_, err := s.engine.DB().Collection(jsmongo.ProtocolConnectionsCollectionName).UpdateOne(ctx,
 		bson.M{"protocolConnectionNumber": s.cfg.ProtocolConnectionNumber},
-		bson.M{"$set": bson.M{"stats": bson.M{
-			"nodeName":          s.engine.Cfg.NodeName,
-			"timeTag":           time.Now(),
-			"openConnections":   s.server.GetSessionsLen(),
-			"clientConnections": s.sessionCount(),
-			"isConnected":       s.sessionCount() > 0,
-			"endpoint": bson.M{endpointKey: bson.M{
-				"timeTag":         time.Now(),
-				"connectionState": state,
-			}},
-		}}})
+		bson.M{"$set": bson.M{"stats": s.statsDoc(endpointKey, state)}})
 	if err != nil {
 		jslog.Log(jslog.LevelDetailed, "%s", s.cfg.Name+" - Error updating stats: "+err.Error())
 	}
+}
+
+func (s *srv104) statsDoc(endpointKey, state string) bson.M {
+	st := bson.M{
+		"nodeName":          s.engine.Cfg.NodeName,
+		"timeTag":           time.Now(),
+		"openConnections":   s.server.GetSessionsLen(),
+		"clientConnections": s.sessionCount(),
+		"isConnected":       s.sessionCount() > 0,
+		"endpoint": bson.M{endpointKey: bson.M{
+			"timeTag":         time.Now(),
+			"connectionState": state,
+		}},
+	}
+	if id := s.engConn.Sec.StatsDoc(); id != nil {
+		st["peerIdentity"] = id
+	}
+	return st
 }
 
 // srvHandler adapts go-iecp5 server callbacks to the shared engine.
@@ -165,6 +200,7 @@ func (h *srvHandler) ASDUHandler(c asdu.Connect, pack *asdu.ASDU) error {
 	jslog.Log(jslog.LevelDetailed, "%s - %s", h.s.cfg.Name, pack.String())
 	if !h.s.engine.HandleCommandASDU(h.s.engConn, c, pack) {
 		jslog.Log(jslog.LevelBasic, "%s -   Not implemented type of ASDU received: %d", h.s.cfg.Name, pack.Type)
+		h.s.engConn.Sec.NotImplemented(c, pack)
 		pack.Coa.IsNegative = true
 		_ = pack.SendReplyMirror(c, asdu.ActivationCon)
 	}
@@ -213,12 +249,28 @@ func main() {
 		os.Exit(-1)
 	}
 
+	// security events: one writer for the process, one reporter per connection
+	secWriter := jssecevents.NewWriter(0)
+	go secWriter.Run(context.Background(), cfg)
+	rtColl := func() *mongo.Collection {
+		if db := engine.DB(); db != nil {
+			return db.Collection(jsmongo.RealtimeDataCollectionName)
+		}
+		return nil
+	}
+
 	var servers []*srv104
 	for _, cc := range connCfgs {
 		s := &srv104{cfg: cc, engine: engine, sessions: map[asdu.Connect]string{}}
 		engConn := srvapp.NewConn(cc)
 		engConn.OriginatorIP = s.originatorIPs
 		engConn.Sessions = s.sessionList
+		rep := &iecsec.Reporter{W: secWriter, Role: "server", Protocol: "iec104",
+			Ident: cc.PeerIdentificationVal(), Drop: iecsec.DropServerRefusals,
+			Origin: jssecevents.Origin{ProtocolDriver: protocolDriverName, ProtocolDriverInstanceNumber: instanceNumber,
+				ProtocolConnectionNumber: int(cc.ProtocolConnectionNumber), ConnectionName: cc.Name, NodeName: cfg.NodeName}}
+		engConn.Sec = iecsec.NewServer(rep, iecsec.StoredIdentity(cc.Stats), rtColl)
+		go engConn.Sec.Run(context.Background())
 		s.engConn = engConn
 		engine.Conns = append(engine.Conns, engConn)
 		servers = append(servers, s)
@@ -279,6 +331,17 @@ func main() {
 		}
 
 		maxClients := defInt(int(cc.MaxClientConnections), 2)
+		// go-iecp5 admits the masters (ipAddresses, maxClientConnections)
+		// and reports what it refuses; it watches the sessions for protocol
+		// violations, sequence errors, floods and control functions
+		pol := iecsec.Policy(cc.PeerIdentificationVal())
+		pol.Sink = s.engConn.Sec.Rep.Sink()
+		if pol.AllowedPeers = s.allowedPeers(); pol.AllowedPeers != nil {
+			pol.RejectUnlisted = true
+		}
+		pol.MaxSessions = maxClients
+		server.SetSecurityPolicy(pol)
+
 		sref := s
 		server.SetOnConnectionHandler(func(c asdu.Connect) {
 			remote := ""
@@ -286,8 +349,16 @@ func main() {
 				remote = uc.RemoteAddr().String()
 			}
 			jslog.Log(jslog.LevelBasic, "%s - New connection request from IP %s", sref.cfg.Name, remote)
-			if !sref.ipAllowed(remote) || sref.sessionCount() >= maxClients {
+			if allowed := sref.ipAllowed(remote); !allowed || sref.sessionCount() >= maxClients {
 				jslog.Log(jslog.LevelBasic, "%s - Connection rejected from %s", sref.cfg.Name, remote)
+				e := jssecevents.Event{Kind: string(secevent.KindConnUnexpected), Action: "rejected",
+					Detail: "connection from an address not in ipAddresses"}
+				if allowed {
+					e.Kind, e.Detail = string(secevent.KindConnRejectedLimit),
+						fmt.Sprintf("maxClientConnections (%d) reached", maxClients)
+				}
+				iecsec.SetPeer(&e, iecsec.PeerOf(c))
+				sref.engConn.Sec.Rep.Emit(e)
 				if uc := c.UnderlyingConn(); uc != nil {
 					_ = uc.Close()
 				}
@@ -296,14 +367,19 @@ func main() {
 			sref.sessMu.Lock()
 			sref.sessions[c] = remote
 			sref.sessMu.Unlock()
+			sref.engConn.Sec.Opened(remote, iecsec.PeerOf(c))
 			jslog.Log(jslog.LevelBasic, "%s - Connection event %s - OPENED", sref.cfg.Name, remote)
 			go sref.updateConnStats(remote, "OPENED")
 		})
 		server.SetConnectionLostHandler(func(c asdu.Connect) {
 			sref.sessMu.Lock()
-			remote := sref.sessions[c]
+			remote, ok := sref.sessions[c]
 			delete(sref.sessions, c)
 			sref.sessMu.Unlock()
+			if !ok {
+				return // refused in the connection handler
+			}
+			sref.engConn.Sec.Closed(remote)
 			sref.engine.ForgetLink(sref.engConn, c)
 			jslog.Log(jslog.LevelBasic, "%s - Connection event %s - CLOSED", sref.cfg.Name, remote)
 			go sref.updateConnStats(remote, "CLOSED")

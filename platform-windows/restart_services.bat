@@ -34,6 +34,7 @@ net stop JSON_SCADA_iec101server
 net stop JSON_SCADA_opcuaserver
 net stop JSON_SCADA_iccpserver
 net stop JSON_SCADA_modbusclient
+net stop JSON_SCADA_sunspecclient
 net stop JSON_SCADA_modbusserver
 
 REM STOP OTHER PROCESSES
@@ -98,6 +99,7 @@ REM net start JSON_SCADA_plctags
 net start JSON_SCADA_opcuaserver
 REM net start JSON_SCADA_mcp_server
 rem net start JSON_SCADA_modbusclient
+rem net start JSON_SCADA_sunspecclient
 rem net start JSON_SCADA_modbusserver
 
 net start JSON_SCADA_php

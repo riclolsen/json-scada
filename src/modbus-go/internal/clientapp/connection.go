@@ -87,6 +87,7 @@ type Connection struct {
 
 	endpointIndex int
 	lastGi        time.Time
+	sec           clientSec
 	// polled is the block list the poll loop last used; only the poll
 	// goroutine touches it.
 	polled []*Block
@@ -103,6 +104,8 @@ const commandQueueSize = 256
 func NewConnection(cfg Config, sink Sink) *Connection {
 	c := &Connection{Cfg: cfg, log: drv.ConnLogger{Prefix: cfg.Name}, sink: sink, byID: map[string]*Binding{}}
 	c.gate.cond = sync.NewCond(&c.gate.mu)
+	c.sec.repeat.Every = repeatEvery
+	c.seedIdentity(cfg.StoredIdentity)
 	c.stats.Status = "stopped"
 	return c
 }
@@ -392,7 +395,7 @@ func (c *Connection) open(ctx context.Context) (*modbus.Client, *mbnet.Bridge, s
 	mc := modbus.Config{
 		Timeout:     timeout,
 		DialTimeout: dialTimeout,
-		Logger:      drv.LibLogger{Prefix: cfg.Name},
+		Logger:      &libLogger{LibLogger: drv.LibLogger{Prefix: cfg.Name}, c: c},
 		PDUTap:      modbus.PDUTapFunc(c.tap),
 		MaxConns:    1,
 	}
@@ -404,6 +407,7 @@ func (c *Connection) open(ctx context.Context) (*modbus.Client, *mbnet.Bridge, s
 	var desc string
 	if cfg.IsSerial() {
 		desc = fmt.Sprintf("serial://%s@%s", cfg.PortName, mbcore.JSNumberString(cfg.BaudRate))
+		c.secNewLink("serial://" + cfg.PortName)
 		par, warn := mbnet.Parity(cfg.Parity)
 		if warn != "" {
 			c.log.Error(warn)
@@ -426,6 +430,7 @@ func (c *Connection) open(ctx context.Context) (*modbus.Client, *mbnet.Bridge, s
 	} else {
 		host, port := c.endpoint()
 		target := mbnet.JoinHostPort(host, port)
+		c.secNewLink(target)
 		scheme := "tcp"
 		if cfg.IsRTU() {
 			scheme = "rtuovertcp"
@@ -464,13 +469,19 @@ func (c *Connection) open(ctx context.Context) (*modbus.Client, *mbnet.Bridge, s
 				if tlsCfg == nil {
 					return conn, nil
 				}
-				t := tls.Client(conn, tlsCfg)
+				tcfg, raw := certCapture(tlsCfg)
+				t := tls.Client(conn, tcfg)
 				hctx, cancel := context.WithTimeout(ctx, dialTimeout)
 				defer cancel()
 				if err := t.HandshakeContext(hctx); err != nil {
 					_ = conn.Close()
+					if ctx.Err() == nil {
+						c.secHandshake(nil, *raw, err)
+					}
 					return nil, fmt.Errorf("TLS handshake: %w", err)
 				}
+				cs := t.ConnectionState()
+				c.secHandshake(&cs, nil, nil)
 				return t, nil
 			}
 			var err error
@@ -577,6 +588,9 @@ func (c *Connection) exec(ctx context.Context, prio bool, unit int, pdu []byte, 
 			c.log.Debug(fmt.Sprintf("TX unit=%d%s %s | PDU: %s", unit, retry, mbcore.DescribeRequest(pdu), mbcore.Hex(pdu, 0)))
 		}
 		err := fn(ctx)
+		if errors.Is(err, modbus.ErrRequestTimedOut) {
+			c.noteTimeout()
+		}
 		if err == nil || !errors.Is(err, modbus.ErrRequestTimedOut) || ctx.Err() != nil {
 			return err
 		}
@@ -627,6 +641,9 @@ func (c *Connection) pollLoop(ctx context.Context, cl *modbus.Client) (reason st
 		if !answered && (n > 0 || empty) {
 			answered = true
 			c.stat(func(s *Stats) { s.Status = "connected" })
+			if c.Cfg.PeerIdentification {
+				c.identifyPeer(ctx, cl)
+			}
 		}
 		wait := interval - time.Since(start)
 		if empty && wait < time.Second {
@@ -791,6 +808,7 @@ func (c *Connection) readBlock(ctx context.Context, cl *modbus.Client, b *Block,
 		}
 		c.stat(func(s *Stats) { s.LastError = msg })
 		jslog.Log(jslog.LevelDetailed, "%s: read failed unit=%d %s:%d x%d - %s", c.Cfg.Name, b.Unit, b.Area, b.Start, b.Count, msg)
+		c.secReadError(b, err)
 		if !b.invalidPublished {
 			ids := make([]any, len(b.Slices))
 			for i, s := range b.Slices {

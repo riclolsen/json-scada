@@ -26,12 +26,14 @@ import (
 	"strings"
 	"sync"
 
+	"dnp3-go/internal/dnp3sec"
 	"dnp3-go/internal/dnp3util"
 
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 
 	"github.com/dscsystems/go-dnp3/channel"
 	"github.com/dscsystems/go-dnp3/outstation"
+	"github.com/dscsystems/go-dnp3/secevent"
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -124,10 +126,21 @@ type Connection struct {
 	AllowTLSv11        bool
 	AllowTLSv12        bool
 	AllowTLSv13        bool
+	// PeerIdentification keeps the identity of the masters in
+	// stats.peerIdentity and reports its changes.
+	PeerIdentification bool
+	// storedIdentity is stats.peerIdentity as the connection document held
+	// it at startup, the reference for changes across a restart.
+	storedIdentity bson.M
 
 	// Runtime state.
 	Chan  channel.Channel
 	Group *dnp3util.Group
+
+	// Sec is the connection's security state (masters, refused controls),
+	// and policy the go-dnp3 security policy of its session and bus.
+	Sec    *dnp3sec.Server
+	policy *secevent.Policy
 
 	mu      sync.Mutex
 	station *outstation.Session

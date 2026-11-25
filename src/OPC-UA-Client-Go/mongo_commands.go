@@ -138,6 +138,8 @@ func watchCommands(ctx context.Context, db *mongo.Database, collCmds *mongo.Coll
 		case queue <- ev.FullDocument:
 		default:
 			jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s - too many commands waiting, refusing one", conn.Name)
+			conn.secCommandRefused(kindFloodCommands, ev.FullDocument,
+				fmt.Sprintf("more than %d commands waiting for the server, refused", commandQueueSize), "")
 			cancelCommand(ctx, collCmds, ev.FullDocument["_id"], "busy")
 		}
 	}
@@ -171,6 +173,8 @@ func handleCommand(ctx context.Context, collCmds *mongo.Collection, conns []*OPC
 	if age > commandExpiry {
 		jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s - Address %s value %v Command Timeout Expired, %v Seconds old",
 			conn.Name, address, value, age.Seconds())
+		conn.secCommandRefused(kindCmdStaleTime, doc,
+			fmt.Sprintf("command older than its expiry (%.0f s), not sent", age.Seconds()), "")
 		cancelCommand(ctx, collCmds, docID, "expired")
 		return
 	}
@@ -182,41 +186,60 @@ func handleCommand(ctx context.Context, collCmds *mongo.Collection, conns []*OPC
 		if !conn.CommandsEnabled {
 			reason = "commands disabled"
 			what = " Commands Disabled"
+			conn.secCommandRefused(kindCmdRejected, doc, "commands are disabled on the connection", "")
 		}
 		jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s Address %s value %v%s", conn.Name, address, value, what)
 		cancelCommand(ctx, collCmds, docID, reason)
 		return
 	}
 
+	conn.secCommand(collCmds.Database().Collection(jsmongo.RealtimeDataCollectionName), doc, asdu, value)
+
 	// An OPC UA method is invoked through the Call service, not written as
 	// a Value attribute.
 	if strings.EqualFold(asdu, "method") {
-		callMethod(ctx, collCmds, conn, cli, docID, address, valueString)
+		callMethod(ctx, collCmds, conn, cli, doc, address, valueString)
 		return
 	}
 
-	writeValue(ctx, collCmds, conn, cli, docID, address, asdu, value, valueString)
+	writeValue(ctx, collCmds, conn, cli, doc, address, asdu, value, valueString)
 }
 
 // callMethod resolves the object owning a method and calls it.
-func callMethod(ctx context.Context, collCmds *mongo.Collection, conn *OPCUAConnection, cli *opcua.Client, docID any, address, valueString string) {
+func callMethod(ctx context.Context, collCmds *mongo.Collection, conn *OPCUAConnection, cli *opcua.Client, doc bson.M, address, valueString string) {
+	docID := doc["_id"]
 	ok := false
 	resultDescription := ""
+	expired := false
 
 	err := func() error {
 		methodID, err := ua.ParseNodeID(address)
 		if err != nil {
+			conn.secCommandRefused(kindCmdObjectUnknown, doc, "the command's address is not a valid node id", "")
 			return err
 		}
 
 		objectID, err := methodParent(ctx, cli, methodID)
+		if errors.Is(err, errNoMethodParent) {
+			conn.secCommandRefused(kindCmdObjectUnknown, doc, "the method has no parent object on the server", "")
+			return err
+		}
 		if err != nil {
+			conn.secCommandFailed(doc, "Browse", err)
 			return err
 		}
 
 		args, err := typedMethodArguments(valueString, methodInputTypes(ctx, cli, methodID))
 		if err != nil {
+			conn.secCommandRefused(kindCmdWrongType, doc, "the method's arguments: "+err.Error(), "")
 			return err
+		}
+
+		// The lookups above take requests to the server: the command may
+		// have expired meanwhile.
+		if commandExpired(conn, doc) {
+			expired = true
+			return nil
 		}
 
 		callCtx, cancel := context.WithTimeout(ctx, commandTimeout)
@@ -226,10 +249,22 @@ func callMethod(ctx context.Context, collCmds *mongo.Collection, conn *OPCUAConn
 			MethodID:       methodID,
 			InputArguments: args,
 		})
+		outcome := ""
+		switch {
+		case err != nil:
+			outcome = err.Error()
+		default:
+			outcome = statusCodeName(res.StatusCode)
+		}
+		// Reported after the dispatch: telling what the method is takes
+		// requests to the server, which must not delay the command.
+		go conn.secMethodCall(cli, doc, methodID, objectID, len(args), outcome)
 		if err != nil {
+			conn.secCommandFailed(doc, "Call", err)
 			return err
 		}
 		if !statusIsGood(res.StatusCode) {
+			conn.secCommandAnswer(doc, "Call", res.StatusCode)
 			return errors.New(statusCodeName(res.StatusCode))
 		}
 
@@ -247,6 +282,10 @@ func callMethod(ctx context.Context, collCmds *mongo.Collection, conn *OPCUAConn
 		return nil
 	}()
 
+	if expired {
+		cancelCommand(ctx, collCmds, docID, "expired")
+		return
+	}
 	if err != nil {
 		ok = false
 		resultDescription = err.Error()
@@ -258,6 +297,10 @@ func callMethod(ctx context.Context, collCmds *mongo.Collection, conn *OPCUAConn
 
 // methodParent finds the object a method belongs to, which the Call service
 // requires alongside the method itself.
+// errNoMethodParent: the server answered, and the method has no parent
+// object.
+var errNoMethodParent = errors.New("could not resolve parent object for method")
+
 func methodParent(ctx context.Context, cli *opcua.Client, methodID *ua.NodeID) (*ua.NodeID, error) {
 	browseCtx, cancel := context.WithTimeout(ctx, commandTimeout)
 	defer cancel()
@@ -278,7 +321,7 @@ func methodParent(ctx context.Context, cli *opcua.Client, methodID *ua.NodeID) (
 		return nil, err
 	}
 	if len(resp.Results) == 0 || len(resp.Results[0].References) == 0 {
-		return nil, errors.New("could not resolve parent object for method")
+		return nil, errNoMethodParent
 	}
 	return ua.NewNodeIDFromExpandedNodeID(resp.Results[0].References[0].NodeID), nil
 }
@@ -475,10 +518,12 @@ func typedArgument(el any, typeID uint32) (v *ua.Variant, handled bool, err erro
 
 // writeValue converts the command to the type the node expects and writes
 // it to the Value attribute.
-func writeValue(ctx context.Context, collCmds *mongo.Collection, conn *OPCUAConnection, cli *opcua.Client, docID any, address, asdu string, value float64, valueString string) {
+func writeValue(ctx context.Context, collCmds *mongo.Collection, conn *OPCUAConnection, cli *opcua.Client, doc bson.M, address, asdu string, value float64, valueString string) {
+	docID := doc["_id"]
 	nodeID, err := ua.ParseNodeID(address)
 	if err != nil {
 		jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s - Type conversion error! %v", conn.Name, err)
+		conn.secCommandRefused(kindCmdObjectUnknown, doc, "the command's address is not a valid node id", "")
 		cancelCommand(ctx, collCmds, docID, "type conversion error")
 		return
 	}
@@ -486,18 +531,26 @@ func writeValue(ctx context.Context, collCmds *mongo.Collection, conn *OPCUAConn
 	variant, reason, err := commandVariant(asdu, value, valueString)
 	if reason != "" {
 		jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s - %s", conn.Name, reason)
+		conn.secCommandRefused(kindCmdWrongType, doc, "command not sent: "+reason, "")
 		cancelCommand(ctx, collCmds, docID, reason)
 		return
 	}
 	if err != nil {
 		jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s - Type conversion error! %v", conn.Name, err)
+		conn.secCommandRefused(kindCmdWrongType, doc, "command not sent: the value does not convert to "+asdu, "")
 		cancelCommand(ctx, collCmds, docID, "type conversion error")
 		return
 	}
 	// No branch matched the ASDU: refuse rather than write a null value.
 	if variant == nil {
 		jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s - Unsupported command ASDU '%s', ignoring.", conn.Name, asdu)
+		conn.secCommandRefused(kindCmdWrongType, doc, "command not sent: unsupported command type "+asdu, "")
 		cancelCommand(ctx, collCmds, docID, "unsupported command type")
+		return
+	}
+
+	if commandExpired(conn, doc) {
+		cancelCommand(ctx, collCmds, docID, "expired")
 		return
 	}
 
@@ -522,9 +575,11 @@ func writeValue(ctx context.Context, collCmds *mongo.Collection, conn *OPCUAConn
 	switch {
 	case err != nil:
 		resultDescription = err.Error()
+		conn.secCommandFailed(doc, "Write", err)
 	case len(resp.Results) > 0:
 		resultDescription = statusCodeName(resp.Results[0])
 		ok = statusIsGood(resp.Results[0])
+		conn.secCommandAnswer(doc, "Write", resp.Results[0])
 	}
 
 	jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s - Address: %s value: %v valueString: %s - Command delivered - %s",
@@ -707,6 +762,20 @@ func arrayVariant(asdu, valueString string) (*ua.Variant, string, error) {
 	}
 	v, err := ua.NewVariant(x)
 	return v, "", err
+}
+
+// commandExpired reports (and logs) a command that is older than its expiry
+// at the moment of dispatch.
+func commandExpired(conn *OPCUAConnection, doc bson.M) bool {
+	age := time.Since(jsmongo.GetTime(doc, "timeTag"))
+	if age <= commandExpiry {
+		return false
+	}
+	jslog.Log(jslog.LevelNoLog, "MongoDB CMD CS - %s - Address %s Command Timeout Expired before dispatch, %v Seconds old",
+		conn.Name, jsmongo.GetString(doc, "protocolSourceObjectAddress", ""), age.Seconds())
+	conn.secCommandRefused(kindCmdStaleTime, doc,
+		fmt.Sprintf("command older than its expiry (%.0f s) at dispatch, not sent", age.Seconds()), "")
+	return true
 }
 
 // cancelCommand marks a command refused before it reached the server.

@@ -64,6 +64,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - Extensibility of the core data model (MongoDB: NoSQL/schema-less).
 - HTML5 Web interface. UTF-8/I18N. Mobile access. Web-based configuration management.
 - Role-based access control (RBAC).
+- Cyber-security events: protocol drivers (IEC 61850, IEC 60870-5-101/103/104, DNP3, ICCP, Modbus, SunSpec, OPC UA) report suspicious or unexpected conditions (TLS handshakes, malformed frames, unauthorized or stale commands, peer identity changes, unknown peers, protocol violations) to a Security Events viewer with severity, peer identification and configurable retention.
 - Various high-quality protocol drivers.
 - Integration with MQTT brokers (compatibility with Sparkplug B).
 - Live point configuration updates.
@@ -105,6 +106,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [Docker Image](docs/docker_image.md)
 - [Docker Compose Demo](demo-docker/README.md)
 - [Schema Documentation](docs/schema.md)
+- [Security Events](docs/schema.md#secevents-collection)
 - [Developer Guide](docs/DEVELOPER_GUIDE.md)
 - [Windows Build Instructions](docs/build_windows.md)
 - [Config File](conf/README.md)
@@ -131,6 +133,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [OPC-DA Client Driver](src/OPC-DA-Client/README.md)
 - [OPC-DA Server Driver](src/OPC-DA-Server/README.md)
 - [PLC4J Client Driver](src/plc4j-client/README.md)
+- [SunSpec Client Driver (Go; model discovery, automatic tags, TCP/TLS/RTU)](src/modbus-go/cmd/sunspecclient/README.md)
 - [Modbus Client Driver (Go; TCP/TLS/RTU/RTU-over-TCP/TLS, all byte orders)](src/modbus-go/cmd/modbusclient/README.md)
 - [Modbus Server Driver (Go; TCP/TLS/RTU/RTU-over-TCP/TLS, all byte orders)](src/modbus-go/cmd/modbusserver/README.md)
 - [CIM-EMS Driver (CGMES 2.4.15 models, load flow, state estimation, contingency analysis; Python)](src/cim-ems/README.md)
@@ -158,6 +161,7 @@ Open http://127.0.0.1 on a browser (user="admin" and password="jsonscada"). See 
 - [x] Various protocols (Modbus, S7, etc.) via PLC4X-Java
 - [x] Modbus Client (native) TCP/TLS/RTU/RTU-over-TCP, all byte orders
 - [x] Modbus Server (native) TCP/TLS/RTU/RTU-over-TCP, all byte orders
+- [x] SunSpec Client (native) TCP/TLS/RTU/RTU-over-TCP, model discovery and automatic tags
 - [x] ICCP Client TCP/TLS
 - [x] ICCP Server TCP/TLS
 - [x] Telegraf Client (many data sources available such as MQTT, MODBUS, SNMP, ...)

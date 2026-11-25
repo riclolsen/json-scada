@@ -123,6 +123,7 @@ connection instead of a local serial port:
 - _**description**_ [String] - Description of the connection. Documental only. **Optional parameter**.
 - _**enabled**_ [Boolean] - Controls the enabling of the connection. Use false here to disable the connection. **Mandatory parameter**.
 - _**commandsEnabled**_ [Boolean] - Allows commands (general commands in control direction) for the connection. Use false to disable commands. **Mandatory parameter**.
+- _**peerIdentification**_ [Boolean] - Records the peer's identity in _stats.peerIdentity_ when the connection is (re)established, and reports its changes as security events. Default: true. **Optional parameter**.
 - _**portName**_ [String] - Serial port name (`COM3`, `/dev/ttyS0`, ...) for a local serial line, **or** `host:port` to carry the FT1.2 frames over TCP (terminal / serial-device server). **Mandatory parameter**.
 - _**baudRate**_ [Double] - Serial baud rate (e.g. 9600, 19200). Serial transport only. **Optional parameter (default 9600)**.
 - _**parity**_ [String] - Serial parity: `Even` (103 standard), `None`, `Odd`. Serial transport only. **Optional parameter (default Even)**.
@@ -134,7 +135,7 @@ connection instead of a local serial port:
 - _**timeoutRepeat**_ [Double] - Link-layer repeat timeout T2 in milliseconds (converted to whole seconds, must be < T1). **Optional parameter**.
 - _**maxQueueSize**_ [Double] - Maximum size of the outbound command queue. **Optional parameter (default 100)**.
 - _**t0**_ [Double] - TCP connect timeout in seconds (TCP transport only). **Optional parameter (default 30)**.
-- _**stats**_ [Object] - Protocol statistics updated by the driver (nodeName, timeTag, linkLayerState). **Optional parameter**.
+- _**stats**_ [Object] - Protocol statistics updated by the driver (nodeName, timeTag, linkLayerState, isConnected, peerIdentity). **Optional parameter**.
 
 Parameters needed only for TLS-encrypted TCP connections:
 
@@ -258,6 +259,10 @@ automatically.
 
 Once the tags exist you can rename, group and edit them normally. Set
 _autoCreateTags_ back to `false` when the address map is stable.
+
+## Security events
+
+The driver reports unexpected or suspicious conditions to the _secEvents_ collection, listed by the Security Events viewer of the Admin UI: go-iecp5 checks the FT1.2 link and the 103 ASDUs; the driver adds the restarts reported by the devices (identification with cause start/restart or power on), general commands refused by a device (negative acknowledgement) or not sent, stale queued commands, command floods and unnecessary commands. With _peerIdentification_ on, the driver records the device's address and link address and, from each device's identification ASDU 5, its compatibility level, manufacturer/product text and software identification (a change is reported as `peer.identity_changed`) in _stats.peerIdentity_ and reports a change between connections, also across driver restarts. See [Security events and peer identification](../../README.md#security-events-and-peer-identification) for the event kinds and the _stats.peerIdentity_ document.
 
 ## Command Line Arguments
 

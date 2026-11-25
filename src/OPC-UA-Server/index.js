@@ -43,6 +43,7 @@ const {
   isTagEligibleForHistory,
   convertHistValue,
 } = require('./historian')
+const { SecEventWriter, ConnSec, COLLECTION: SecEventsCollection } = require('./secevents')
 let HintMongoIsConnected = true
 
 process.on('uncaughtException', (err) =>
@@ -59,6 +60,9 @@ process.on('unhandledRejection', (reason) =>
 
   let clientMongo = null
   let servers = [] // OPC-UA server instances, tracked across (re)connections for shutdown
+  // security events of every connection (secEvents), kept in memory while
+  // MongoDB is unreachable
+  const secWriter = new SecEventWriter((msg) => Log.log(msg, Log.levelDetailed))
 
   // Every 5 s: the instance keep-alive and each connection's
   // stats.isConnected (at least one client session open), read by the data
@@ -95,7 +99,11 @@ process.on('unhandledRejection', (reason) =>
             timeTag: now,
             isConnected: (server.currentSessionCount || 0) > 0,
             sessions: server.currentSessionCount || 0,
-          }
+            // the client sessions open now and the client applications seen
+            ...(server._sec?.ident ? { peerIdentity: server._sec.statsDoc() } : {}),
+          },
+          // identification off: no identity left from when it was on
+          server._sec && !server._sec.ident ? ['peerIdentity'] : []
         )
       }
     } catch (err) {
@@ -124,7 +132,7 @@ process.on('unhandledRejection', (reason) =>
   }
 
   // graceful shutdown on termination signals: drop OPC-UA clients and close
-  // the Mongo client cleanly before the process exits (e.g. systemctl/nssm
+  // the Mongo client cleanly before the process exits (e.g. systemctl/WinSW
   // stop, docker stop, CTRL+C)
   let isShuttingDown = false
   const gracefulShutdown = async (signal) => {
@@ -141,6 +149,11 @@ process.on('unhandledRejection', (reason) =>
       await shutdownServers()
     } catch (e) {
       Log.log('Error shutting down OPC-UA server(s): ' + e)
+    }
+    try {
+      await secWriter.close() // store the queued security events
+    } catch (e) {
+      Log.log('Error storing security events: ' + e)
     }
     try {
       if (clientMongo) await clientMongo.close()
@@ -185,6 +198,7 @@ process.on('unhandledRejection', (reason) =>
           const connsCollection = db.collection(
             jsConfig.ProtocolConnectionsCollectionName
           )
+          secWriter.setCollection(db.collection(SecEventsCollection))
 
           // find the connection number, if not found abort (only one connection per instance is allowed for this protocol)
           let connections = await getConnections(connsCollection, jsConfig)
@@ -238,39 +252,65 @@ process.on('unhandledRejection', (reason) =>
             rtCollection,
             cmdCollection
           ) {
-            async function sendCommand(tag, variant) {
+            // the outcome of a client write to a command variable: the
+            // status returned to the client and its security event (sec is
+            // told who wrote through node-opcua's setter context)
+            async function sendCommand(tag, variant, context, nodeId) {
+              const out = { tag, nodeId }
+              const sc = await sendCommandChecked(tag, variant, out)
+              out.status = sc.name
+              try {
+                sec.commandOutcome(context, out)
+              } catch (e) {
+                Log.log('secEvents - command check: ' + e)
+              }
+              return sc
+            }
+
+            async function sendCommandChecked(tag, variant, out) {
               let cmdRes = null
               try {
                 cmdRes = await rtCollection.findOne({ tag: tag })
               } catch (e) {
                 Log.log('Error reading command tag! Tag: ' + tag + ' ' + e)
+                out.internal = true
+                out.error = String(e?.message || e)
                 return StatusCodes.BadInternalError
               }
 
               if (!cmdRes || !('_id' in cmdRes)) {
                 Log.log('Command not found! Tag: ' + tag)
+                out.kind = 'cmd.object_unknown'
+                out.detail = 'the command tag no longer exists'
                 return StatusCodes.BadNotFound
               }
+              out.asdu = cmdRes.protocolSourceASDU
 
               if (cmdRes?.commandBlocked !== false) {
                 Log.log('Command blocked! Tag: ' + tag)
+                out.kind = 'cmd.rejected'
+                out.detail = 'command blocked (commandBlocked)'
                 return StatusCodes.BadNotWritable
               }
 
               // check the supervised point for commandBlocked
+              let supRes = null
               if (cmdRes.supervisedOfCommand != 0) {
-                let supRes = null
                 try {
                   supRes = await rtCollection.findOne({
                     _id: cmdRes.supervisedOfCommand,
                   })
                 } catch (e) {
                   Log.log('Error reading supervised tag! Tag: ' + tag + ' ' + e)
+                  out.internal = true
+                  out.error = String(e?.message || e)
                   return StatusCodes.BadInternalError
                 }
                 if (supRes && '_id' in supRes) {
                   if (supRes?.commandBlocked !== false) {
                     Log.log('Command blocked (sup)! Tag: ' + tag)
+                    out.kind = 'cmd.rejected'
+                    out.detail = 'command blocked (commandBlocked of the supervised point)'
                     return StatusCodes.BadNotWritable
                   }
                 }
@@ -279,10 +319,23 @@ process.on('unhandledRejection', (reason) =>
               const cv = variantToCommandValue(variant)
               if (cv === null) {
                 Log.log('Command with invalid value type! Tag: ' + tag)
+                out.kind = 'cmd.wrong_type'
+                out.detail = 'command value of a type that cannot be used'
                 return StatusCodes.BadTypeMismatch
               }
               let doubleVal = cv.doubleVal
               let strVal = cv.strVal
+              if (cmdRes?.type !== 'string') out.value = cv.doubleVal
+              // a digital command to the state its supervised point already
+              // is in (a value from before this command)
+              const now = new Date()
+              out.unnecessary =
+                cmdRes?.type === 'digital' &&
+                supRes?.type === 'digital' &&
+                supRes.invalid === false &&
+                supRes.timeTag instanceof Date &&
+                supRes.timeTag < now &&
+                (cv.doubleVal !== 0) === (supRes.value !== 0)
 
               if (cmdRes?.type === 'digital') {
                 doubleVal = doubleVal ? 1 : 0
@@ -299,6 +352,8 @@ process.on('unhandledRejection', (reason) =>
               }
               if (!Number.isFinite(doubleVal)) {
                 Log.log('Command with non-finite value! Tag: ' + tag)
+                out.kind = 'cmd.wrong_type'
+                out.detail = 'command value out of range after conversion'
                 return StatusCodes.BadOutOfRange
               }
 
@@ -338,6 +393,8 @@ process.on('unhandledRejection', (reason) =>
                 })
               } catch (e) {
                 Log.log('Error inserting command! Tag: ' + tag + ' ' + e)
+                out.internal = true
+                out.error = String(e?.message || e)
                 return StatusCodes.BadInternalError
               }
 
@@ -497,6 +554,15 @@ process.on('unhandledRejection', (reason) =>
             server._metrics = {}
             server._name = connection.name
             server._connNumber = connection.protocolConnectionNumber
+            // security events and client identification (peerIdentification)
+            const sec = new ConnSec(connection, secWriter, {
+              protocolDriver: AppDefs.NAME,
+              instance: jsConfig.Instance,
+              nodeName: jsConfig.nodeName,
+              log: (msg) => Log.log(connection.name + ' - ' + msg, Log.levelDetailed),
+            })
+            sec.attach(server)
+            server._sec = sec
             servers.push(server)
 
             await server.initialize()
@@ -571,6 +637,7 @@ process.on('unhandledRejection', (reason) =>
                 Log.log(
                   'IP not authorized: closing channel! ' + channel?.remoteAddress
                 )
+                sec.unexpectedConnection(channel)
                 try {
                   channel.close()
                 } catch (e) {
@@ -585,7 +652,7 @@ process.on('unhandledRejection', (reason) =>
               Log.log('Creating session.')
               Log.log(
                 'Client description, application URI: ' +
-                  session?.parent?.clientDescription?.applicationUri
+                  session?.clientDescription?.applicationUri
               )
               Log.log('Remote Address: ' + session?.channel?.remoteAddress)
 
@@ -843,8 +910,15 @@ process.on('unhandledRejection', (reason) =>
                       get: () => new Variant(variant),
                       // async setter: the client gets the real outcome (blocked,
                       // unknown tag, bad type, insert failure) instead of Good
-                      set: (variant, callback) => {
-                        sendCommand(element.tag, variant)
+                      // node-opcua passes the writer's session context after
+                      // the callback
+                      set: (variant, callback, context) => {
+                        sendCommand(
+                          element.tag,
+                          variant,
+                          context,
+                          String(server._metrics[element.tag]?.nodeId || '')
+                        )
                           .then((sc) => callback(null, sc))
                           .catch((e) => {
                             Log.log(
@@ -948,6 +1022,10 @@ process.on('unhandledRejection', (reason) =>
                     ...cmdWriteProp,
                     // timestamped_get will not be used, values will be updated by change stream
                   })
+                  if (element.origin === 'command')
+                    sec.commandNodes.add(
+                      server._metrics[element.tag].nodeId.toString()
+                    )
                   if (element.origin !== 'command') {
                     server._metrics[element.tag].setValueFromSource(
                       {
@@ -1171,19 +1249,30 @@ process.on('unhandledRejection', (reason) =>
 // $set stats.<field> on a connection document. Connection documents are
 // created with stats: null, where a dotted $set fails with error 28
 // (PathNotViable): replace the null with an empty document and retry once.
-async function updateConnectionStats(connsCollection, connNumber, fields) {
+// unsetFields: stats.<field> paths to remove.
+async function updateConnectionStats(
+  connsCollection,
+  connNumber,
+  fields,
+  unsetFields = []
+) {
   const set = {}
   for (const [k, v] of Object.entries(fields)) set['stats.' + k] = v
+  const update = { $set: set }
+  if (unsetFields.length > 0) {
+    update.$unset = {}
+    for (const k of unsetFields) update.$unset['stats.' + k] = ''
+  }
   const filter = { protocolConnectionNumber: connNumber }
   try {
-    return await connsCollection.updateOne(filter, { $set: set })
+    return await connsCollection.updateOne(filter, update)
   } catch (err) {
     if (err?.code !== 28) throw err
     await connsCollection.updateOne(
       { ...filter, stats: null },
       { $set: { stats: {} } }
     )
-    return await connsCollection.updateOne(filter, { $set: set })
+    return await connsCollection.updateOne(filter, update)
   }
 }
 

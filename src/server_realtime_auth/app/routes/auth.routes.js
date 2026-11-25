@@ -2,6 +2,8 @@ const { authJwt } = require('../middlewares')
 const controller = require('../controllers/auth.controller')
 const processController = require('../controllers/processManagement.controller')
 const cimEmsController = require('../controllers/cimEms.controller')
+const alarmsController = require('../controllers/alarms.controller')
+const secEventsController = require('../controllers/secEvents.controller')
 
 module.exports = function (app, accessPoint) {
   app.use(function (req, res, next) {
@@ -116,19 +118,33 @@ module.exports = function (app, accessPoint) {
     [authJwt.verifyToken],
     controller.userDisplays
   )
+  // alarm list (alarmsData), realtime or historical; any signed-in user
+  app.post(
+    accessPoint + 'auth/listAlarms',
+    [authJwt.verifyToken],
+    alarmsController.listAlarms
+  )
+  // security events (secEvents); a role with viewSecEvents
+  app.post(
+    accessPoint + 'auth/listSecEvents',
+    [authJwt.isSecEventsViewer],
+    secEventsController.listSecEvents
+  )
+  // svg displays (SVG editor, MCP display tools): isAdmin or a role with
+  // editDisplays (non-admins only the displays of their displayList)
   app.use(
     accessPoint + 'auth/listDisplays',
-    [authJwt.isAdmin],
+    [authJwt.isDisplayEditor],
     controller.listDisplays
   )
   app.get(
     accessPoint + 'auth/openDisplay',
-    [authJwt.isAdmin],
+    [authJwt.isDisplayEditor],
     controller.openDisplay
   )
   app.post(
     accessPoint + 'auth/saveDisplay',
-    [authJwt.isAdmin],
+    [authJwt.isDisplayEditor],
     controller.saveDisplay
   )
   app.post(

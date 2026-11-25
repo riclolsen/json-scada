@@ -42,7 +42,18 @@ The Windows Installer has everything needed to run the system (MongoDB, PostgreS
 * Administrative rights. corporate Windows policies may cause problems with the creation of services and the opening of TCP ports.
 * Free TCP ports 6688, 6689, 27017, 5432, 80, 8080, 3000, 3001, 9000. Other ports may be required for optional services and protocols.
 * If the server already has MongoDB, PostgreSQL, Grafana, Nginx or another webserver, please uninstall, disable or watch out for possible conflicts.
-* Do not update previously installed JSON-SCADA. Please uninstall previous JSON-SCADA versions before installing a new version.
+* To upgrade, run the new installer over the existing installation (do not uninstall first: the uninstaller removes the databases). See [Upgrading on Windows](#upgrading-on-windows).
+
+### Upgrading on Windows
+
+Running a newer installer over an existing installation upgrades it in place:
+
+* MongoDB and PostgreSQL data, the `c:\json-scada\conf\` files, SVG displays and the settings of existing services are kept. The demo data is not imported again.
+* All JSON-SCADA services are stopped during the upgrade; the ones that were running are restarted at the end.
+* `conf\`, the `platform-windows` batch scripts and `mongod.cfg` are first backed up to `c:\json-scada\backup\upgrade_<date>_<time>\`.
+* Services added by the new version are registered with their default settings. New collections, indexes and validators are added to MongoDB, its feature compatibility version is raised (single-node replica set) and the TimescaleDB extension is updated.
+* If the bundled PostgreSQL major version differs from the data, the previous PostgreSQL binaries are kept in `platform-windows\postgresql-runtime-<version>` and keep serving the data; migrate it later with `pg_upgrade` or `pg_dumpall`.
+* Details and warnings are logged to `c:\json-scada\log\upgrade.log`. Installing an older version over a newer one is not supported.
 
 ### QUICKSTART
 
@@ -87,15 +98,10 @@ Execute commands below for scripted installation:
     sudo dnf -y install git
     cd /home/jsonscada
     git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
-    cd json-scada/platform-rhel9
-    # or 
-    # cd json-scada/platform-rhel10
+    cd json-scada/platform-rhel
 
-    # on x86-64 platform run
+    # one installer for RHEL 9 and 10, x86-64 and ARM64 (version and CPU architecture are detected)
     sudo sh ./json-scada-install.sh
-
-    # on ARM64 platform instead run
-    # sudo sh ./json-scada-install-aarch64.sh 
 
     # to compile and install Inkscape+SAGE, run the following command: 
     sudo sh ./inkscape-plus-sage.sh
@@ -120,15 +126,32 @@ Execute commands below for scripted installation:
     sudo apt install -y git
     cd /home/jsonscada
     git clone --recurse-submodules https://github.com/riclolsen/json-scada --config core.autocrlf=input
-    cd json-scada/platform-ubuntu-2404
-    # or 
-    # cd json-scada/platform-ubuntu-2604
+    cd json-scada/platform-ubuntu
 
-    # on x86-64 or ARM64 platform run
+    # one installer for Ubuntu 24.04 and 26.04, x86-64 and ARM64 (version and CPU architecture are detected)
     sudo sh ./json-scada-install.sh
 
     # to compile and install Inkscape+SAGE, run the following command: 
     sudo sh ./inkscape-plus-sage.sh
+
+## Upgrading a scripted Linux installation
+
+Update the checkout and run the same installer again; it detects the existing installation and upgrades it:
+
+    cd /home/jsonscada/json-scada
+    git pull --recurse-submodules
+    cd platform-ubuntu    # or platform-rhel (also for installations made from the former per-version folders)
+    sudo sh ./json-scada-install.sh
+
+If `git pull` refuses because `conf/json-scada.json` was changed locally, copy the file aside, run `git checkout conf/json-scada.json`, pull and copy it back.
+
+* MongoDB and PostgreSQL data, `conf/`, SVG displays and the AdminUI driver services in `conf/supervisor.d` are kept. The demo database is not imported again.
+* Supervisor programs are stopped during the upgrade; the ones that were running are started again at the end.
+* System configuration files installed by the script (Nginx, MongoDB, PostgreSQL, Grafana, Telegraf, Supervisor) are updated only if they were not changed locally. A changed file is kept and the new version is written next to it as `<file>.jsnew`. Supervisor program files take the new version but keep their `autostart` setting.
+* `conf/`, the Supervisor program files and every replaced system file are first backed up to `backup/upgrade_<date>_<time>/` in the checkout.
+* New MongoDB collections, indexes and validators are added, its feature compatibility version is raised (single-node replica set) and the TimescaleDB extensions are updated.
+* If the PostgreSQL data is in an older major version cluster than the one the script installs, that cluster keeps serving JSON-SCADA unchanged; the script prints the commands to migrate it.
+* Details and warnings are logged to `log/upgrade.log`. Set `JS_ASSUME_YES=1` to run without the confirmation prompt (`sudo JS_ASSUME_YES=1 sh ./json-scada-install.sh`). Checking out an older version and running the installer (downgrade) is not supported.
 
 ## Manual Installation
 
@@ -197,7 +220,7 @@ If certificates are configured for PostgreSQL connections to the server, it must
 
 * Inkscape SAGE or SCADAvis.io SVG Editor for synoptic display creation - https://www.microsoft.com/en-us/p/scadavisio-synoptic-editor/9p9905hmkz7x . Available only for Windows.
 * OpenSSL 3.x (for Windows) - https://slproweb.com/products/Win32OpenSSL.html.
-* NSSM (for Windows) - https://nssm.cc/
+* WinSW 2.x (for Windows, WinSW-x64.exe saved as WinSW.exe) - https://github.com/winsw/winsw
 * Visual Studio Community (for Windows) - https://visualstudio.microsoft.com/vs/community/
 * Supervisor (for Linux) - http://supervisord.org/installing.html
 * Visual Studio Code - https://code.visualstudio.com/
@@ -243,7 +266,7 @@ Processes can be distributed on distinct servers, each server must have a differ
 
 Multiple JSON-SCADA systems can run on the same server; each one must have distinct MongoDB and PostgreSQL databases, a separate folder structure and distinct HTTP listen ports.
 
-It is recommended to run JSON-SCADA processes as services or daemons. On Linux, use the _Supervisor_ tool to manage processes. On Windows, convert processes into Windows services with the NSSM tool.
+It is recommended to run JSON-SCADA processes as services or daemons. On Linux, use the _Supervisor_ tool to manage processes. On Windows, run processes as Windows services with the WinSW tool.
 
 ### Supervisor Configuration (Linux)
 
@@ -253,21 +276,21 @@ Install supervisor for your OS
 
 The platform installers already install supervisor and copy the program definitions:
 
-* Ubuntu: `platform-ubuntu-*/supervisord.conf` -> `/etc/supervisor/supervisord.conf`,
-  and `platform-ubuntu-*/*.ini` -> `/etc/supervisor/conf.d/`.
-* RHEL: `platform-rhel*/supervisord.conf` -> `/etc/supervisord.conf`, and
-  `platform-rhel*/*.ini` -> `/etc/supervisord.d/`.
+* Ubuntu: `platform-ubuntu/supervisord.conf` -> `/etc/supervisor/supervisord.conf`,
+  and `platform-ubuntu/*.ini` -> `/etc/supervisor/conf.d/`.
+* RHEL: `platform-rhel/supervisord.conf` -> `/etc/supervisord.conf`, and
+  `platform-rhel/*.ini` -> `/etc/supervisord.d/`.
 
 For a manual installation, do the same with the directory for your distribution
-(`platform-rhel9`, `platform-rhel10`, `platform-ubuntu-2404` or `platform-ubuntu-2604`):
+(`platform-rhel` or `platform-ubuntu`):
 
     sudo apt install -y supervisor          # or: sudo dnf install -y supervisor
-    sudo cp platform-ubuntu-2404/supervisord.conf /etc/supervisor/supervisord.conf
-    sudo cp platform-ubuntu-2404/*.ini /etc/supervisor/conf.d/
+    sudo cp platform-ubuntu/supervisord.conf /etc/supervisor/supervisord.conf
+    sudo cp platform-ubuntu/*.ini /etc/supervisor/conf.d/
 
     # or, on RHEL-compatible systems:
-    sudo cp platform-rhel9/supervisord.conf /etc/supervisord.conf
-    sudo cp platform-rhel9/*.ini /etc/supervisord.d/
+    sudo cp platform-rhel/supervisord.conf /etc/supervisord.conf
+    sudo cp platform-rhel/*.ini /etc/supervisord.d/
 
 Adjust the `/home/jsonscada/json-scada` paths and the `user=` line in the `.ini` files
 if you installed elsewhere. Programs that ship with `autostart=false` stay stopped until
@@ -285,27 +308,29 @@ Use the manager tool to start, stop and monitor the system:
         tail -f cs_data_processor
         help
 
-### NSSM Configuration on Windows (not necessary if used the Windows installer)
+### WinSW Configuration on Windows (not necessary if used the Windows installer)
 
-Install the NSSM tool. It can be installed in "c:\json-scada\platform-windows\".
+Save the WinSW 2.x executable (WinSW-x64.exe from https://github.com/winsw/winsw/releases) as "c:\json-scada\platform-windows\WinSW.exe".
 
-Use the tool to create necessary services. See "C:\json-scada\platform-windows\create_services.bat".
+Each service is defined by an XML file in "c:\json-scada\platform-windows\service-templates\" (executable, arguments, working directory, environment, start mode, log file). Create the services from an administrator command prompt (existing services are kept as they are):
 
-    cd c:\json-scada\bin
-    nssm install JSON_SCADA_calculations "C:\json-scada\bin\calculations.exe"
-    nssm install JSON_SCADA_iec104server "C:\json-scada\bin\iec104server.exe"
-    nssm install JSON_SCADA_iec104client "C:\json-scada\bin\iec104client.exe"
-    nssm install JSON_SCADA_cs_data_processor <PATH_TO_NODEJSEXE>\node "C:\json-scada\src\cs_data_processor\cs_data_processor.js"
-    nssm install JSON_SCADA_server_realtime_auth <PATH_TO_NODEJSEXE>\node "C:\json-scada\src\server_realtime_auth\index.js"
+    c:\json-scada\platform-windows\create_services.bat
 
-    ... and so on ...
+or, for some services only:
 
-To manage services use
+    powershell -ExecutionPolicy Bypass -File c:\json-scada\platform-windows\winsw-services.ps1 -Action Install -Name calculations,iec104client
 
-    nssm start service_name
-    nssm stop service_name
-    nssm restart service_name
-    nssm status service_name
-    nssm remove service_name
+Each installed service has its live configuration "c:\json-scada\platform-windows\services\JSON_SCADA_<name>.xml" next to its service binary "JSON_SCADA_<name>.exe" (a hard link to, or copy of, WinSW.exe). Edit the XML and restart the service to change it (start mode and failure actions are set when the service is installed: use `sc config`, or `winsw-services.ps1 -Action Install -Force -Name <name>` to re-create it from its template). The output goes to "c:\json-scada\log\<name>.out.log" and "<name>.err.log", rolled at 10 MB with one rolled file kept. WinSW restarts a process that exits with a non-zero code after 2 seconds; a process that exits with code 0 stops its service.
+
+To manage services use (admin PowerShell)
+
+    Start-Service JSON_SCADA_<name>
+    Stop-Service JSON_SCADA_<name>
+    Restart-Service JSON_SCADA_<name>
+    Get-Service JSON_SCADA_*
+    powershell -ExecutionPolicy Bypass -File c:\json-scada\platform-windows\winsw-services.ps1 -Action Status
+    powershell -ExecutionPolicy Bypass -File c:\json-scada\platform-windows\winsw-services.ps1 -Action Remove -Name <name>
+
+Services created by NSSM in older installations are converted with the same settings by `winsw-services.ps1 -Action Migrate` (the installer does it on upgrade).
 
     

@@ -34,6 +34,7 @@ export const PROTOCOL_DRIVERS: Record<string, { doc?: string; role: string }> =
     DNP3_SERVER: { doc: 'dnp3-go/README.md', role: 'server' },
     'MQTT-SPARKPLUG-B': { doc: 'mqtt-sparkplug/README.md', role: 'client/server' },
     MODBUS: { doc: 'modbus-go/cmd/modbusclient/README.md', role: 'client' },
+    SUNSPEC: { doc: 'modbus-go/cmd/sunspecclient/README.md', role: 'client' },
     MODBUS_SERVER: { doc: 'modbus-go/cmd/modbusserver/README.md', role: 'server' },
     'OPC-UA': { doc: 'OPC-UA-Client-Go/README.md', role: 'client' },
     'OPC-UA_SERVER': { doc: 'OPC-UA-Server/README.md', role: 'server' },

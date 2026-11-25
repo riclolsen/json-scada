@@ -42,7 +42,8 @@
     "customDevelopments": "التطورات المخصصة",
     "open": "يفتح",
     "cimEms": "CIM-EMS",
-    "svgedit": "محرر SVG"
+    "svgedit": "محرر SVG",
+    "secEventsViewer": "أحداث الأمان"
   },
   "tabularViewer": {
     "station": "محطة",
@@ -91,9 +92,15 @@
       "value": "قيمة",
       "state": "ولاية",
       "quality": "جودة",
-      "hiLimit": "الحد الأعلى",
-      "loLimit": "الحد الأدنى",
+      "hiLimit": "الحد الأعلى (HI)",
+      "loLimit": "الحد الأدنى (LO)",
+      "hihiLimit": "الحد الأعلى 2 (HIHI)",
+      "hihihiLimit": "الحد الأعلى 3 (HIHIHI)",
+      "loloLimit": "الحد الأدنى 2 (LOLO)",
+      "lololoLimit": "الحد الأدنى 3 (LOLOLO)",
       "hysteresis": "التخلف",
+      "alarmRange": "نطاق الإنذار",
+      "limitsOrder": "الحدود خارج الترتيب (LOLOLO ≤ LOLO ≤ LO ≤ HI ≤ HIHI ≤ HIHIHI)",
       "annotation": "تعليق الحجب",
       "notes": "ملاحظات وثائقية",
       "alarmDisabled": "تم تعطيل الإنذار",
@@ -170,6 +177,72 @@
       "date": "تاريخ",
       "time": "الوقت الأولي",
       "filter": "فلتر"
+    }
+  },
+  "alarmsViewer": {
+    "alarms": "إنذارات",
+    "unackedOnly": "غير المؤكدة فقط",
+    "modes": {
+      "normal": "طبيعي",
+      "aggregated": "المجموع",
+      "historical": "السجل"
+    },
+    "columns": {
+      "time": "الوقت",
+      "alarm": "الإنذار",
+      "state": "الحالة",
+      "priority": "الأولوية",
+      "normalTime": "وقت العودة",
+      "ackTime": "وقت التأكيد",
+      "ackUser": "مستخدم التأكيد"
+    },
+    "state": {
+      "active": "نشط",
+      "normal": "طبيعي"
+    },
+    "hist": {
+      "from": "من",
+      "to": "إلى",
+      "filter": "تصفية",
+      "filterHint": "الوسم، الوصف، النص",
+      "find": "بحث",
+      "limited": "يتم عرض أول {n} إنذار فقط: ضيّق الفترة أو التصفية."
+    }
+  },
+  "secEvents": {
+    "title": "أحداث الأمان",
+    "from": "من",
+    "to": "إلى",
+    "now": "الآن",
+    "minSeverity": "أدنى خطورة",
+    "category": "الفئة",
+    "filterHint": "النوع، الطرف، الكائن، التفاصيل",
+    "find": "بحث",
+    "autoRefresh": "تحديث تلقائي",
+    "exportCsv": "تصدير CSV",
+    "showFrom": "عرض من {s} فما فوق",
+    "events": "أحداث",
+    "limited": "تُعرض أحدث {n} أحداث فقط: ضيّق الفترة أو عامل التصفية.",
+    "noData": "لا توجد أحداث أمان",
+    "noRight": "أدوارك لا تمنح صلاحية عرض أحداث الأمان.",
+    "unavailable": "قاعدة البيانات غير متاحة",
+    "severities": {
+      "info": "معلومة",
+      "notice": "إشعار",
+      "warning": "تحذير",
+      "alert": "إنذار",
+      "critical": "حرج"
+    },
+    "columns": {
+      "time": "الوقت",
+      "severity": "الخطورة",
+      "kind": "الحدث",
+      "connection": "الاتصال",
+      "peer": "الطرف",
+      "object": "الكائن",
+      "action": "الإجراء",
+      "detail": "التفاصيل",
+      "source": "المصدر"
     }
   },
   "login": {
@@ -315,7 +388,11 @@
         "total": "الأدوار",
         "admin": "أدوار المسؤول",
         "unused": "غير مسندة"
-      }
+      },
+      "viewSecEvents": "عرض أحداث الأمان",
+      "viewSecEventsHint": "يمكنه فتح عارض أحداث الأمان (حالات شاذة في الاتصال والشهادات والهوية والأوامر تبلّغ عنها برامج تشغيل البروتوكولات).",
+      "editDisplays": "تحرير شاشات العرض",
+      "editDisplaysHint": "يمكنه سرد شاشات عرض SVG وفتحها وحفظها في محرر SVG (المسؤولون دائمًا). مع قائمة شاشات العرض، تلك الشاشات فقط."
     },
     "protocolDriverInstances": {
       "title": "حالات برنامج تشغيل البروتوكول",
@@ -742,6 +819,28 @@
       "serverUnitIds": "معرفات وحدات الخادم",
       "serverUnitIdsTitle": "معرفات الوحدات (عناوين التابع) المخدومة",
       "serverUnitIdsHint": "اكتب رقمًا واضغط Enter. النطاق من 0 إلى 255.",
+      "sunspecParameters": "معاملات SunSpec",
+      "unitIds": "معرفات الوحدات",
+      "unitIdsTitle": "أجهزة SunSpec (معرفات وحدات Modbus) المطلوب اكتشافها",
+      "unitIdsHint": "اكتب رقمًا واضغط Enter. النطاق 1 إلى 255. فارغ: الوحدة 1.",
+      "baseAddresses": "العناوين الأساسية",
+      "baseAddressesTitle": "عناوين السجلات التي يُبحث فيها عن علامة SunS",
+      "baseAddressesHint": "اكتب رقمًا واضغط Enter. فارغ: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",
+      "modelIds": "معرفات النماذج",
+      "modelIdsTitle": "نماذج SunSpec التي تُنشأ لها وسوم تلقائية",
+      "modelIdsHint": "اكتب معرف نموذج واضغط Enter (مثل 1, 103, 160). فارغ: كل النماذج المكتشفة.",
+      "registerType": "نوع السجل",
+      "registerTypeTitle": "السجلات التي تحوي خريطة SunSpec",
+      "registerTypeHint": "holding (الوظيفة 3، معظم الأجهزة) أو input (الوظيفة 4، للقراءة فقط).",
+      "maxModels": "أقصى عدد للنماذج",
+      "maxModelsTitle": "أقصى عدد لرؤوس النماذج المقروءة من السلسلة",
+      "maxModelsHint": "عدد صحيح، 1 على الأقل. الافتراضي 256.",
+      "autoCreateCommandTags": "إنشاء وسوم الأوامر تلقائيًا: ",
+      "autoCreateCommandTagsTrue": "صحيح",
+      "autoCreateCommandTagsFalse": "خطأ",
+      "autoCreateUnimplemented": "إنشاء وسوم للنقاط غير المنفذة: ",
+      "autoCreateUnimplementedTrue": "صحيح",
+      "autoCreateUnimplementedFalse": "خطأ",
       "strictUnitId": "معرف وحدة صارم: ",
       "strictUnitIdTrue": "حقيقي",
       "strictUnitIdFalse": "خطأ شنيع",
@@ -802,7 +901,9 @@
         "total": "الاتصالات",
         "tags": "الوسوم",
         "invalidTags": "وسوم غير صالحة"
-      }
+      },
+      "peerIdentification": "تعريف الطرف (أحداث الأمان): ",
+      "peerIdentificationHint": "يقرأ هوية الطرف (المصنّع، الطراز، البرنامج الثابت، عنوان MAC، الشهادة) عند كل اتصال في إحصاءات الاتصال ويبلّغ عن تغيّراتها كأحداث أمان."
     },
     "userActions": {
       "title": "إجراءات المستخدم",
@@ -850,6 +951,13 @@
       "editOrigin": "أصل",
       "editType": "يكتب",
       "editHistorianDeadBand": "مؤرخ الفرقة الميتة (%)",
+      "editHihihiLimit": "الحد الأعلى 3 (HIHIHI)",
+      "editHihiLimit": "الحد الأعلى 2 (HIHI)",
+      "editHiLimit": "الحد الأعلى (HI)",
+      "editLoLimit": "الحد الأدنى (LO)",
+      "editLoloLimit": "الحد الأدنى 2 (LOLO)",
+      "editLololoLimit": "الحد الأدنى 3 (LOLOLO)",
+      "editHysteresis": "التخلف",
       "editHistorianPeriod": "فترة سلامة المؤرخ (بالثواني)",
       "editAlarmState": "حالة الإنذار",
       "editAlarmStateOff": "عن",
@@ -1016,7 +1124,15 @@
       "pruneExecute": "حذف",
       "pruneConfirmText": "تُحذف الإعدادات المحددة نهائيًا. صدّر نسخة احتياطية أولًا إن كنت قد تحتاجها.",
       "pruneTypeToConfirm": "اكتب {word} للتأكيد",
-      "pruneDone": "تم تنظيف الإعدادات"
+      "pruneDone": "تم تنظيف الإعدادات",
+      "retentionTitle": "الاحتفاظ بالبيانات",
+      "retentionHint": "أيام الاحتفاظ بالأحداث (SOE) والإنذارات والبيانات التاريخية؛ يُحذف الفائض مرة يوميًا. تُحفظ الإنذارات غير المؤكدة أو النشطة.",
+      "retentionSoe": "الأحداث (SOE)",
+      "retentionAlarms": "الإنذارات",
+      "retentionHist": "البيانات التاريخية",
+      "retentionDays": "أيام",
+      "retentionRule": "عدد صحيح من الأيام من {min} إلى {max}",
+      "retentionSecEvents": "أحداث الأمان"
     },
     "cimEms": {
       "readOnly": "عرض للقراءة فقط: رفع النماذج وتفعيلها واعتماد الربط والتنزيل تتطلب دورًا يملك صلاحية هندسة CIM-EMS.",
@@ -1221,8 +1337,12 @@
     "reset": "إعادة ضبط العرض ومتابعة البيانات الحية",
     "downloadCsv": "تنزيل CSV",
     "current": "القيمة الحالية",
-    "hiLimit": "الحد الأعلى",
-    "loLimit": "الحد الأدنى",
+    "hiLimit": "الحد الأعلى (HI)",
+    "loLimit": "الحد الأدنى (LO)",
+    "hihiLimit": "الحد الأعلى 2 (HIHI)",
+    "hihihiLimit": "الحد الأعلى 3 (HIHIHI)",
+    "loloLimit": "الحد الأدنى 2 (LOLO)",
+    "lololoLimit": "الحد الأدنى 3 (LOLOLO)",
     "noData": "لا توجد بيانات في هذه الفترة",
     "noPoint": "لم يتم تحديد نقطة (استخدم ?point=<المفتاح أو الوسم>)",
     "notFound": "النقطة غير موجودة"
@@ -1247,5 +1367,18 @@
       "analytics": "التحليلات",
       "engineering": "الهندسة"
     }
+  },
+  "customDev": {
+    "subtitle": "تطبيقات ويب مبنية في src/custom-developments: لوحات معلومات ولوحات تحكم وعروض خاصة.",
+    "search": "البحث في التطبيقات",
+    "open": "فتح",
+    "openNewWindow": "فتح في نافذة جديدة",
+    "back": "العودة إلى القائمة",
+    "retry": "إعادة المحاولة",
+    "empty": "لا توجد تطويرات مخصصة بعد",
+    "emptyHint": "ابنِ تطبيقًا في مجلد من src/custom-developments (npm install && npm run build) ثم أعد تشغيل server_realtime_auth.",
+    "noMatch": "لا يوجد تطبيق يطابق البحث.",
+    "noDescription": "لا يوجد وصف",
+    "built": "بُني في {date}"
   }
 }

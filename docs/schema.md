@@ -6,14 +6,16 @@ The JSON-SCADA MongoDB database is comprised of the following collections.
 * _protocolDriverInstances_ - Configuration of protocol drivers instances. See specific protocol for documentation.
 * _protocolConnections_ - Configuration of protocol connections. See specific protocol for documentation.
 * _commandsQueue_ - Queue for commands.
-* _soeData_ - Sequence of Events data. This is a Capped Collection, it has a limited size.
+* _soeData_ - Sequence of Events data. Normal collection; events older than the SOE retention are removed once a day. See [_soeData_ collection](#soedata-collection).
+* _alarmsData_ - Alarm list: one document per alarm occurrence, acknowledged by the operators. See [_alarmsData_ collection](#alarmsdata-collection).
+* _secEvents_ - Cyber-security events reported by the protocol drivers. See [_secEvents_ collection](#secevents-collection).
 * _processInstances_ - Configuration and information about JSON-SCADA instances of processes.
 * _hist_ - MongoDB time series historian (secondary to the PostgreSQL historian). See [_hist_ collection](#hist-collection).
 * _users_ - User accounts. See [_users_ collection](#users-collection).
 * _roles_ - RBAC roles (rights and group filters). See [_roles_ collection](#roles-collection).
 * _userActions_ - Audit log of user actions. See [_userActions_ collection](#useractions-collection).
 * _cimModels_, _cimMeasurementBindings_, _cimRuns_, _cimContingencyLists_, _cimStudyRequests_ and the GridFS bucket _cimArtifacts_ - CIM-EMS network model revisions, binding revisions, study runs, contingency lists, Admin UI study requests and stored packages/results. Written by the _CIM-EMS_ driver; see the [CIM-EMS README](../src/cim-ems/README.md). Model packages and study results are confidential: _cimArtifacts_ is not served by `/GetFile`. Contingency result files (`kind: "contingency-result"`) are deleted by the driver after the _cimRuns_ retention (7 days); element catalogs (`kind: "element-catalog"`, binding review) are kept for the 5 newest per model; the state estimation residual report (`kind: "se-residuals"`) keeps only the latest one per connection.
-* _systemSettings_ - Single document (`key: "global"`) with runtime toggles (`autoManageServices`, `autoRestartOnConnectionChange`), created on demand by _server_realtime_auth_; not created by the seed script.
+* _systemSettings_ - Single document (`key: "global"`) with runtime toggles (`autoManageServices`, `autoRestartOnConnectionChange`) and the data retentions in days (`soeRetentionDays`, `alarmsRetentionDays`, `secEventsRetentionDays`, `histRetentionDays`; whole numbers 1 to 36500, 60 when absent; edited in the Admin UI, Admin / System), created on demand by _server_realtime_auth_; not created by the seed script. See [Data retention](#data-retention).
 
 Collections, validation and indexes are created by [mongo_seed/b_create-db.js](../mongo_seed/b_create-db.js), which is the authoritative definition when this document and the script differ:
 
@@ -24,8 +26,10 @@ Collections, validation and indexes are created by [mongo_seed/b_create-db.js](.
 | protocolConnections | normal | `$jsonSchema`, strict / error | `protocolConnectionNumber` (unique) |
 | processInstances | normal | `$jsonSchema`, strict / error | `processName + processInstanceNumber` (unique) |
 | commandsQueue | normal, no automatic expiry | none | none (watched by change streams) |
-| soeData | capped, 2 GB circular buffer | none | `timeTag`; `timeTagAtSource`; `group1`; `ack` |
-| hist | time series (`timeField: timeTag`, `metaField: tag`, 1 h buckets), `expireAfterSeconds` = 60 days | none | none created by the seed |
+| soeData | normal, `soeRetentionDays` (60) | none | `timeTag`; `timeTagAtSource`; `group1`; `ack` |
+| alarmsData | normal, `alarmsRetentionDays` (60), acknowledged and inactive alarms only | none | `timeTag` (`alarmsTimeTagIndex`); `pointKey + active` (`alarmsPointActiveIndex`); `ack + timeTag` (`alarmsAckIndex`); `active + timeTag` (`alarmsActiveIndex`); `group1` (`alarmsGroup1Index`) |
+| secEvents | normal, `secEventsRetentionDays` (60) | none | `timeTag` (`secEventsTimeTagIndex`); `severityLevel + timeTag` (`secEventsSeverityIndex`); `kind + timeTag` (`secEventsKindIndex`); `protocolConnectionNumber + timeTag` (`secEventsConnectionIndex`) |
+| hist | time series (`timeField: timeTag`, `metaField: tag`, 1 h buckets), `expireAfterSeconds` = `histRetentionDays` (60) | none | none created by the seed |
 | users | normal | none (mongoose model in _server_realtime_auth_) | `username` (unique, `userNameIndex`) |
 | roles | normal | none (mongoose model) | `name` (unique, `roleNameIndex`) |
 | userActions | normal, no automatic expiry | none (mongoose model) | `timeTag` (`actionsTimeTagIndex`); for expiry replace it with a TTL index, e.g. `{ timeTag: 1 }, { expireAfterSeconds: 2592000 }` |
@@ -263,13 +267,14 @@ Do not rename existing tags to fit the conventions. Tag names are referenced by 
 
 ### Fields that can be configured and altered by the operators.
 
-* _**_hiLimit_**_ [Double] - High limit for out-of-range alarm. Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
-* _**_hihiLimit_**_ [Double] - High-high limit for out-of-range alarm. Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
-* _**_hihihiLimit_**_ [Double] - High-high-high limit for out-of-range alarm. Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
-* _**_loLimit_**_ [Double] - Low limit for out-of-range alarm. Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
-* _**_loloLimit_**_ [Double] - Low-low limit for out-of-range alarm. Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
-* _**_lololoLimit_**_ [Double] - Low-low-low limit for out-of-range alarm. Use -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. Currently not used. **Mandatory parameter**.
+* _**_hiLimit_**_ [Double] - High limit for out-of-range alarm (level 1, _alarmRange_ 1). Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
+* _**_hihiLimit_**_ [Double] - High-high limit for out-of-range alarm (level 2, _alarmRange_ 2). Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
+* _**_hihihiLimit_**_ [Double] - High-high-high limit for out-of-range alarm (level 3, _alarmRange_ 3). Use null, Infinity or a big value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
+* _**_loLimit_**_ [Double] - Low limit for out-of-range alarm (level 1, _alarmRange_ -1). Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
+* _**_loloLimit_**_ [Double] - Low-low limit for out-of-range alarm (level 2, _alarmRange_ -2). Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
+* _**_lololoLimit_**_ [Double] - Low-low-low limit for out-of-range alarm (level 3, _alarmRange_ -3). Use null, -Infinity or a big negative value to avoid alarm. Only meaningful for _type=analog_. **Mandatory parameter**.
 * _**_hysteresis_**_ [Double] - Hysteresis (maximum absolute value variation that will not produce out-of-range alarms) for limits verification. Only meaningful for _type=analog_. **Mandatory parameter**.
+  The data processor checks each configured limit level independently (a null or missing limit is not checked; the limits should not decrease from _lololoLimit_ to _hihihiLimit_). A level is entered when the value passes its limit by more than the hysteresis and left when it comes back by more than the hysteresis, so a value inside a hysteresis band keeps the previous range. Every range change creates an SOE event (text ending with the level: HI, HIHI, HIHIHI, LO, LOLO, LOLOLO; 🆗 when normalized); a change to a more severe level, or to the other side, is a new alarm (beep, new _timeTagAlarm_) even when the previous one is not acknowledged.
 * _**_substituted_**_ [Boolean] - When true, indicates that the value is substituted locally by the operator. **Mandatory parameter**.
 * _**_alarmDisabled_**_ [Boolean] - When true, indicates that alarms are disabled for the point. **Mandatory parameter**.
 * _**_annotation_**_ [String] - Blocking annotation text (reason command for blocking). **Mandatory parameter**.
@@ -279,8 +284,8 @@ Do not rename existing tags to fit the conventions. Tag names are referenced by 
 
 ### Fields updated by the system.
 
-* _**_alarmed_**_ [Boolean] - When true means the point is alarmed. **Mandatory parameter**.
-* _**_alarmRange_**_ [Double] - Current alarm range for analog tags. 0=normal, 1=hiLimit violated, -1=loLimit violated. **Mandatory parameter**.
+* _**_alarmed_**_ [Boolean] - Summary of the alarm list: true while the point has unacknowledged alarms (set by the data processor on a new alarm, cleared by the acknowledgement of the point). The alarm occurrences are the _alarmsData_ documents. **Mandatory parameter**.
+* _**_alarmRange_**_ [Double] - Current alarm range for analog tags. 0=normal, 1/2/3=hiLimit/hihiLimit/hihihiLimit violated, -1/-2/-3=loLimit/loloLimit/lololoLimit violated (the most severe level violated). **Mandatory parameter**.
 * _**_alerted_**_ [Boolean] - When true means the point is alerted (Grafana alert). **Optional parameter**.
 * _**_alertState_**_ [String] - Grafana alert state name. **Optional parameter**.
 * _**_historianLastValue_**_ [Double] - Last value sent to historian (for dead band processing). Only for analog tags. **Mandatory parameter**.
@@ -395,7 +400,7 @@ Example document
 
 Here are stored Sequence of Events (SOE) information for digital values with source timestamps.
 
-This is a Capped Collection, it has a limited size. Old documents are overwritten when the maximum sized is reached. Data here is only written for digital states when the protocol provides a source timestamp (like for IEC 60870-5-104 type 30).
+Normal collection: events older than `soeRetentionDays` (see [Data retention](#data-retention)) are removed once a day. Older installs had a capped collection; the data processor converts it once (renamed to `soeData_capped_<ms>`, the events within the retention copied back to a new `soeData`, then dropped). Data here is written for digital states when the protocol provides a source timestamp (like for IEC 60870-5-104 type 30) and for the limit violations of analog points.
 
     {
         "_id":{
@@ -430,6 +435,123 @@ This is a Capped Collection, it has a limited size. Old documents are overwritte
 * _**_timeTagAtSource_**_ [Date] - Timestamp for the change stamped by the source device (RTU/IED).
 * _**_timeTagAtSourceOk_**_ [Boolean] - When true means the source timestamp is considered ok.
 * _**_ack_**_ [Int32] - Operator acknowledgement (0=not acknowledged, 1=acknowledged, 2=eliminated from lists).
+
+## _alarmsData_ collection
+
+The alarm list. _cs_data_processor_ (and _cs_data_processor-go_) insert one document per alarm occurrence: an analog point entering a more severe or different limit range (`alarmRange`), or a digital point changing to an alarm state. A new condition of a point first ends (`active: false`, `timeTagNormal`) the point's earlier active alarms, then inserts the new alarm. Points with `alarmDisabled: true` raise no alarm. _server_realtime_auth_ acknowledges alarms (`ack: 1`, `timeTagAck`, `ackUser`): one alarm, all the alarms of a point, or all alarms (restricted to the user's _group1_ list). The Alarms Viewer (Admin UI `/alarms-viewer`) shows unacknowledged or active alarms for current tags in Normal mode. Aggregated mode keeps the latest occurrence per tag from the same realtime feed before applying the grid filters. A row stays unacknowledged while any occurrence of that point in the feed is unacknowledged. Acknowledging the row acknowledges all unacknowledged occurrences for the point on the server. Historical mode shows alarms raised in a selected period, including alarms for deleted tags.
+
+    {
+        "_id": { "$oid": "6740c1f05afe8a451246eb4e" },
+        "tag": "KAW2TR1-21MW",
+        "pointKey": 3001,
+        "group1": "KAW2",
+        "group2": "TR1",
+        "description": "KAW2~TR1~Active Power",
+        "type": "analog",
+        "priority": 1,
+        "value": 61.2,
+        "valueString": "61.2 MW",
+        "alarmText": "61.2 MW ⤉ 🚩 HIHI",
+        "timeTag": { "$date": "2026-11-21T17:31:03.702Z" },
+        "timeTagAtSource": null,
+        "timeTagAtSourceOk": false,
+        "active": true,
+        "ack": 0,
+        "timeTagAck": null,
+        "ackUser": null,
+        "timeTagNormal": null,
+        "alarmRange": 2
+    }
+
+* _**__id_**_ [ObjectId] - MongoDB document id (the `alarm_id` of a single alarm acknowledgement).
+* _**_tag_**_, _**_pointKey_**_, _**_group1_**_, _**_group2_**_, _**_description_**_, _**_type_**_, _**_priority_**_ - Copied from the _realtimeData_ point.
+* _**_value_**_ [Double], _**_valueString_**_ [String] - Value that raised the alarm.
+* _**_alarmText_**_ [String] - Alarm text: analog, the value and the violated limit level; digital, `eventTextTrue`/`eventTextFalse`, else the value text.
+* _**_timeTag_**_ [Date] - Time the alarm was raised.
+* _**_timeTagAtSource_**_ [Date], _**_timeTagAtSourceOk_**_ [Boolean] - Source timestamp of the value.
+* _**_active_**_ [Boolean] - True while the condition lasts. Digital alarms with `alarmState` other than 0 or 1 (alarm on any change) are inserted inactive.
+* _**_ack_**_ [Int32] - 0 = not acknowledged, 1 = acknowledged.
+* _**_timeTagAck_**_ [Date], _**_ackUser_**_ [String] - Acknowledgement time and user (null until acknowledged).
+* _**_timeTagNormal_**_ [Date] - Time the alarm became inactive (null while active).
+* _**_alarmRange_**_ [Double] - Analog only: the violated range, as in _realtimeData_ `alarmRange`.
+
+## _secEvents_ collection
+
+Cyber-security events: unexpected or suspicious conditions seen by the protocol drivers (the IEC 61850, Modbus, IEC 60870-5-101/103/104, ICCP and DNP3 client and server drivers and the SunSpec and OPC UA clients, through `src/go-common/jssecevents`, and the OPC UA server, through its `secevents.js`, which writes the same documents). One document per event; repeats of an event within a second may be folded into one with a `count`. The events come from the protocol library (`source: "library"`, the `secevent` channel of go-iec61850, go-modbus, go-iecp5, tase2, go-dnp3 and opcua: connections, TLS handshakes, associations, malformed PDUs, MBAP headers and APDUs, sequence numbers, link addresses) and from the drivers' own checks (`source: "driver"`). The Security Events viewer (Admin UI `/sec-events-viewer`, `POST /Invoke/auth/listSecEvents`) lists them for users whose roles grant _viewSecEvents_. _cs_data_processor_ removes them after `secEventsRetentionDays` (see [Data retention](#data-retention)); nothing else changes them.
+
+    {
+        "_id": { "$oid": "6740c1f05afe8a451246eb4f" },
+        "timeTag": { "$date": "2026-11-21T17:31:03.702Z" },
+        "kind": "peer.mac_changed",
+        "category": "peer",
+        "severity": "alert",
+        "severityLevel": 3,
+        "action": "observed",
+        "source": "driver",
+        "protocol": "mms",
+        "role": "server",
+        "protocolDriver": "IEC61850_SERVER",
+        "protocolDriverInstanceNumber": 1,
+        "protocolConnectionNumber": 8001,
+        "connectionName": "IEC61850SRV",
+        "nodeName": "mainNode",
+        "sessionId": 12,
+        "peerAddress": "192.168.1.20:50211",
+        "peerIp": "192.168.1.20",
+        "peerMac": "00:1a:2b:3c:4d:5f",
+        "value": "00:1a:2b:3c:4d:5f",
+        "detail": "MAC address was 00:1a:2b:3c:4d:5e",
+        "count": 1,
+        "technique": "T0830",
+        "std62351": "x-go-iec61850.peer.mac_changed"
+    }
+
+* _**__id_**_ [ObjectId] - Assigned by the driver when the event is queued, so a batch retried after a failed insert stores each event once (duplicates of an already stored event are ignored). A driver keeps unstored events in memory (at most 4096, the oldest dropped first and counted in a `meta.events_dropped` event) until the database accepts them.
+* _**_timeTag_**_ [Date] - Time of the event (of the last repeat when `count` > 1).
+* _**_kind_**_ [String] - Stable event identifier, `<category>.<name>`: the go-iec61850 `secevent` kinds (`conn.unexpected`, `tls.cert_rejected`, `peer.identity_changed`, `access.object_nonexistent`, `cmd.rejected`, `flood.controls`, `proto.*`, ...) and the drivers' own (`cmd.unnecessary`, `cmd.object_unknown`, `access.tag_unknown`, `report.sequence`, `report.unexpected`, `peer.identified`, `meta.events_dropped`; the Modbus drivers' `access.unit_unknown`, `access.scan`, `access.enumeration`, `ctrl.restart`, `ctrl.setting_edit`, `file.read`, `file.write`, `cmd.stale_time`, `proto.bad_frame`, `proto.bad_response`, `proto.txn_mismatch`, `proto.unit_mismatch`; the go-iecp5 kinds of the IEC 60870-5 drivers, such as `seq.ns_gap`, `link.foreign_address`, `access.unknown_ioa`, `cmd.execute_without_select`, `cmd.stale_timetag`, `ctrl.end_of_init`, `ctrl.parameter_change`, `file.upload`, `remote.rejected`, and their own `cmd.stale_time`; the tase2 kinds of the ICCP drivers, such as `identity.unknown`, `auth.failed`, `access.unknown_object`, `access.scan`, `cmd.operate_without_select`, `ctrl.transfer_set_disabled`, `seq.invoke_id_duplicate`, `unsol.report`, and their own `peer.identity_changed`, `cmd.wrong_type`; the go-dnp3 kinds of the DNP3 drivers, such as `link.foreign_dest`, `seq.response_stale`, `access.unknown_point`, `ctrl.cold_restart`, `remote.rejected`, `unsol.while_disabled`, and their own `peer.identity_changed`, `cmd.object_unknown` (server), `cmd.wrong_type`, `cmd.stale_time`; the opcua kinds of the OPC UA client, such as `message.malformed`, `message.sequence_error`, `message.security_check_failed`, `message.certificate_rejected`, `message.unsolicited_response`, `connection.mac_changed`, and its own `access.unknown_node`, `remote.restart`, `remote.state`, `cmd.object_unknown`, `cmd.wrong_type`, `ctrl.restart`, `ctrl.config_change`, `file.transfer`, `ctrl.method_call`; the OPC UA server's, all `source: "driver"`, such as `conn.unexpected`, `conn.open_failed`, `tls.cert_rejected`, `auth.failed`, `link.endpoint_mismatch`, `access.unknown_node`, `access.scan`, `access.write_denied`, `cmd.disabled`, `seq.invalid`, `proto.malformed`, `proto.service_unsupported`; listed in the drivers' READMEs).
+* _**_category_**_ [String] - connection, tls, peer, association, auth, identity, protocol, sequence, access, control, configuration, unsolicited, flood, resource, file, meta.
+* _**_severity_**_ [String], _**_severityLevel_**_ [Int32] - info (0), notice (1), warning (2), alert (3), critical (4).
+* _**_action_**_ [String] - What was done: observed, ignored, rejected, throttled, disconnected, blocked.
+* _**_source_**_ [String] - `library` (detected by the protocol library) or `driver` (by the driver's code).
+* _**_protocol_**_, _**_role_**_ [String] - e.g. `mms`, `modbus`, `sunspec`, `iec104`, `iec101`, `iec103`, `iccp`, `dnp3`, `opcua`, `tls`; `client` or `server`.
+* _**_protocolDriver_**_, _**_protocolDriverInstanceNumber_**_, _**_protocolConnectionNumber_**_, _**_connectionName_**_, _**_nodeName_**_ - The connection and node that reported it.
+* _**_sessionId_**_ [Int64] - Correlates the events of one connection or association.
+* _**_peerAddress_**_, _**_peerIp_**_, _**_peerMac_**_, _**_localAddress_**_ [String] - The peer; the MAC address is the operating system neighbour (ARP) table's, absent when unknown (a peer behind a router shows the router's).
+* _**_peer_**_ [Object] - What is known of the peer's identity: `tls` (`subject`, `issuer`, `serial`, `sha256`, `notAfter`, `verified`, `version`), `acse` (`callingApTitle`, `callingAeQualifier`, `calledApTitle`, `passwordPresented`; ICCP `calledAeQualifier`, `authenticated`), `macSource`; ICCP `interface`, `blt` (the bilateral table bound to the peer); OPC UA server `application` (the client's `CreateSession` description), `user` (`tokenType`, `userName`; never a password or token).
+* _**_objectRef_**_, _**_fc_**_ [String] - The protocol object concerned (IEC 61850 reference and functional constraint; Modbus `unit <id> <area>:<address> x<quantity>`; IEC 60870-5 `CA <common address> IOA <object address>`; ICCP `<domain>/<item>`, the item alone at VCC scope, or the domain's transfer set or dataset; DNP3 `g<group>v<variation> #<index>`, the variation left out when unknown; OPC UA the node id). _**_tag_**_ [String] - The json-scada tag concerned, when one is.
+* _**_value_**_, _**_previous_**_, _**_detail_**_, _**_error_**_ [String] - New value (of a changed identity, MAC, ...), the value before a change, one-line explanation and error text.
+* _**_fields_**_ [Object] - Protocol fields some events carry: `addCause`, `ctlNum`, `test`, `orCat`, `orIdent`, `accessError`, `service`, `invokeId`, `sqNum`, `stage`, `session` (summary of an ended connection), `raw` (hex of the offending PDU, truncated); Modbus `unitId`, `functionCode`, `function`, `address`, `quantity`, `exception`, `exceptionName`, `subFunction`, `transactionId`; IEC 60870-5 `typeId`, `type`, `cause`, `negative`, `originatorAddress`, `commonAddress`, `ioa`, `linkAddress`, `sendSeq`, `recvSeq`, `expectedSeq`; ICCP `layer`, `phase`, `reason`, `service`, `domain`, `item`, `transferSet`, `dataSet`, `invokeId`, `errorClass`, `errorCode`; DNP3 `transport`, `linkSource`, `linkDestination`, `appFunction`, `appSeq`, `iin`, `group`, `variation`, `qualifier`, `index`, `commandStatus`, `controlCode`, `user`, `fileStatus`, `fileName`; OPC UA `connId`, `secureChannelId`, `requestId`, `objectId`, `attributeId`, `status`, and on command events `protocolSourceASDU`, `value`, `method`, `methodId`, `objectId`, `objectType`, `arguments` (a count: argument values and `valueString` are never stored); OPC UA server `service`, `status`, `attribute`, `secureChannelId`, `receivedChannelId` (the channel id a malformed message's header claimed), `securityPolicy`, `securityMode`, `expectedSeq`, `sequenceNumber`, `requestId`, `bytesRead`, and on command events `value` (numeric commands only), `protocolSourceASDU`.
+* _**_count_**_ [Int32], _**_firstSeen_**_ [Date] - Repeats folded into the event and the start of their window.
+* _**_technique_**_ [String] - MITRE ATT&CK for ICS technique, a routing hint. _**_std62351_**_ [String] - IEC 62351-14 event identifier, or an extension one (`x-go-iec61850.*`, `x-json-scada.*`).
+
+### Peer identification
+
+The IEC61850, IEC61850_SERVER, SUNSPEC, MODBUS, MODBUS_SERVER, IEC60870-5-104, IEC60870-5-104_SERVER, IEC60870-5-101, IEC60870-5-103, ICCP, ICCP_SERVER, DNP3, DNP3_SERVER, OPC-UA and OPC-UA_SERVER connections have `peerIdentification` [Boolean] (default true). On every (re)established association or connection the driver records the peer's identity in `protocolConnections.stats.peerIdentity` and reports changes of it (`peer.identity_changed`, `peer.mac_changed`, `tls.cert_changed`) as security events, comparing with the identity stored there, so a change across a driver restart is seen too:
+
+* Client: `vendor`, `model`, `revision` (MMS Identify), `devices` (per logical device the `phyNam` nameplate of `LPHD1.PhyNam` and the `namPlt` of `LLN0.NamPlt`), `ip`, `mac`, `tls` (the IED certificate), `address`, `collectedAt`, `keys` (the compared values).
+* Server: `clients` (the open associations: `address`, `ip`, `mac`, `acseIdentity`, `tls`, `passwordPresented`, `sessionId`, `connectedAt`) and `known` (the last identity of up to 64 client addresses: `ip`, `mac`, `acseIdentity`, `tlsSha256`, `lastSeen`).
+* Modbus client: `units` (per polled unit id, at most 8: `unitId`, `method` `FC43/14` with `conformityLevel` and `objects` such as `VendorName`, `ProductCode`, `MajorMinorRevision`, `ModelName`, or `FC17` with `serverId`; `error` when neither answers), `ip`, `mac`, `tls`, `address`, `collectedAt`, `keys`.
+* SunSpec client: `units` (per discovered unit: `unitId`, `baseAddress`, `registerType`, `models` (the model chain), and from the Common model (1) `manufacturer`, `model`, `options`, `version`, `serialNumber`, `deviceAddress`), `address`, `ip`, `mac`, `tls`, `collectedAt`, `keys` (`unit:N`, `models:N`, `mac`, `cert`: a firmware, serial number or model chain change is `peer.identity_changed`).
+* Modbus server: `clients` (the connected masters: `address`, `ip`, `mac`, `tls`, `connectedAt`) and `known` (up to 64 master IPs: `ip`, `mac`, `tlsSha256`, `tlsSubject`, `lastSeen`). Masters cannot be asked for an identification.
+* IEC 60870-5 clients: `address`, `ip`, `mac`, `tls` (104 and 101 over TCP), `linkAddress` (101/103), `connectedAt`, `keys`; the 103 client adds `devices` (per device that sent its identification ASDU 5: `commonAddress`, `identification`, `compatibilityLevel`, `softwareId`, `fun`, `inf`, `cause`). 101/104 define no device identification.
+* IEC 60870-5-104 server: `clients` and `known` as the Modbus server. The 101 server does not identify its masters.
+* ICCP client: `vendor`, `model`, `revision` and `method` (`identify`: MMS Identify; `vmdVariables`: the VMD `VendorName`, `ModelName`, `Revision` variables of servers without it; `identifyError` when neither answers), `tase2Version` (`TASE2_Version`, `major.minor`), `supportedFeatures` (the conformance blocks `Supported_Features` sets, `CBB1` ...), `bilateralTables` (`domain`, `id`: `Bilateral_Table_ID` of the domains with mapped points, at most 32), `ip`, `mac`, `macSource`, `tls`, `apTitle`, `aeQualifier` (the called ones), `address`, `collectedAt`, `keys`. The MAC and the certificate are compared by the tase2 library, its peer history seeded from this document.
+* ICCP server: `clients` (the open associations: `address`, `ip`, `mac`, `macSource`, `acseIdentity` (calling AP title/AE qualifier), `authenticated`, `blt`, `tls`, `connectedAt`) and `known` (up to 64 client IPs: `ip`, `mac`, `macSource`, `acseIdentity`, `tlsSha256`, `lastSeen`). Clients cannot be asked for an identification.
+* OPC UA client: `ServerStatus.BuildInfo` (`vendor`, `model`, `productUri`, `softwareVersion`, `buildNumber`, `buildDate`), `startTime` and `state` of `ServerStatus` (a new `startTime` is reported as `remote.restart`), `application` (the endpoint's `applicationUri`, `applicationName`, `productUri`, `applicationType`), `certificate` (`subject`, `issuer`, `serial`, `sha256`, `notAfter`), `endpointUrl`, `securityPolicy`, `securityMode`, `address`, `ip`, `mac`, `macSource`, `method` (`buildInfo`; `error`, with `error`), `collectedAt`, `keys` (per endpoint URL, `field|url`, and the MAC per IP, `mac|ip`, so failover between servers is not a change). Read on every session, including the client's own reconnections.
+* OPC UA server: `clients` (the open sessions: `sessionName`, `address`, `ip`, `mac`, `macSource`, `application` (the `CreateSession` client description: `applicationUri`, `productUri`, `applicationName`, `applicationType`, `gatewayServerUri`, `discoveryProfileUri`, `discoveryUrls`), `tls` (the client application certificate), `endpointUrl`, `securityPolicy`, `securityMode`, `secureChannelId`, `user` (`tokenType` `anonymous`, `username` with `userName`, `certificate` with `certificate`, `issued`), `connectedAt`, `activatedAt`) and `known` (up to 64 client applications by `applicationUri`: `productUri`, `applicationName`, `applicationType`, `ip`, `mac`, `tlsSha256`, `tlsSubject`, `lastSeen`). A new application is reported as `peer.identified`, a changed `productUri` or `applicationName` as `peer.identity_changed`, a changed certificate as `tls.cert_changed`. OPC UA clients publish no model or firmware version.
+* DNP3 client: the device attributes of IEEE 1815 set 0 (group 0) the outstation reports: `vendor`, `model`, `hardwareVersion`, `softwareVersion`, `serialNumber`, `dnp3Subset`, `deviceName`, `deviceId`, `location`, `configId`, `configVersion`, `configSignature`, `attributes` (every one read: `variation`, `name`, `value`, at most 64), `method` (`attributes`; `unsupported` for an outstation without attributes, asked again on every connection; `error`, with `error`), `address`, `ip`, `mac`, `macSource`, `tls`, `linkAddress`, `connectedAt`, `collectedAt`, `keys`. The MAC, link address and certificate are compared by go-dnp3, its peer history seeded from this document.
+* DNP3 server: `clients` (the master connected now: `address`, `ip`, `mac`, `macSource`, `tls`, `linkAddress`, `connectedAt`) and `known` (up to 64 master IPs: `ip`, `linkAddress`, `mac`, `macSource`, `tlsSha256`, `tlsSubject`, `lastSeen`). Masters cannot be asked for an identification.
+
+## Data retention
+
+Instance 1 of _cs_data_processor_ (or _cs_data_processor-go_), on the active node, runs the retention once a day (first run 1 minute after start, then it checks every hour whether 24 h have passed since the last successful run). The retentions are whole days read from the _systemSettings_ document `{ "key": "global" }` (`soeRetentionDays`, `alarmsRetentionDays`, `secEventsRetentionDays`, `histRetentionDays`; 60 when absent or invalid, at most 36500):
+
+* _soeData_ - events with `timeTag` older than the retention are deleted.
+* _alarmsData_ - acknowledged, inactive alarms with `timeTag` older than the retention are deleted; unacknowledged or active alarms are kept.
+* _secEvents_ - security events with `timeTag` older than the retention are deleted.
+* _hist_ - the time series `expireAfterSeconds` is set to the retention (MongoDB expires the buckets).
+
+The same run creates the _alarmsData_ and _secEvents_ indexes and converts a capped _soeData_ into a normal collection.
 
 ## _processInstances_ collection
 
@@ -503,7 +625,7 @@ Example document for the _CALCULATIONS_ module. Currently, this process supports
 
 ## _hist_ collection
 
-MongoDB time series collection written by _cs_data_processor_ (and the Go _cs_data_processor-go_) with the same records and filters (`historianPeriod`, `historianDeadBand`, `isNotForHistorical`) as the PostgreSQL historian. Inserts are unacknowledged (`w: 0`) bulk writes, so this historian is best-effort. Records older than `expireAfterSeconds` (60 days as seeded) are removed automatically; change it with `db.runCommand({ collMod: "hist", expireAfterSeconds: N })`.
+MongoDB time series collection written by _cs_data_processor_ (and the Go _cs_data_processor-go_) with the same records and filters (`historianPeriod`, `historianDeadBand`, `isNotForHistorical`) as the PostgreSQL historian. Inserts are unacknowledged (`w: 0`) bulk writes, so this historian is best-effort. Records older than `expireAfterSeconds` are removed automatically; the data processor keeps it equal to `histRetentionDays` (see [Data retention](#data-retention)), so set the retention in the Admin UI rather than with `collMod`.
 
     {
         tag: "KAW2AL-21MTWT",
@@ -529,7 +651,7 @@ MongoDB time series collection written by _cs_data_processor_ (and the Go _cs_da
 |---|---|---|
 | Role | Secondary historian, needs no extra database | Primary historian |
 | Written by | _cs_data_processor_ directly (`insertMany`, `w: 0`) | _cs_data_processor_ writes SQL files, `src/process_pg_sql` (`process_pg_hist` service) loads them |
-| Retention | `expireAfterSeconds` (60 days as seeded) | TimescaleDB `add_retention_policy('hist', INTERVAL '45 days')` in `sql/create_tables.sql` (`sql/delete_old.sql` for manual pruning) |
+| Retention | `expireAfterSeconds` = `histRetentionDays` (60 days by default) | TimescaleDB `add_retention_policy('hist', INTERVAL '45 days')` in `sql/create_tables.sql` (`sql/delete_old.sql` for manual pruning) |
 | Quality fields | `invalid`, `timeTagAtSource`, `timeTagAtSourceOk`, `cot` | `time_tag_at_source`, `flags` bit mask |
 | Read by | _OPC-UA-Server_ HistoryRead (default backend, `historian: "mongodb"`) | _server_realtime_auth_ `/Invoke` HistoryRead and GraphQL, Grafana, Metabase, _OPC-UA-Server_ with `historian: "postgresql"` |
 
@@ -563,8 +685,10 @@ RBAC roles (model `app/models/role.model.js`); seed in `mongo_seed/roles.json`. 
 * _**_ackEvents_**_, _**_ackAlarms_**_, _**_disableAlarms_**_ [Boolean] - May acknowledge events, acknowledge alarms, disable alarms.
 * _**_group1List_**_ [Array of String] - _group1_ values the role can see. Empty = all.
 * _**_group1CommandList_**_ [Array of String] - _group1_ values the role can command. Empty = all the stations the user can see: a user restricted by _group1List_ can only command those stations (when both lists are given, a station must be in both). Special `$$` commands (no point) are allowed to a user restricted by either list only when _group1CommandList_ contains `$$`.
-* _**_displayList_**_ [Array of String] - Display files (e.g. `kaw2.svg`) the role can open; enforced for the `.svg` files under `/svg`. Empty = all; admins open any display.
+* _**_displayList_**_ [Array of String] - Display files (e.g. `kaw2.svg`) the role can open; enforced for the `.svg` files under `/svg` and for the display editing routes of a non-admin _editDisplays_ role. Empty = all; admins open any display.
 * _**_cimEngineering_**_ [Boolean] - CIM-EMS engineering: upload and activate network models, approve binding revisions, download CIM-EMS artifacts. Checked in addition to _isAdmin_. Default false.
+* _**_viewSecEvents_**_ [Boolean] - May open the Security Events viewer (_secEvents_). Not implied by _isAdmin_. Default false; the seeded `admin` and `security` roles grant it.
+* _**_editDisplays_**_ [Boolean] - May list, open and save the SVG displays (SVG Editor, `auth/listDisplays`, `auth/openDisplay`, `auth/saveDisplay`); limited to the _displayList_ when it is not empty. _isAdmin_ also allows it. Default false; the seeded `admin` role grants it.
 * _**_maxSessionDays_**_ [Double] - Session (JWT) lifetime in days. Default 3.
 
 ## _userActions_ collection

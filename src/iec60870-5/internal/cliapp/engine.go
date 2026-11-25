@@ -30,11 +30,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/riclolsen/go-iecp5/asdu"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 
 	"iec60870-5/internal/conv"
+	"iec60870-5/internal/iecsec"
 	"iec60870-5/internal/model"
 
 	"github.com/riclolsen/json-scada/src/go-common/jscommands"
@@ -57,10 +59,14 @@ type Conn struct {
 	// bypasses the default 101/104 BuildInfoObj/SBO path. Used by the IEC 103
 	// client (FUN/INF general command). Returns an error to cancel.
 	RawCmd func(asduNum, objAddr, commonAddr int, value float64, duration int) error
+	// Sec reports the security events of the connection and keeps the
+	// device's identity (stats.peerIdentity); nil only logs them.
+	Sec *iecsec.Client
 
 	mu             sync.Mutex
 	lastSelected   *conv.InfoObject
 	lastSelectedCa int
+	lastSelectedAt time.Time
 
 	inserted   map[[2]int]bool // {CA, IOA} pairs known in realtimeData (autoCreateTags)
 	lastNewKey float64
@@ -71,18 +77,34 @@ func (c *Conn) SetLastSelected(obj *conv.InfoObject, ca int) {
 	c.mu.Lock()
 	c.lastSelected = obj
 	c.lastSelectedCa = ca
+	c.lastSelectedAt = time.Now()
 	c.mu.Unlock()
 }
 
-// SelectedFor returns the stored execute twin when the confirmed select
-// matches its object address (C# parity: compared by IOA only, not cleared).
-func (c *Conn) SelectedFor(ioa int) *conv.InfoObject {
+// SelectTimeout is how long a sent select waits for its confirmation: a later
+// one is a stale or replayed confirmation and does not trigger the execute.
+const SelectTimeout = 30 * time.Second
+
+// ClearSelected forgets the pending execute (the connection was lost).
+func (c *Conn) ClearSelected() {
+	c.mu.Lock()
+	c.lastSelected = nil
+	c.mu.Unlock()
+}
+
+// TakeSelected returns the stored execute twin when the confirmed select
+// matches it (common address, object address and command type) and is still
+// within SelectTimeout, and consumes it: one select yields one execute.
+func (c *Conn) TakeSelected(sel conv.SelectConfirm) *conv.InfoObject {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.lastSelected != nil && c.lastSelected.Ioa == ioa {
-		return c.lastSelected
+	x := c.lastSelected
+	if x == nil || x.Ioa != sel.Ioa || x.TypeID != sel.Type || c.lastSelectedCa != sel.Ca ||
+		time.Since(c.lastSelectedAt) > SelectTimeout {
+		return nil
 	}
-	return nil
+	c.lastSelected = nil
+	return x
 }
 
 // Engine is the shared client-driver engine.
@@ -114,6 +136,16 @@ func New(cfg jsconfig.Config, driverName string, instanceNumber int, active func
 		dataQ:          make(chan conv.IecValue, DataBufferLimit),
 		ackQ:           make(chan conv.IecCmdAck, 1000),
 	}
+}
+
+// LinkStats is the stats document of a 101/103 connection: the link layer
+// state, and the device's identity when peerIdentification is on.
+func LinkStats(c *Conn, nodeName, state string, linkActive bool) bson.M {
+	st := bson.M{"nodeName": nodeName, "timeTag": time.Now(), "linkLayerState": state, "isConnected": linkActive}
+	if id := c.Sec.PeerIdentity(); id != nil {
+		st["peerIdentity"] = id
+	}
+	return st
 }
 
 // FindConn returns the connection with the given protocolConnectionNumber.
@@ -542,8 +574,12 @@ func (e *Engine) processCommand(collection *mongo.Collection, doc bson.M) {
 		jslog.Log(jslog.LevelBasic, "MongoDB CMD CS - %s OA %d value %s %s",
 			srv.Cfg.Name, objAddr, formatValue(value), reason)
 		setResult("cancelReason", reason)
+		if !srv.Cfg.CommandsEnabledVal() {
+			srv.Sec.Refused(doc, reason, asduNum, commonAddr, objAddr)
+		}
 		return
 	}
+	rt := collection.Database().Collection(jsmongo.RealtimeDataCollectionName)
 
 	// IEC 103 (and any driver that sets RawCmd) builds and sends the command
 	// itself; the connected/enabled/expiry checks above and below still apply.
@@ -552,8 +588,10 @@ func (e *Engine) processCommand(collection *mongo.Collection, doc bson.M) {
 			jslog.Log(jslog.LevelBasic, "MongoDB CMD CS - %s OA %d value %s Expired",
 				srv.Cfg.Name, objAddr, formatValue(value))
 			setResult("cancelReason", "expired")
+			srv.Sec.Stale(doc, timeTag, asduNum, commonAddr, objAddr)
 			return
 		}
+		srv.Sec.Command(rt, doc, value, true, asduNum, commonAddr, objAddr) // IEC 103 general command: ON/OFF
 		if err := srv.RawCmd(asduNum, objAddr, commonAddr, value, duration); err != nil {
 			jslog.Log(jslog.LevelBasic, "MongoDB CMD CS - %s - Error sending command: %s", srv.Cfg.Name, err.Error())
 			setResult("cancelReason", "not connected")
@@ -569,6 +607,7 @@ func (e *Engine) processCommand(collection *mongo.Collection, doc bson.M) {
 		jslog.Log(jslog.LevelBasic, "MongoDB CMD CS - %s OA %d value %s ASDU Not Implemented",
 			srv.Cfg.Name, objAddr, formatValue(value))
 		setResult("cancelReason", "asdu not implemented")
+		srv.Sec.Refused(doc, "type not implemented by the driver", asduNum, commonAddr, objAddr)
 		return
 	}
 
@@ -578,7 +617,14 @@ func (e *Engine) processCommand(collection *mongo.Collection, doc bson.M) {
 		jslog.Log(jslog.LevelBasic, "MongoDB CMD CS - %s OA %d value %s Expired",
 			srv.Cfg.Name, objAddr, formatValue(value))
 		setResult("cancelReason", "expired")
+		srv.Sec.Stale(doc, timeTag, asduNum, commonAddr, objAddr)
 		return
+	}
+	switch asdu.TypeID(asduNum) {
+	case asdu.C_SC_NA_1, asdu.C_SC_TA_1, asdu.C_DC_NA_1, asdu.C_DC_TA_1:
+		srv.Sec.Command(rt, doc, value, true, asduNum, commonAddr, objAddr)
+	default:
+		srv.Sec.Command(rt, doc, value, false, asduNum, commonAddr, objAddr)
 	}
 
 	if useSbo {

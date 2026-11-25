@@ -90,7 +90,7 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 - [src/AdminUI/](src/AdminUI/AGENTS.md) — Vue.js web admin interface SPA
 - [src/mcp-json-scada-db/](src/mcp-json-scada-db/AGENTS.md) — MCP server for AI tooling (data, commands, configuration, operation, health/log diagnosis, displays, calculated and system tags, custom developments, CIM-EMS control)
 - [src/dnp3-go/](src/dnp3-go/AGENTS.md) — DNP3 client/server (Go, drop-in replacement; the services run it)
-- [src/modbus-go/](src/modbus-go/AGENTS.md) — Modbus client/server (Go, drop-in replacement; the services run it)
+- [src/modbus-go/](src/modbus-go/AGENTS.md) — SunSpec client and Modbus client/server (Go, drop-in replacement; the services run it)
 - [src/mqtt-sparkplug/](src/mqtt-sparkplug/AGENTS.md) — MQTT/Sparkplug B (Node.js)
 - [src/server_realtime_auth/](src/server_realtime_auth/AGENTS.md) — Realtime WebSocket server (Node.js)
 - [src/calculations/](src/calculations/AGENTS.md) — Calculations engine (Go)
@@ -122,10 +122,8 @@ All protocol drivers, web UI, data processors, and tools. Contains its own child
 ### Platform Configurations
 
 - [platform-windows/](platform-windows/AGENTS.md) — Windows installer, services, batch scripts, runtimes
-- [platform-ubuntu-2404/](platform-ubuntu-2404/AGENTS.md) — Ubuntu 24.04 automated installer & config
-- [platform-ubuntu-2604/](platform-ubuntu-2604/AGENTS.md) — Ubuntu 26.04 automated installer & config
-- [platform-rhel9/](platform-rhel9/AGENTS.md) — RHEL 9 / Rocky 9 / Alma 9 installer & config
-- [platform-rhel10/](platform-rhel10/AGENTS.md) — RHEL 10 / Rocky 10 / Alma 10 installer & config
+- [platform-ubuntu/](platform-ubuntu/AGENTS.md) — Ubuntu 24.04 and 26.04 automated installer & config (one installer, x86-64 and ARM64)
+- [platform-rhel/](platform-rhel/AGENTS.md) — RHEL / Rocky / Alma 9 and 10 installer & config (one installer, x86-64 and ARM64)
 - [platform-linux/](platform-linux/AGENTS.md) — Generic Linux build/export/restart scripts
 
 ### Configuration

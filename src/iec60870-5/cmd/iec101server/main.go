@@ -23,24 +23,29 @@
 package main
 
 import (
+	"context"
 	"os"
 	"time"
 
 	"github.com/riclolsen/go-iecp5/asdu"
 	"github.com/riclolsen/go-iecp5/cs101"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"iec60870-5/internal/cs101util"
+	"iec60870-5/internal/iecsec"
 	"iec60870-5/internal/jscfg"
 	"iec60870-5/internal/model"
 	"iec60870-5/internal/mongoutil"
 	"iec60870-5/internal/srvapp"
 
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 )
 
 const (
 	protocolDriverName = "IEC60870-5-101_SERVER"
-	driverVersion      = "0.4.0"
+	driverVersion      = "0.5.0"
 )
 
 // srv101 holds the runtime state of one served IEC 101 connection.
@@ -86,6 +91,7 @@ func (h *srvHandler) ASDUHandler(pack *asdu.ASDU) error {
 	jslog.Log(jslog.LevelDetailed, "%s - %s", h.s.cfg.Name, pack.String())
 	if !h.s.engine.HandleCommandASDU(h.s.engConn, h.s.server, pack) {
 		jslog.Log(jslog.LevelBasic, "%s -   Not implemented type of ASDU received: %d", h.s.cfg.Name, pack.Type)
+		h.s.engConn.Sec.NotImplemented(h.s.server, pack)
 		pack.Coa.IsNegative = true
 		_ = pack.SendReplyMirror(h.s.server, asdu.ActivationCon)
 	}
@@ -127,10 +133,26 @@ func main() {
 		os.Exit(-1)
 	}
 
+	// security events: one writer for the process, one reporter per connection
+	secWriter := jssecevents.NewWriter(0)
+	go secWriter.Run(context.Background(), cfg)
+	rtColl := func() *mongo.Collection {
+		if db := engine.DB(); db != nil {
+			return db.Collection(jsmongo.RealtimeDataCollectionName)
+		}
+		return nil
+	}
+
 	var servers []*srv101
 	for _, cc := range connCfgs {
 		s := &srv101{cfg: cc, engine: engine}
 		engConn := srvapp.NewConn(cc)
+		rep := &iecsec.Reporter{W: secWriter, Role: "server", Protocol: "iec101",
+			Ident: cc.PeerIdentificationVal(), Drop: iecsec.DropServerRefusals,
+			Origin: jssecevents.Origin{ProtocolDriver: protocolDriverName, ProtocolDriverInstanceNumber: instanceNumber,
+				ProtocolConnectionNumber: int(cc.ProtocolConnectionNumber), ConnectionName: cc.Name, NodeName: cfg.NodeName}}
+		engConn.Sec = iecsec.NewServer(rep, iecsec.StoredIdentity(cc.Stats), rtColl)
+		go engConn.Sec.Run(context.Background())
 		s.engConn = engConn
 		engine.Conns = append(engine.Conns, engConn)
 		servers = append(servers, s)
@@ -156,6 +178,10 @@ func main() {
 		server.SetConfig(config)
 		params := cs101util.BuildParams(&s.cfg)
 		server.SetParams(&params)
+		// go-iecp5 watches the link (frames for another station, bad frames,
+		// repeated frames) and the requests (control functions, floods)
+		server.SetSecurityPolicy(iecsec.Policy(cc.PeerIdentificationVal()))
+		server.SetCyberEventSink(s.engConn.Sec.Rep.Sink())
 		if jslog.Level() >= jslog.LevelDebug {
 			server.SetLogMode(true)
 		}

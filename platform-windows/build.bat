@@ -130,6 +130,7 @@ rem Node.js drivers in src\modbus (services modbusclient/modbusserver).
 cd %SRCPATH%\modbus-go
 go mod tidy
 go build -ldflags="-s -w" -o %BINPATH%\modbus-client.exe .\cmd\modbusclient
+go build -ldflags="-s -w" -o %BINPATH%\sunspec-client.exe .\cmd\sunspecclient
 go build -ldflags="-s -w" -o %BINPATH%\modbus-server.exe .\cmd\modbusserver
 
 cd %SRCPATH%\iec60870-5

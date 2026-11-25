@@ -42,7 +42,8 @@
     "customDevelopments": "Розробки на замовлення",
     "open": "ВІДЧИНЕНО",
     "cimEms": "CIM-EMS",
-    "svgedit": "SVG-редактор"
+    "svgedit": "SVG-редактор",
+    "secEventsViewer": "Події безпеки"
   },
   "tabularViewer": {
     "station": "Станція",
@@ -91,9 +92,15 @@
       "value": "Значення",
       "state": "Штат",
       "quality": "Якість",
-      "hiLimit": "Верхня межа",
-      "loLimit": "Нижня межа",
+      "hiLimit": "Верхня межа (HI)",
+      "loLimit": "Нижня межа (LO)",
+      "hihiLimit": "Верхня межа 2 (HIHI)",
+      "hihihiLimit": "Верхня межа 3 (HIHIHI)",
+      "loloLimit": "Нижня межа 2 (LOLO)",
+      "lololoLimit": "Нижня межа 3 (LOLOLO)",
       "hysteresis": "Гістерезис",
+      "alarmRange": "Діапазон тривоги",
+      "limitsOrder": "Межі не по порядку (LOLOLO ≤ LOLO ≤ LO ≤ HI ≤ HIHI ≤ HIHIHI)",
       "annotation": "Блокування анотацій",
       "notes": "Документальні нотатки",
       "alarmDisabled": "Сигналізація вимкнена",
@@ -170,6 +177,72 @@
       "date": "Дата",
       "time": "Початковий час",
       "filter": "Фільтр"
+    }
+  },
+  "alarmsViewer": {
+    "alarms": "сигналів",
+    "unackedOnly": "Лише неквитовані",
+    "modes": {
+      "normal": "Звичайний",
+      "aggregated": "Агреговані",
+      "historical": "Архів"
+    },
+    "columns": {
+      "time": "Час",
+      "alarm": "Сигнал",
+      "state": "Стан",
+      "priority": "Пріоритет",
+      "normalTime": "Час норми",
+      "ackTime": "Час квит.",
+      "ackUser": "Квитував"
+    },
+    "state": {
+      "active": "Активний",
+      "normal": "Норма"
+    },
+    "hist": {
+      "from": "З",
+      "to": "По",
+      "filter": "Фільтр",
+      "filterHint": "тег, опис, текст",
+      "find": "Знайти",
+      "limited": "Показано лише перші {n} сигналів: звузьте період або фільтр."
+    }
+  },
+  "secEvents": {
+    "title": "Події безпеки",
+    "from": "З",
+    "to": "По",
+    "now": "зараз",
+    "minSeverity": "Мін. важливість",
+    "category": "Категорія",
+    "filterHint": "тип, вузол, об'єкт, деталі",
+    "find": "Знайти",
+    "autoRefresh": "Автооновлення",
+    "exportCsv": "Експорт CSV",
+    "showFrom": "Показати від {s}",
+    "events": "подій",
+    "limited": "Показано лише {n} останніх подій: звузьте період або фільтр.",
+    "noData": "Немає подій безпеки",
+    "noRight": "Ваші ролі не надають права «Перегляд подій безпеки».",
+    "unavailable": "База даних недоступна",
+    "severities": {
+      "info": "Інфо",
+      "notice": "Повідомлення",
+      "warning": "Попередження",
+      "alert": "Тривога",
+      "critical": "Критично"
+    },
+    "columns": {
+      "time": "Час",
+      "severity": "Важливість",
+      "kind": "Подія",
+      "connection": "З'єднання",
+      "peer": "Вузол",
+      "object": "Об'єкт",
+      "action": "Дія",
+      "detail": "Деталі",
+      "source": "Джерело"
     }
   },
   "login": {
@@ -315,7 +388,11 @@
         "total": "Ролі",
         "admin": "Ролі адміністратора",
         "unused": "Не призначені"
-      }
+      },
+      "viewSecEvents": "Перегляд подій безпеки",
+      "viewSecEventsHint": "Може відкривати перегляд подій безпеки (аномалії з'єднань, сертифікатів, ідентифікації та команд від драйверів протоколів).",
+      "editDisplays": "Редагування дисплеїв",
+      "editDisplaysHint": "Може переглядати список, відкривати та зберігати SVG-дисплеї в редакторі SVG (адміністратори — завжди). Із заданим списком дисплеїв — лише їх."
     },
     "protocolDriverInstances": {
       "title": "Примірники драйвера протоколу",
@@ -742,6 +819,28 @@
       "serverUnitIds": "Unit id сервера",
       "serverUnitIdsTitle": "Обслуговувані unit id (адреси підлеглих)",
       "serverUnitIdsHint": "Введіть число та натисніть Enter. Діапазон від 0 до 255.",
+      "sunspecParameters": "Параметри SunSpec",
+      "unitIds": "Unit ID",
+      "unitIdsTitle": "Пристрої SunSpec (Modbus unit id) для виявлення",
+      "unitIdsHint": "Введіть число й натисніть Enter. Діапазон 1–255. Порожньо: пристрій 1.",
+      "baseAddresses": "Базові адреси",
+      "baseAddressesTitle": "Адреси регістрів, що перевіряються на маркер SunS",
+      "baseAddressesHint": "Введіть число й натисніть Enter. Порожньо: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",
+      "modelIds": "ID моделей",
+      "modelIdsTitle": "Моделі SunSpec з автоматичними тегами",
+      "modelIdsHint": "Введіть ID моделі й натисніть Enter (напр. 1, 103, 160). Порожньо: усі виявлені моделі.",
+      "registerType": "Тип регістрів",
+      "registerTypeTitle": "Регістри з картою SunSpec",
+      "registerTypeHint": "holding (функція 3, майже всі пристрої) або input (функція 4, лише читання).",
+      "maxModels": "Макс. моделей",
+      "maxModelsTitle": "Максимум заголовків моделей, що читаються з ланцюжка",
+      "maxModelsHint": "Ціле число, не менше 1. Типово 256.",
+      "autoCreateCommandTags": "Автостворення тегів команд: ",
+      "autoCreateCommandTagsTrue": "Так",
+      "autoCreateCommandTagsFalse": "Ні",
+      "autoCreateUnimplemented": "Створювати теги для нереалізованих точок: ",
+      "autoCreateUnimplementedTrue": "Так",
+      "autoCreateUnimplementedFalse": "Ні",
       "strictUnitId": "Суворий unit id: ",
       "strictUnitIdTrue": "Правда",
       "strictUnitIdFalse": "Неправда",
@@ -802,7 +901,9 @@
         "total": "З’єднання",
         "tags": "Теги",
         "invalidTags": "Недостовірні теги"
-      }
+      },
+      "peerIdentification": "Ідентифікувати вузол (події безпеки): ",
+      "peerIdentificationHint": "Під час кожного підключення записує ідентифікацію вузла (виробник, модель, прошивка, MAC-адреса, сертифікат) у статистику з'єднання і повідомляє про її зміни як про події безпеки."
     },
     "userActions": {
       "title": "Дії користувача",
@@ -850,6 +951,13 @@
       "editOrigin": "Походження",
       "editType": "Тип",
       "editHistorianDeadBand": "Мертва зона історика (%)",
+      "editHihihiLimit": "Верхня межа 3 (HIHIHI)",
+      "editHihiLimit": "Верхня межа 2 (HIHI)",
+      "editHiLimit": "Верхня межа (HI)",
+      "editLoLimit": "Нижня межа (LO)",
+      "editLoloLimit": "Нижня межа 2 (LOLO)",
+      "editLololoLimit": "Нижня межа 3 (LOLOLO)",
+      "editHysteresis": "Гістерезис",
       "editHistorianPeriod": "Період доброчесності історика (секунди)",
       "editAlarmState": "Стан тривоги",
       "editAlarmStateOff": "ВИМКНЕНО",
@@ -1016,7 +1124,15 @@
       "pruneExecute": "Видалити",
       "pruneConfirmText": "Вибрану конфігурацію буде видалено назавжди. Якщо вона може знадобитися, спершу експортуйте резервну копію.",
       "pruneTypeToConfirm": "Введіть {word} для підтвердження",
-      "pruneDone": "Конфігурацію очищено"
+      "pruneDone": "Конфігурацію очищено",
+      "retentionTitle": "Зберігання даних",
+      "retentionHint": "Термін зберігання подій (SOE), сигналів і архівних даних у днях; надлишок видаляється раз на добу. Неквитовані та активні сигнали зберігаються.",
+      "retentionSoe": "Події (SOE)",
+      "retentionAlarms": "Сигнали",
+      "retentionHist": "Архівні дані",
+      "retentionDays": "дн.",
+      "retentionRule": "Ціле число днів від {min} до {max}",
+      "retentionSecEvents": "Події безпеки"
     },
     "cimEms": {
       "readOnly": "Лише перегляд: завантаження та активація моделей, затвердження прив'язок і завантаження файлів потребують ролі з правом інженера CIM-EMS.",
@@ -1221,8 +1337,12 @@
     "reset": "Скинути вигляд і стежити в реальному часі",
     "downloadCsv": "Завантажити CSV",
     "current": "Поточне значення",
-    "hiLimit": "Верхня межа",
-    "loLimit": "Нижня межа",
+    "hiLimit": "Верхня межа (HI)",
+    "loLimit": "Нижня межа (LO)",
+    "hihiLimit": "Верхня межа 2 (HIHI)",
+    "hihihiLimit": "Верхня межа 3 (HIHIHI)",
+    "loloLimit": "Нижня межа 2 (LOLO)",
+    "lololoLimit": "Нижня межа 3 (LOLOLO)",
     "noData": "Немає даних за цей період",
     "noPoint": "Точку не вказано (використовуйте ?point=<ключ або тег>)",
     "notFound": "Точку не знайдено"
@@ -1247,5 +1367,18 @@
       "analytics": "Аналітика",
       "engineering": "Інжиніринг"
     }
+  },
+  "customDev": {
+    "subtitle": "Вебзастосунки, зібрані в src/custom-developments: панелі, фейсплейти та спеціальні види.",
+    "search": "Пошук застосунків",
+    "open": "Відкрити",
+    "openNewWindow": "Відкрити в новому вікні",
+    "back": "Назад до списку",
+    "retry": "Повторити",
+    "empty": "Користувацьких розробок ще немає",
+    "emptyHint": "Зберіть застосунок у теці src/custom-developments (npm install && npm run build) і перезапустіть server_realtime_auth.",
+    "noMatch": "Жоден застосунок не відповідає пошуку.",
+    "noDescription": "Немає опису",
+    "built": "Зібрано {date}"
   }
 }

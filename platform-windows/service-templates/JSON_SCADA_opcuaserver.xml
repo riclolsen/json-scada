@@ -1,0 +1,19 @@
+<service>
+  <id>JSON_SCADA_opcuaserver</id>
+  <name>JSON_SCADA_opcuaserver</name>
+  <description>JSON-SCADA opcuaserver</description>
+  <executable>{root}\platform-windows\nodejs-runtime\node.exe</executable>
+  <arguments>"{root}\src\OPC-UA-Server\index.js" 1 1 "{root}\conf\json-scada.json"</arguments>
+  <workingdirectory>{root}\src\OPC-UA-Server</workingdirectory>
+  <startmode>Automatic</startmode>
+  <logpath>{root}\log</logpath>
+  <logname>opcuaserver</logname>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>1</keepFiles>
+  </log>
+  <onfailure action="restart" delay="2 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  <stoptimeout>15 sec</stoptimeout>
+  <stopparentprocessfirst>true</stopparentprocessfirst>
+</service>

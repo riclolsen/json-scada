@@ -69,6 +69,7 @@ This driver will make all points available to the clients, unless filtered. Only
         privateKeyFilePath: "",
         historyEnabled: false,
         historian: "mongodb",
+        peerIdentification: true,
         stats: {}
     });
 
@@ -98,11 +99,61 @@ Parameters for communication with OPC-UA servers.
 - _**historyQueryTimeoutMs**_ [Number] - Backend query timeout in ms. Default `10000`. **Optional parameter**.
 - _**historyTimestampField**_ [String] - Which timestamp the history range filters/orders on: `"timeTag"` (default, server receive time) or `"timeTagAtSource"` (source time; for MongoDB this mode benefits from an extra index `db.hist.createIndex({ tag: 1, timeTagAtSource: 1 })`). **Optional parameter**.
 - _**historyFullHAConfiguration**_ [Boolean] - When `true` (default) each historized variable gets a full per-node `HA Configuration` object (spec-compliant). Set `false` for a "lite" install (no `HA Configuration` object) to keep the address space small on systems with tens of thousands of tags. **Optional parameter**.
-- _**stats**_ [Object] - Protocol statistics updated by the driver. **Mandatory parameter**.
+- _**peerIdentification**_ [Boolean] - Record the identity of the clients in `stats.peerIdentity` and report its changes as security events. Default `true`. See [Security Events and Client Identification](#security-events-and-client-identification). **Optional parameter**.
+- _**stats**_ [Object] - Protocol statistics updated by the driver: `isConnected`, `sessions`, and `peerIdentity` when `peerIdentification` is on. **Mandatory parameter**.
 
 ## Commands Routing
 
 Commands received on this driver (OPC UA tag writes) can be routed to protocol clients. The write result reflects the outcome: `BadNotWritable` for blocked commands, `BadNotFound` for unknown tags, `BadTypeMismatch` for values that are not a scalar number/boolean, `Good` only when the command was queued. Enabling commands on a connection that allows anonymous clients over an unsecured channel from any address logs a warning: set `useSecurity`, `users` or `ipAddresses`. When commands are enabled for the connection, command tags will be automatically made available on the OPC-UA server. When a write is performed on an OPC object (associated with a command tag) on the OPC-UA server, the command is routed to the protocol source of the command tag.
+
+## Security Events and Client Identification
+
+The driver reports unexpected or suspicious client activity to the _secEvents_ collection, shown by the Admin UI Security Events viewer (see the _secEvents_ collection in [docs/schema.md](../../docs/schema.md#secevents-collection)). Every event names the connection, the client address (`peerAddress`, `peerIp`, and `peerMac` from the operating system's ARP table when known), `sessionId` (the secure channel id) and, when the client has a session, its application description and user (`peer.application`, `peer.user`, `peer.tls`). Passwords, tokens and string command values are never stored. A repeated event (same kind, address, node and status) is stored once per 10 s with a `count`; an unknown node once per 10 minutes and address.
+
+**Client identification** (`peerIdentification`, default on). On every session the driver records what the client tells about itself in `CreateSession` and `ActivateSession`, and keeps it in `stats.peerIdentity`:
+
+- `clients` - the sessions open now: `sessionName`, `address`, `ip`, `mac`, `macSource`, `application` (`applicationUri`, `productUri`, `applicationName`, `applicationType`, `gatewayServerUri`, `discoveryProfileUri`, `discoveryUrls`), `tls` (the client application certificate: `subject`, `issuer`, `serial`, `sha256`, `notAfter`, `subjectAltName`), `endpointUrl`, `securityPolicy`, `securityMode`, `secureChannelId`, `user` (`tokenType`: `anonymous`, `username` with `userName`, `certificate` with `certificate`, or `issued`), `connectedAt`, `activatedAt`.
+- `known` - the last identity of up to 64 client applications, by `applicationUri`: `productUri`, `applicationName`, `applicationType`, `ip`, `mac`, `tlsSha256`, `tlsSubject`, `lastSeen`.
+
+A session that moves to another secure channel (the client reconnected) takes that channel's address, MAC, certificate and security, compared again. A new client application is reported as `peer.identified`; a change of the `productUri` or `applicationName` of a known application as `peer.identity_changed`, of its certificate as `tls.cert_changed`, and of the MAC address of a client IP as `peer.mac_changed`. The comparison starts from the stored `known` list, so a change across a driver restart is seen too. OPC UA clients publish no model or firmware version: the product URI, application name and certificate are what identifies them. With `peerIdentification` false nothing is recorded (a `stats.peerIdentity` left from before is removed) and no `peer.*`, `tls.cert_changed` event is reported; the other events are.
+
+**Events**
+
+| Kind | Severity | When |
+|---|---|---|
+| `conn.unexpected` | alert | A connection from an address not in `ipAddresses` (closed) |
+| `conn.refused` | warning | A connection refused because the server has as many as it accepts |
+| `conn.open_failed` | warning | A connection that did not open a secure channel: not OPC UA, a malformed hello, a timeout |
+| `conn.security_rejected` | warning | A security mode or policy the server does not offer |
+| `tls.cert_rejected` | alert | A client certificate refused (untrusted, expired, revoked, wrong use or URI) |
+| `auth.failed` | alert | A session activation refused: wrong user name or password, refused identity token |
+| `auth.signature_invalid` | alert | A bad client signature or nonce in a session activation |
+| `link.endpoint_mismatch` | notice | A session for an endpoint port or path the server does not have (the host name is not compared) |
+| `access.unknown_node` | warning | A Read, Browse, monitored item, HistoryRead or browse path of a node the server does not have |
+| `access.scan` | alert | More than 20 requests for unknown nodes from one address within a minute |
+| `access.write_denied` | warning | A write to a variable that is not a command |
+| `access.session_invalid` | notice | A request on a session or secure channel that is closed or does not exist |
+| `cmd.disabled` | warning | A write of a value while the connection's `commandsEnabled` is false |
+| `cmd.object_unknown` | warning | A command to a node or method the server does not have, or to a command tag removed from the database |
+| `cmd.wrong_type` | warning | A command value of the wrong type or out of range, or method arguments that do not match |
+| `cmd.rejected` | warning | A command refused: blocked (`commandBlocked`), refused by the server, or not queued because the database failed (with `error`) |
+| `cmd.unnecessary` | notice | A digital command to the state its supervised point already is in (the command is still sent) |
+| `flood.commands` | alert | More than 10 command attempts (value writes, accepted or refused) from one address within 10 s |
+| `ctrl.restart` | notice | A call of `RequestServerStateChange` or a program state machine method |
+| `ctrl.config_change` | notice | A write of an attribute other than the value, a write to a namespace 0 node, node management or HistoryUpdate requests, server configuration and certificate methods |
+| `file.transfer` | notice | A call of a file or trust list method |
+| `ctrl.method_call` | notice | Any other method call (`GetMonitoredItems`, `ResendData`, `ConditionRefresh` and condition acknowledgement are routine and not reported) |
+| `proto.malformed` | warning | A message that does not decode, has bad headers or is too large; the channel is closed |
+| `proto.security_check_failed` | alert | A message whose signature or encryption does not check |
+| `seq.invalid` | alert | A message with a sequence number out of order (a replay or an injected message); the channel is closed |
+| `proto.service_unsupported` | warning | A service the server does not implement |
+| `proto.bad_request` | warning | A request refused as malformed or too large |
+| `proto.service_fault` | notice | Any other refused request (Publish and Republish faults, timeouts and shutdowns are routine and not reported) |
+| `resource.max_sessions` | warning | A session refused because the server has as many as it accepts |
+
+Each event has `fields` with what the request carried: `service`, `status`, and per kind `attribute`, `method`, `methodId`, `objectId`, `objectType`, `arguments` (a count), `value` (numeric commands), `protocolSourceASDU`, `securityPolicy`, `securityMode`, `expectedSeq`, `sequenceNumber`, `secureChannelId` (the channel the message came in on), `receivedChannelId` (the channel id its header claimed), `requestId`, `bytesRead`.
+
+The driver listens to every request node-opcua decodes, which turns off node-opcua's faster path for plain reads and writes; a server with very many polling clients uses somewhat more CPU.
 
 ## Historical Data Access (OPC UA HA)
 

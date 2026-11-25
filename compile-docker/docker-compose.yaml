@@ -36,6 +36,7 @@ services:
                     go build -ldflags='-s -w' -o /publish_bin/dnp3-server ./cmd/dnp3server &&
                     cd /src/modbus-go &&
                     go build -ldflags='-s -w' -o /publish_bin/modbus-client ./cmd/modbusclient &&
+                    go build -ldflags='-s -w' -o /publish_bin/sunspec-client ./cmd/sunspecclient &&
                     go build -ldflags='-s -w' -o /publish_bin/modbus-server ./cmd/modbusserver &&
                     cp /src/iccp/iccp-client/iccp-client-linux-$${ARCH} /publish_bin/iccp-client &&
                     cp /src/iccp/iccp-server/iccp-server-linux-$${ARCH} /publish_bin/iccp-server &&

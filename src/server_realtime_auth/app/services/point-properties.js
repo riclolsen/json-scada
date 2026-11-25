@@ -42,7 +42,9 @@ function propertyProblem(props) {
     if (v.length > max) return k + ' too long (maximum ' + max + ' characters)'
   }
   // a null limit (an Infinity serialized as JSON) means no limit
-  for (const k of ['loLimit', 'hiLimit'])
+  for (const k of [
+    'loLimit', 'loloLimit', 'lololoLimit', 'hiLimit', 'hihiLimit', 'hihihiLimit',
+  ])
     if (props[k] !== undefined && props[k] !== null && finiteNumber(props[k]) === undefined)
       return k + ' must be a number'
   if (props.hysteresis !== undefined) {

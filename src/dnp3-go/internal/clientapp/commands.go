@@ -27,6 +27,7 @@ import (
 	"math"
 	"time"
 
+	"dnp3-go/internal/dnp3sec"
 	"dnp3-go/internal/dnp3util"
 
 	"github.com/riclolsen/json-scada/src/go-common/jscommands"
@@ -59,6 +60,7 @@ func (e *Engine) commandsLoop(ctx context.Context) {
 			continue
 		}
 		coll := cli.Database(e.cfg.MongoDatabaseName).Collection(jsmongo.CommandsQueueCollectionName)
+		rt := cli.Database(e.cfg.MongoDatabaseName).Collection(jsmongo.RealtimeDataCollectionName)
 
 		pipeline := jscommands.InsertOnlyPipeline()
 		opts := options.ChangeStream()
@@ -87,7 +89,7 @@ func (e *Engine) commandsLoop(ctx context.Context) {
 				continue
 			}
 			if change.FullDocument != nil {
-				e.executeCommand(ctx, coll, change.FullDocument)
+				e.executeCommand(ctx, coll, rt, change.FullDocument)
 			}
 		}
 		if err := stream.Err(); err != nil && ctx.Err() == nil {
@@ -99,8 +101,9 @@ func (e *Engine) commandsLoop(ctx context.Context) {
 	}
 }
 
-// executeCommand validates a queued command and issues it.
-func (e *Engine) executeCommand(ctx context.Context, coll *mongo.Collection, cmd bson.M) {
+// executeCommand validates a queued command and issues it. rt is the
+// realtimeData collection, for the unnecessary-command check.
+func (e *Engine) executeCommand(ctx context.Context, coll, rt *mongo.Collection, cmd bson.M) {
 	if !e.redundancy.Active() {
 		return
 	}
@@ -118,6 +121,15 @@ func (e *Engine) executeCommand(ctx context.Context, coll *mongo.Collection, cmd
 		jslog.Log(jslog.LevelDetailed, "Mongo CMD: connection %d not handled by this driver, ignoring command", connNumber)
 		return
 	}
+	group := jsmongo.GetInt(cmd, "protocolSourceCommonAddress", 0)
+	variation := jsmongo.GetInt(cmd, "protocolSourceASDU", 0)
+	address := jsmongo.GetInt(cmd, "protocolSourceObjectAddress", 0)
+	// refuse cancels a command the driver does not send and reports why.
+	refuse := func(reason, kind, why string) {
+		conn.Sec.Refused(kind, cmd, why, group, variation, address)
+		cancelCommand(ctx, coll, id, reason)
+	}
+
 	session := conn.Session()
 	switch {
 	case session == nil:
@@ -127,21 +139,19 @@ func (e *Engine) executeCommand(ctx context.Context, coll *mongo.Collection, cmd
 		cancelCommand(ctx, coll, id, "not_connected")
 		return
 	case !conn.CommandsEnabled:
-		cancelCommand(ctx, coll, id, "cmds_disabled")
+		refuse("cmds_disabled", dnp3sec.KindCmdRejected, "commands are disabled on the connection")
 		return
 	}
-	if time.Since(time.UnixMilli(jsmongo.GetDateMs(cmd, "timeTag", time.Now().UnixMilli()))) > CommandExpiry {
+	if ts := time.UnixMilli(jsmongo.GetDateMs(cmd, "timeTag", time.Now().UnixMilli())); time.Since(ts) > CommandExpiry {
+		conn.Sec.Stale(cmd, ts, group, variation, address)
 		cancelCommand(ctx, coll, id, "expired")
 		return
 	}
 
-	group := jsmongo.GetInt(cmd, "protocolSourceCommonAddress", 0)
-	variation := jsmongo.GetInt(cmd, "protocolSourceASDU", 0)
-	address := jsmongo.GetInt(cmd, "protocolSourceObjectAddress", 0)
 	if !validPointIndex(address) {
 		// Narrowing to 16 bits would wrap onto a different point: a command
 		// for 65541 would operate point 5.
-		cancelCommand(ctx, coll, id, "invalid_address")
+		refuse("invalid_address", dnp3sec.KindCmdRejected, "object address outside 0..65535")
 		return
 	}
 	index := uint16(address)
@@ -161,16 +171,18 @@ func (e *Engine) executeCommand(ctx context.Context, coll *mongo.Collection, cmd
 			// -25536. A setpoint the variation cannot carry is refused.
 			jslog.Log(jslog.LevelBasic, "%s - Setpoint %v does not fit g41v%d; command refused",
 				conn.Name, value, variation)
-			cancelCommand(ctx, coll, id, "value_out_of_range")
+			refuse("value_out_of_range", dnp3sec.KindCmdWrongType, "the setpoint does not fit its variation")
 			return
 		}
 	default:
-		cancelCommand(ctx, coll, id, "unsupported_group")
+		refuse("unsupported_group", dnp3sec.KindCmdWrongType,
+			"the command's group (protocolSourceCommonAddress) is neither 12 (CROB) nor 41 (analog output)")
 		return
 	}
 
 	name := conn.Name
 	jslog.Log(jslog.LevelBasic, "%s - Issuing command %s useSBO=%v", name, command, useSBO)
+	conn.Sec.Command(rt, cmd, value, group == dnp3util.GroupCROBCommand, group, variation, address)
 
 	// The request methods block until the outstation answers, so each command
 	// gets its own goroutine and the change stream is never held up.
@@ -190,6 +202,7 @@ func (e *Engine) executeCommand(ctx context.Context, coll *mongo.Collection, cmd
 
 		ok, description := describeResult(res, err)
 		jslog.Log(jslog.LevelBasic, "%s - Command result: %s", name, description)
+		conn.Sec.Answer(cmd, res.Statuses, group, variation, address)
 		ackCommand(context.Background(), e, id, ok, description)
 	}()
 }

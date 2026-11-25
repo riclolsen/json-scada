@@ -5,8 +5,9 @@ go 1.26.0
 replace github.com/riclolsen/json-scada/src/go-common => ../go-common
 
 require (
-	github.com/otfabric/go-modbus v1.17.0
+	github.com/otfabric/go-modbus v1.24.1
 	github.com/otfabric/go-serial v0.5.0
+	github.com/otfabric/go-sunspec v0.0.0-20261123011555-3b87cf8587a6
 	github.com/riclolsen/json-scada/src/go-common v0.0.0-00010101000000-000000000000
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
 	go.mongodb.org/mongo-driver/v2 v2.8.0
@@ -23,3 +24,7 @@ require (
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 )
+
+replace github.com/otfabric/go-modbus => github.com/riclolsen/go-modbus v1.24.1
+
+replace github.com/otfabric/go-sunspec => github.com/riclolsen/go-sunspec v0.0.0-20261123011555-3b87cf8587a6

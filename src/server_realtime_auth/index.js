@@ -39,6 +39,7 @@ const ALLOW_FRAMING = (process.env.JS_ALLOW_FRAMING || '').toLowerCase() === 'tr
 const QUERYJSON_AP = '/queryJSON' // API Access point for special custom queries returning JSON
 const COLL_REALTIME = 'realtimeData'
 const COLL_SOE = 'soeData'
+const COLL_ALARMS = 'alarmsData'
 const COLL_COMMANDS = 'commandsQueue'
 const COLL_ACTIONS = 'userActions'
 const GRAPHQL_AP = process.env.JS_GRAPHQL_AP || '/apollo' // same as graphql-server.js
@@ -206,7 +207,7 @@ async function exitAfterFlush(code, graceful = false) {
 }
 
 // After an uncaught exception the process state is unknown: log it and exit, the
-// process manager (supervisor/nssm) restarts the server.
+// process manager (supervisor/WinSW) restarts the server.
 process.on('uncaughtException', (err) => {
   Log.log('Uncaught Exception:' + err.message + ' ' + err.stack)
   setTimeout(() => process.exit(1), 4000).unref()
@@ -238,13 +239,25 @@ const MaxFilteredReadRows = 100000 // max points returned by a ContentFilter rea
 // nodes of one write request (commands, acks, property writes); the clients
 // write one at a time, a larger batch is a script or a flood of commands
 const MaxWriteNodes = 100
+// acknowledgement of alarmsData documents
+const alarmAckUpdate = (username) => ({
+  $set: { ack: 1, timeTagAck: new Date(), ackUser: username },
+})
+
+// out-of-range alarm limits of analog points (alarmRange 1..3 / -1..-3)
+const LimitFields = [
+  'hiLimit', 'hihiLimit', 'hihihiLimit', 'loLimit', 'loloLimit', 'lololoLimit',
+]
+const LimitIsHigh = { hiLimit: true, hihiLimit: true, hihihiLimit: true }
+const limitsOf = (p) => Object.fromEntries(LimitFields.map((f) => [f, p?.[f]]))
 // fields of the points returned by a ContentFilter read
 const FilteredReadFields = Object.fromEntries(
   ['_id', 'tag', 'type', 'value', 'valueString', 'valueDefault', 'invalid',
     'timeTag', 'timeTagAtSource', 'timeTagAtSourceOk', 'timeTagAlarm',
     'alarmed', 'alarmRange', 'alarmState', 'alarmDisabled', 'frozen', 'isEvent',
     'transit', 'group1', 'group2', 'group3', 'description',
-    'ungroupedDescription', 'hiLimit', 'loLimit', 'hysteresis',
+    'ungroupedDescription', 'hiLimit', 'hihiLimit', 'hihihiLimit', 'loLimit',
+    'loloLimit', 'lololoLimit', 'hysteresis',
     'stateTextTrue', 'stateTextFalse', 'unit', 'annotation', 'notes',
     'commandOfSupervised', 'supervisedOfCommand', 'origin', 'priority'].map(
     (f) => [f, 1]
@@ -253,7 +266,7 @@ const FilteredReadFields = Object.fromEntries(
 // fields of a point read before a property write (the rest is not needed)
 const PropertyWriteFields = Object.fromEntries(
   ['_id', 'tag', 'type', 'group1', 'value', 'description', 'unit', 'priority',
-    'annotation', 'notes', 'alarmDisabled', 'loLimit', 'hiLimit', 'hysteresis',
+    'annotation', 'notes', 'alarmDisabled', ...LimitFields, 'hysteresis',
     'eventTextTrue', 'eventTextFalse'].map((f) => [f, 1])
 )
 
@@ -1001,6 +1014,11 @@ function maskConnectionString(cs) {
 
                 if (node.Value.Body & opc.Acknowledge.AckAllAlarms) {
                   Log.log('Ack All Alarms')
+                  // the alarm list, then the alarmed flag of the points
+                  await db.collection(COLL_ALARMS).updateMany(
+                    { ack: 0, ...group1Restriction },
+                    alarmAckUpdate(username)
+                  )
                   let result = await db.collection(COLL_REALTIME).updateMany(
                     {
                       alarmed: true,
@@ -1051,45 +1069,82 @@ function maskConnectionString(cs) {
                   })
                 } else if (node.Value.Body & opc.Acknowledge.AckOneAlarm) {
                   Log.log('Ack alarm: ' + node.NodeId.Id)
-                  let result = await db
+                  // one alarm of the list (_Properties.alarm_id) or all the
+                  // alarms of the point; the point stays alarmed while it
+                  // has unacknowledged alarms
+                  const almId = node._Properties?.alarm_id
+                  const alarmObjectId =
+                    typeof almId === 'string' && ObjectId.isValid(almId)
+                      ? new ObjectId(almId)
+                      : null
+                  const point = await db
                     .collection(COLL_REALTIME)
-                    .updateOne(findPoint, {
-                      $set: {
-                        alarmed: false,
-                      },
-                    })
-                  // make digital event tag return to zero after acknowledged
-                  result = await db.collection(COLL_REALTIME).updateOne(
-                    {
-                      $and: [
-                        findPoint,
-                        { type: 'digital' },
-                        { isEvent: true },
-                        {
-                          $or: [
-                            { origin: 'supervised' },
-                            { origin: 'calculated' },
-                          ],
-                        },
-                      ],
-                    },
-                    [
+                    .findOne(findPoint, { projection: { _id: 1 } })
+                  let unackedLeft = 0
+                  if (point) {
+                    await db.collection(COLL_ALARMS).updateMany(
                       {
-                        $set: {
-                          value: 0,
-                          valueString: '$stateTextFalse',
-                          timeTagAtSource: null,
-                          timeTagAtSourceOk: null,
-                        },
+                        pointKey: point._id,
+                        ack: 0,
+                        ...(alarmObjectId ? { _id: alarmObjectId } : {}),
                       },
-                    ]
-                  )
-                  UserActionsQueue.enqueue({
-                    username: username,
-                    action: 'Ack Point Alarm',
-                    pointKey: node.NodeId.Id,
-                    timeTag: new Date(),
-                  })
+                      alarmAckUpdate(username)
+                    )
+                    if (alarmObjectId)
+                      unackedLeft = await db
+                        .collection(COLL_ALARMS)
+                        .countDocuments({ pointKey: point._id, ack: 0 }, { limit: 1 })
+                  }
+                  if (unackedLeft > 0) {
+                    UserActionsQueue.enqueue({
+                      username: username,
+                      action: 'Ack Alarm',
+                      pointKey: node.NodeId.Id,
+                      alarmId: alarmObjectId,
+                      timeTag: new Date(),
+                    })
+                  } else {
+                    let result = await db
+                      .collection(COLL_REALTIME)
+                      .updateOne(findPoint, {
+                        $set: {
+                          alarmed: false,
+                        },
+                      })
+                    // make digital event tag return to zero after acknowledged
+                    result = await db.collection(COLL_REALTIME).updateOne(
+                      {
+                        $and: [
+                          findPoint,
+                          { type: 'digital' },
+                          { isEvent: true },
+                          {
+                            $or: [
+                              { origin: 'supervised' },
+                              { origin: 'calculated' },
+                            ],
+                          },
+                        ],
+                      },
+                      [
+                        {
+                          $set: {
+                            value: 0,
+                            valueString: '$stateTextFalse',
+                            timeTagAtSource: null,
+                            timeTagAtSourceOk: null,
+                          },
+                        },
+                      ]
+                    )
+                    UserActionsQueue.enqueue({
+                      username: username,
+                      action: alarmObjectId ? 'Ack Alarm' : 'Ack Point Alarm',
+                      pointKey: node.NodeId.Id,
+                      ...(alarmObjectId ? { alarmId: alarmObjectId } : {}),
+                      timeTag: new Date(),
+                    })
+                  }
                 }
                 if (node.Value.Body & opc.Acknowledge.SilenceBeep) {
                   Log.log('Silence Beep')
@@ -1534,30 +1589,21 @@ function maskConnectionString(cs) {
                             annotation: node.Value._Properties?.annotation,
                           }
 
-                      let loLimitNew = {}
                       // absent fields are left unchanged; a null limit (an
                       // Infinity serialized as JSON) means no limit
                       const props = node.Value?._Properties || {}
-                      const limitOf = (v, inf) =>
-                        v === null ? inf : finiteNumber(v)
-                      if (userRights?.enterLimits && props.loLimit !== undefined)
-                        if (
-                          prevData?.loLimit !== limitOf(props.loLimit, -Infinity)
-                        )
-                          loLimitNew = {
-                            loLimit: new Double(
-                              limitOf(props.loLimit, -Infinity)
-                            ),
-                          }
-
-                      let hiLimitNew = {}
-                      if (userRights?.enterLimits && props.hiLimit !== undefined)
-                        if (
-                          prevData?.hiLimit !== limitOf(props.hiLimit, Infinity)
-                        )
-                          hiLimitNew = {
-                            hiLimit: new Double(limitOf(props.hiLimit, Infinity)),
-                          }
+                      let limitsNew = {}
+                      if (userRights?.enterLimits)
+                        for (const k of LimitFields) {
+                          if (props[k] === undefined) continue
+                          const lim =
+                            props[k] === null
+                              ? LimitIsHigh[k]
+                                ? Infinity
+                                : -Infinity
+                              : finiteNumber(props[k])
+                          if (prevData?.[k] !== lim) limitsNew[k] = new Double(lim)
+                        }
 
                       let hysteresisNew = {}
                       if (
@@ -1568,11 +1614,6 @@ function maskConnectionString(cs) {
                           hysteresisNew = {
                             hysteresis: new Double(finiteNumber(props.hysteresis)),
                           }
-
-                      // loloLimit: node.Value._Properties.loLimit,
-                      // lololoLimit: node.Value._Properties.loLimit,
-                      // hihiLimit: node.Value._Properties.hiLimit,
-                      // hihihiLimit: node.Value._Properties.hiLimit,
 
                       let notesNew = {}
                       if (userRights?.enterNotes && props.notes !== undefined)
@@ -1593,8 +1634,7 @@ function maskConnectionString(cs) {
                         $set: {
                           ...alarmDisableNew,
                           ...annotationNew,
-                          ...loLimitNew,
-                          ...hiLimitNew,
+                          ...limitsNew,
                           ...hysteresisNew,
                           ...notesNew,
                           ...valueNew,
@@ -1620,8 +1660,7 @@ function maskConnectionString(cs) {
                         if (prevData.type === 'analog') {
                           if (
                             'alarmDisabled' in alarmDisableNew ||
-                            'hiLimit' in hiLimitNew ||
-                            'loLimit' in loLimitNew ||
+                            Object.keys(limitsNew).length > 0 ||
                             'hysteresis' in hysteresisNew
                           ) {
                             Log.log('Update for range check: ' + node.NodeId.Id)
@@ -1881,8 +1920,7 @@ function maskConnectionString(cs) {
                   valueString: 1,
                   invalid: 1,
                   timeTag: 1,
-                  loLimit: 1,
-                  hiLimit: 1,
+                  ...Object.fromEntries(LimitFields.map((f) => [f, 1])),
                   hysteresis: 1,
                   alarmed: 1,
                   alarmRange: 1,
@@ -2133,8 +2171,7 @@ function maskConnectionString(cs) {
                           group3: pointInfo.group3,
                           description: pointInfo.description,
                           ungroupedDescription: pointInfo.ungroupedDescription,
-                          hiLimit: pointInfo.hiLimit,
-                          loLimit: pointInfo.loLimit,
+                          ...limitsOf(pointInfo),
                           hysteresis: pointInfo.hysteresis,
                           stateTextTrue: pointInfo.stateTextTrue,
                           stateTextFalse: pointInfo.stateTextFalse,
@@ -2246,8 +2283,7 @@ function maskConnectionString(cs) {
                       group3: node.group3,
                       description: node.description,
                       ungroupedDescription: node.ungroupedDescription,
-                      hiLimit: node.hiLimit,
-                      loLimit: node.loLimit,
+                      ...limitsOf(node),
                       hysteresis: node.hysteresis,
                       stateTextTrue: node.stateTextTrue,
                       stateTextFalse: node.stateTextFalse,

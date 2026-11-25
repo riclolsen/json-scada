@@ -49,6 +49,7 @@ var supervisedDrivers = bson.A{
 	"PLCTAG",
 	"PLC4X",
 	"MODBUS",
+	"SUNSPEC",
 	"IEC61850",
 	"ICCP",
 }

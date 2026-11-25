@@ -1,10 +1,10 @@
 {
   "name": "opc-ua-server",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test-history.js"
+    "test": "node test-history.js && node test-secevents.js"
   },
   "author": "",
   "license": "ISC",

@@ -209,6 +209,52 @@ const isUserPage = async (req, res, next) => {
   res.status(401).send({ ok: false, message: 'Require sign-in!' })
 }
 
+// security events viewer: a role must grant viewSecEvents (admin is not
+// enough on its own)
+const isSecEventsViewer = async (req, res, next) => {
+  const tok = checkToken(req)
+  if (tok === false) {
+    res.status(403).send({ error: 'Require sign-in!' })
+    return
+  }
+  try {
+    const rights = await UserRights.getCurrentRights(tok, { fresh: true })
+    if (rights && rights.viewSecEvents) {
+      req.userId = tok.id
+      req.token = tok
+      req.rights = rights
+      next()
+      return
+    }
+    res.status(403).send({ error: 'Require the viewSecEvents right!' })
+  } catch (err) {
+    sendLookupError(res, err)
+  }
+}
+
+// display editor (list, open and save the svg displays): a role granting
+// editDisplays, or isAdmin
+const isDisplayEditor = async (req, res, next) => {
+  const tok = checkToken(req)
+  if (tok === false) {
+    res.status(403).send({ error: 'Require sign-in!' })
+    return
+  }
+  try {
+    const rights = await UserRights.getCurrentRights(tok, { fresh: true })
+    if (rights && (rights.isAdmin || rights.editDisplays)) {
+      req.userId = tok.id
+      req.token = tok
+      req.rights = rights
+      next()
+      return
+    }
+    res.status(403).send({ error: 'Require the editDisplays right!' })
+  } catch (err) {
+    sendLookupError(res, err)
+  }
+}
+
 // CIM-EMS engineering right (model upload/activation, binding approval, artifact
 // download): an admin role is not enough, a role must grant cimEngineering.
 const hasCimEngineering = async (req) => {
@@ -239,5 +285,7 @@ const authJwt = {
   isUserPage,
   hasCimEngineering,
   isCimEngineer,
+  isSecEventsViewer,
+  isDisplayEditor,
 }
 module.exports = authJwt

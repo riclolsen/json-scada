@@ -76,6 +76,8 @@ type ConnCfg struct {
 	ChainValidation               bool          `bson:"chainValidation"`
 	AutoCreateTags                bool          `bson:"autoCreateTags"`
 	Topics                        []string      `bson:"topics"`
+	PeerIdentification            *bool         `bson:"peerIdentification"` // default true when missing
+	Stats                         bson.M        `bson:"stats"`              // the stored statistics (stats.peerIdentity)
 	// IEC 101 (serial) specific
 	PortName          string  `bson:"portName"`
 	BaudRate          float64 `bson:"baudRate"`
@@ -96,6 +98,16 @@ func (c *ConnCfg) CommandsEnabledVal() bool {
 		return true
 	}
 	return *c.CommandsEnabled
+}
+
+// PeerIdentificationVal returns peerIdentification (default true): identify
+// the peer on every connection into stats.peerIdentity and report changes of
+// its identity as security events.
+func (c *ConnCfg) PeerIdentificationVal() bool {
+	if c.PeerIdentification == nil {
+		return true
+	}
+	return *c.PeerIdentification
 }
 
 // GiIntervalVal returns giInterval with the C# default (300 s).

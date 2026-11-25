@@ -656,6 +656,28 @@
                 :label="$t('admin.tags.editFrozenDetectTimeout')"
               ></v-text-field>
 
+              <!-- out-of-range alarm limits (empty = no limit) -->
+              <template v-if="editedTag.type === 'analog' && editedTag.origin !== 'command'">
+                <v-row dense>
+                  <v-col v-for="k in limitFieldsShown" :key="k" cols="6">
+                    <v-text-field
+                      variant="outlined"
+                      type="number"
+                      clearable
+                      v-model="editedTag[k]"
+                      :label="$t('admin.tags.edit' + k.charAt(0).toUpperCase() + k.slice(1))"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
+                <v-text-field
+                  variant="outlined"
+                  type="number"
+                  min="0"
+                  v-model="editedTag.hysteresis"
+                  :label="$t('admin.tags.editHysteresis')"
+                ></v-text-field>
+              </template>
+
               <v-text-field
                 variant="outlined"
                 type="number"
@@ -1234,6 +1256,26 @@
     dialogDeleteTag.value = false
   }
 
+  // limits shown in pairs: high levels left, low levels right, most severe first
+  const limitFieldsShown = [
+    'hihihiLimit', 'lololoLimit', 'hihiLimit', 'loloLimit', 'hiLimit', 'loLimit',
+  ]
+  // the edited tag as sent: limits and hysteresis as numbers, an empty
+  // limit as null (no limit)
+  const tagToSend = () => {
+    const tag = { ...editedTag.value }
+    for (const k of limitFieldsShown)
+      if (k in tag) {
+        const v = parseFloat(tag[k])
+        tag[k] = isNaN(v) ? null : v
+      }
+    if ('hysteresis' in tag) {
+      const h = parseFloat(tag.hysteresis)
+      tag.hysteresis = isNaN(h) || h < 0 ? 0 : h
+    }
+    return tag
+  }
+
   const updateOrCreateTag = async () => {
     if (isNewTag.value) {
       await createTag()
@@ -1250,7 +1292,7 @@
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(editedTag.value),
+        body: JSON.stringify(tagToSend()),
       })
       const json = await response.json()
       if (json.error || !json._id) {
@@ -1272,7 +1314,7 @@
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(editedTag.value),
+        body: JSON.stringify(tagToSend()),
       })
       const json = await response.json()
       if (json.error) {

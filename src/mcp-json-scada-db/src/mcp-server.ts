@@ -30,6 +30,8 @@ import { registerCommandsTools } from "./tools/commands.js";
 import { registerCollectionsTools } from "./tools/collections.js";
 import { registerInspectTools } from "./tools/inspect.js";
 import { registerHistoryTools } from "./tools/history.js";
+import { registerAlarmTools } from "./tools/alarms.js";
+import { registerSecurityEventTools } from "./tools/security-events.js";
 import { registerStatusTools } from "./tools/status.js";
 import { registerDriverDocTools, registerDriverTools } from "./tools/drivers.js";
 import {
@@ -92,6 +94,8 @@ function buildServer(): McpServer {
   registerCollectionsTools(server, mgr);
   registerInspectTools(server, mgr);
   registerHistoryTools(server, mgr);
+  registerAlarmTools(server, mgr);
+  registerSecurityEventTools(server, mgr);
   registerStatusTools(server, mgr);
   registerDriverDocTools(server);
   registerConnectionReadTools(server, mgr);
@@ -173,9 +177,11 @@ function buildServer(): McpServer {
           {
             uri: uri.href,
             text: `JSON-SCADA Database Schema Summary:
-- realtimeData: Contains the current state of all points (tags). Fields: _id (pointKey), tag, description, type, value, timeTag, unit, invalid, alarmed, group1/2/3, etc.
+- realtimeData: Contains the current state of all points (tags). Fields: _id (pointKey), tag, description, type, value, timeTag, unit, invalid, alarmed (true while the point has unacknowledged alarms), group1/2/3, etc.
 - hist: Historical data for points. Fields: timeTag, tag, value, timeTagAtSource, invalid.
-- soeData: Sequence of Events. Fields: timeTag, timeTagAtSource, tag, description, eventText, ack.
+- soeData: Sequence of Events. Fields: pointKey, tag, timeTag, timeTagAtSource, timeTagAtSourceOk, eventText, invalid, priority, ack. Use get_soe_events and json-scada://alarms-and-soe/guide.
+- secEvents: Protocol security observations. Fields: timeTag, kind, category, severityLevel, action, source, protocolConnectionNumber, sessionId, count, firstSeen. Use get_security_events and json-scada://security-events/guide.
+- alarmsData: Alarm list, one document per alarm occurrence. Fields: tag, pointKey, group1, description, priority, alarmText, timeTag, active, ack, timeTagAck, ackUser, timeTagNormal, alarmRange (analog). Use get_alarms and json-scada://alarms-and-soe/guide.
 - commandsQueue: Queue for commands to be dispatched. Fields: tag, value, timeTag, delivered, ack, originatorUserName.
 - processInstances: Status and config of system processes.
 - protocolDriverInstances: Status and config of protocol drivers.

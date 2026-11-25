@@ -200,6 +200,16 @@ exports.getSystemSettings = async (req, res) => {
       settings: {
         autoManageServices: settings.autoManageServices,
         autoRestartOnConnectionChange: settings.autoRestartOnConnectionChange,
+        ...Object.fromEntries(
+          SystemSettings.RETENTION_FIELDS.map((k) => [
+            k,
+            typeof settings[k] === 'number' ? settings[k] : SystemSettings.DEFAULTS[k],
+          ])
+        ),
+      },
+      retentionLimits: {
+        min: SystemSettings.MIN_RETENTION_DAYS,
+        max: SystemSettings.MAX_RETENTION_DAYS,
       },
       processManagementEnabled: ProcessManager.isEnabled(),
       localNode: ProcessManager.localNodeName(),
@@ -392,6 +402,11 @@ exports.installCimEmsDependencies = async (req, res) => {
 
 exports.updateSystemSettings = async (req, res) => {
   try {
+    const problem = SystemSettings.retentionProblem(req.body)
+    if (problem) {
+      res.status(200).send({ error: problem })
+      return
+    }
     registerUserAction(req, 'updateSystemSettings')
     const settings = await SystemSettings.updateSettings(req.body || {})
     res.status(200).send({ error: false, settings })

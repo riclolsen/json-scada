@@ -30,8 +30,8 @@ import (
 const (
 	CopyrightMessage   = "{json:scada} IEC61850 Server Driver (IEC61850-90-2, Go) - Copyright 2020-2026 Ricardo Olsen"
 	ProtocolDriverName = "IEC61850_SERVER"
-	DriverVersion      = "0.2.1"
-	LibraryVersion     = "v0.7.1"
+	DriverVersion      = "0.3.1"
+	LibraryVersion     = "v0.8.0"
 )
 
 // Default config file locations, in the C# driver's resolution order.
@@ -71,6 +71,12 @@ type ServerConnection struct {
 	CipherList                    string
 	Username                      string
 	Password                      string
+	// PeerIdentification records the identity of every client association
+	// in stats.peerIdentity and reports changes of it as security events.
+	PeerIdentification bool
+	// KnownPeers is stats.peerIdentity.known as stored: the identities the
+	// change detection starts from.
+	KnownPeers []bson.M
 }
 
 func logBanner() {
@@ -126,6 +132,12 @@ func connectionFromDoc(doc bson.M) *ServerConnection {
 		CipherList:                    jsmongo.GetString(doc, "cipherList", ""),
 		Username:                      jsmongo.GetString(doc, "username", ""),
 		Password:                      jsmongo.GetString(doc, "password", ""),
+		PeerIdentification:            jsmongo.GetBool(doc, "peerIdentification", true),
+	}
+	if st := jsmongo.GetDoc(doc, "stats"); st != nil {
+		if pid := jsmongo.GetDoc(st, "peerIdentity"); pid != nil {
+			c.KnownPeers = jsmongo.GetDocArray(pid, "known")
+		}
 	}
 	if id, ok := doc["_id"].(bson.ObjectID); ok {
 		c.ID = id

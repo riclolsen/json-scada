@@ -36,8 +36,8 @@ import (
 const (
 	CopyrightMessage   = "{json:scada} IEC61850 Client Driver (Go) - Copyright 2020-2026 Ricardo Olsen"
 	ProtocolDriverName = "IEC61850"
-	DriverVersion      = "0.2.1"
-	LibraryVersion     = "v0.7.1"
+	DriverVersion      = "0.3.1"
+	LibraryVersion     = "v0.8.0"
 )
 
 // Queue and key-allocation limits, same values as the C# driver.
@@ -110,8 +110,12 @@ type Iec61850Connection struct {
 	UseBrcb                       bool
 	UseUrcb                       bool
 	Browse                        bool
+	// PeerIdentification reads the IED's identity on every association
+	// into stats.peerIdentity and reports changes of it as security events.
+	PeerIdentification bool
 
 	// Runtime state.
+	sec           connSec // security events and identity (secevents.go)
 	mu            sync.Mutex
 	LastReportIds map[string][]byte // rcb reference -> last seen EntryID
 	Entries       map[string]*Iec61850Entry
@@ -369,6 +373,7 @@ func connectionFromDoc(doc bson.M) *Iec61850Connection {
 		UseBrcb:                       jsmongo.GetBool(doc, "useBrcb", true),
 		UseUrcb:                       jsmongo.GetBool(doc, "useUrcb", true),
 		Browse:                        jsmongo.GetBool(doc, "browse", false),
+		PeerIdentification:            jsmongo.GetBool(doc, "peerIdentification", true),
 		LastReportIds:                 jsmongo.GetBinaryMap(doc, "lastReportIds"),
 		Entries:                       map[string]*Iec61850Entry{},
 		InsertedTags:                  map[string]bool{},
@@ -377,6 +382,9 @@ func connectionFromDoc(doc bson.M) *Iec61850Connection {
 	}
 	if id, ok := doc["_id"].(bson.ObjectID); ok {
 		c.ID = id
+	}
+	if st := jsmongo.GetDoc(doc, "stats"); st != nil {
+		c.seedIdentity(jsmongo.GetDoc(st, "peerIdentity"))
 	}
 	return c
 }

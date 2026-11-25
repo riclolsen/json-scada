@@ -14,10 +14,12 @@ import (
 	"time"
 
 	"modbus-go/internal/drv"
+	"modbus-go/internal/mbsec"
 
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
 	"github.com/riclolsen/json-scada/src/go-common/jsredundancy"
+	"github.com/riclolsen/json-scada/src/go-common/jssecevents"
 	"github.com/riclolsen/json-scada/src/go-common/jsstats"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -28,16 +30,72 @@ import (
 var App = drv.AppDefs{
 	Name:      "MODBUS",
 	EnvPrefix: "JS_MODBUS_",
-	Version:   "0.3.0",
+	Version:   "0.4.0",
 	Msg:       "{json:scada} - Modbus Client Driver (Go)",
 }
 
 // BindingsReloadPeriod is how often the tag bindings are re-read while active.
 const BindingsReloadPeriod = 60 * time.Second
 
+// ManagedConnection is one driver connection as Run drives it.
+type ManagedConnection interface {
+	Start()
+	Stop()
+	KeepRunning() bool
+	StatsEntry() jsstats.Entry
+	Reload(context.Context, *mongo.Collection) error
+}
+
+// Factory builds a connection from its protocolConnections document.
+type Factory func(context.Context, bson.M, *mongo.Collection, *mongo.Collection, *jssecevents.Writer, jssecevents.Origin, func() bool) ManagedConnection
+
 // Main runs the driver with the full os.Args; it returns the process exit code.
-func Main(argv []string) int {
-	s := drv.Start(App, argv)
+func Main(argv []string) int { return Run(argv, App, newManagedConnection) }
+
+func newManagedConnection(ctx context.Context, d bson.M, rtColl, cmdColl *mongo.Collection, secWriter *jssecevents.Writer, origin jssecevents.Origin, active func() bool) ManagedConnection {
+	cfg := Normalize(d)
+
+	if err := cfg.Validate(); err != nil {
+		jslog.Log(jslog.LevelNoLog, "%s: %v; using %s", cfg.Name, err, ModeTCP)
+	}
+	conn := NewConnection(cfg, MongoSink{Coll: rtColl})
+	conn.Commands = MongoCommands{Coll: cmdColl, Name: cfg.Name}
+	conn.SetSecurity(&mbsec.Reporter{W: secWriter, Role: "client", Origin: origin}, rtColl)
+	conn.Active = active
+	if cfg.AutoCreateTags {
+		if err := AutoCreateTags(ctx, cfg, MongoTags{Coll: rtColl}); err != nil {
+			jslog.Log(jslog.LevelNoLog, "%s: auto-tag error: %v", cfg.Name, err)
+		}
+	}
+	if err := loadBindings(ctx, conn, rtColl); err != nil {
+		jslog.Log(jslog.LevelNoLog, "%s: bindings load error: %v", cfg.Name, err)
+	}
+	return conn
+}
+
+// KeepRunning implements ManagedConnection.
+func (c *Connection) KeepRunning() bool { return c.Cfg.KeepProtocolRunningWhileInactive }
+
+// Reload implements ManagedConnection.
+func (c *Connection) Reload(ctx context.Context, rt *mongo.Collection) error {
+	return loadBindings(ctx, c, rt)
+}
+
+// StatsEntry implements ManagedConnection.
+func (c *Connection) StatsEntry() jsstats.Entry {
+	snapshot := c.Stats()
+	stats := snapshot.BSON()
+	if id := c.PeerIdentity(); id != nil {
+		stats["peerIdentity"] = id
+	}
+	return jsstats.Entry{ConnectionNumber: c.Cfg.ProtocolConnectionNumber, Stats: stats, Label: c.Cfg.Name, IsConnected: jsstats.Bool(snapshot.Status == "connected")}
+}
+
+// Run runs a client driver built on this lifecycle (MODBUS, SUNSPEC): start-up,
+// instance document, connections, redundancy, statistics, bindings reload and
+// the security event writer.
+func Run(argv []string, app drv.AppDefs, factory Factory) int {
+	s := drv.Start(app, argv)
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -49,11 +107,11 @@ func Main(argv []string) int {
 	defer func() { _ = cli.Disconnect(context.Background()) }()
 	jslog.Log(jslog.LevelNoLog, "Mongo - Connected.")
 
-	if _, err := drv.EnsureInstance(ctx, db, App, s); err != nil {
+	if _, err := drv.EnsureInstance(ctx, db, app, s); err != nil {
 		jslog.Log(jslog.LevelNoLog, "Redundancy - Error: %v", err)
 	}
-	if drv.InstanceDisabled(ctx, db, App, s.Instance) {
-		jslog.Log(jslog.LevelNoLog, "Instance %d of %s is disabled. Exiting.", s.Instance, App.Name)
+	if drv.InstanceDisabled(ctx, db, app, s.Instance) {
+		jslog.Log(jslog.LevelNoLog, "Instance %d of %s is disabled. Exiting.", s.Instance, app.Name)
 		jslog.Flush()
 		return 0
 	}
@@ -64,7 +122,7 @@ func Main(argv []string) int {
 
 	fctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	docs, err := jsmongo.FindAll(fctx, connColl, bson.M{
-		"protocolDriver": App.Name, "protocolDriverInstanceNumber": s.Instance, "enabled": true,
+		"protocolDriver": app.Name, "protocolDriverInstanceNumber": s.Instance, "enabled": true,
 	})
 	cancel()
 	if err != nil {
@@ -72,7 +130,7 @@ func Main(argv []string) int {
 		return -1
 	}
 	if len(docs) == 0 {
-		jslog.Log(jslog.LevelNoLog, "No enabled connections found for driver %s instance %d. Exiting.", App.Name, s.Instance)
+		jslog.Log(jslog.LevelNoLog, "No enabled connections found for driver %s instance %d. Exiting.", app.Name, s.Instance)
 		jslog.Flush()
 		return 0
 	}
@@ -80,7 +138,12 @@ func Main(argv []string) int {
 	var ctl *jsredundancy.Controller
 	active := func() bool { return ctl != nil && ctl.Active() }
 
-	var conns []*Connection
+	secWriter := jssecevents.NewWriter(0)
+	wctx, stopWriter := context.WithCancel(context.Background())
+	defer stopWriter()
+	go secWriter.Run(wctx, s.Config)
+
+	var conns []ManagedConnection
 	seen := map[float64]bool{}
 	for _, d := range docs {
 		cfg := Normalize(d)
@@ -88,20 +151,8 @@ func Main(argv []string) int {
 			continue
 		}
 		seen[cfg.ProtocolConnectionNumber] = true
-		if err := cfg.Validate(); err != nil {
-			jslog.Log(jslog.LevelNoLog, "%s: %v; using %s", cfg.Name, err, ModeTCP)
-		}
-		conn := NewConnection(cfg, MongoSink{Coll: rtColl})
-		conn.Commands = MongoCommands{Coll: cmdColl, Name: cfg.Name}
-		conn.Active = active
-		if cfg.AutoCreateTags {
-			if err := AutoCreateTags(ctx, cfg, MongoTags{Coll: rtColl}); err != nil {
-				jslog.Log(jslog.LevelNoLog, "%s: auto-tag error: %v", cfg.Name, err)
-			}
-		}
-		if err := loadBindings(ctx, conn, rtColl); err != nil {
-			jslog.Log(jslog.LevelNoLog, "%s: bindings load error: %v", cfg.Name, err)
-		}
+		origin := jssecevents.Origin{ProtocolDriver: app.Name, ProtocolDriverInstanceNumber: s.Instance, ProtocolConnectionNumber: int(cfg.ProtocolConnectionNumber), ConnectionName: jsmongo.GetString(d, "name", app.Name+"-"+drv.AnyString(cfg.ProtocolConnectionNumber)), NodeName: s.Config.NodeName}
+		conn := factory(ctx, d, rtColl, cmdColl, secWriter, origin, active)
 		conns = append(conns, conn)
 		jslog.Log(jslog.LevelNoLog, "Loaded connection %s %q mode=%s", drv.AnyString(cfg.ProtocolConnectionNumber), cfg.Name, cfg.ConnectionMode)
 	}
@@ -115,7 +166,7 @@ func Main(argv []string) int {
 	}
 	ctl = &jsredundancy.Controller{
 		Config:                s.Config,
-		DriverName:            App.Name,
+		DriverName:            app.Name,
 		InstanceNumber:        s.Instance,
 		MissingInstanceActive: true,
 		OnActivate: func() {
@@ -127,7 +178,7 @@ func Main(argv []string) int {
 		OnDeactivate: func() {
 			jslog.Log(jslog.LevelNoLog, "Driver - Becoming INACTIVE, stopping connections.")
 			for _, c := range conns {
-				if !c.Cfg.KeepProtocolRunningWhileInactive {
+				if !c.KeepRunning() {
 					c.Stop()
 				}
 			}
@@ -135,16 +186,13 @@ func Main(argv []string) int {
 		OnTick: func(db *mongo.Database) {
 			entries := make([]jsstats.Entry, 0, len(conns))
 			for _, c := range conns {
-				entries = append(entries, jsstats.Entry{
-					ConnectionNumber: c.Cfg.ProtocolConnectionNumber, Stats: c.Stats().BSON(), Label: c.Cfg.Name,
-					IsConnected: jsstats.Bool(c.Stats().Status == "connected"),
-				})
+				entries = append(entries, c.StatsEntry())
 			}
 			statsWriter.Write(ctx, db.Collection(jsmongo.ProtocolConnectionsCollectionName), entries)
 		},
 	}
 	go ctl.Run(ctx)
-	go drv.WatchInstanceEnabled(ctx, db, App, s.Instance, stop)
+	go drv.WatchInstanceEnabled(ctx, db, app, s.Instance, stop)
 
 	t := time.NewTicker(BindingsReloadPeriod)
 	defer t.Stop()
@@ -158,7 +206,7 @@ loop:
 				continue
 			}
 			for _, c := range conns {
-				if err := loadBindings(ctx, c, rtColl); err != nil {
+				if err := c.Reload(ctx, rtColl); err != nil {
 					jslog.Log(jslog.LevelNoLog, "Bindings reload error: %v", err)
 				}
 			}
@@ -167,6 +215,12 @@ loop:
 	jslog.Log(jslog.LevelNoLog, "Driver - shutting down...")
 	for _, c := range conns {
 		c.Stop()
+	}
+	// deliver the security events queued so far
+	stopWriter()
+	select {
+	case <-secWriter.Done():
+	case <-time.After(3 * time.Second):
 	}
 	jslog.Flush()
 	return 0

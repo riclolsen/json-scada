@@ -1,11 +1,14 @@
-# DOX: src/modbus-go — Modbus Client and Server Drivers (Go)
+# DOX: src/modbus-go — Modbus Client and Server, SunSpec Client Drivers (Go)
 
 ## Purpose
 
-Go Modbus master and slave drivers for JSON-SCADA, built on `github.com/otfabric/go-modbus`.
+Go Modbus master and slave drivers for JSON-SCADA, built on go-modbus (the fork
+`github.com/riclolsen/go-modbus` of `github.com/otfabric/go-modbus`).
 Drop-in replacements for the former Node.js drivers in `src/modbus` (sources removed in 0.69):
 same `protocolDriver` names (`MODBUS`, `MODBUS_SERVER`), same configuration documents and
 defaults, same CLI and environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), same service names.
+Also the SunSpec client (`SUNSPEC`, new), on go-sunspec (`github.com/riclolsen/go-sunspec`)
+over the same go-modbus transports.
 
 ## Ownership
 
@@ -16,35 +19,73 @@ defaults, same CLI and environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), sa
 ## Local Contracts
 
 - **Language:** Go 1.26, module `modbus-go`, `cmd/` + `internal/` layout, listed in `src/go.work`
-- **Library:** `github.com/otfabric/go-modbus` v1.17.0 (MIT) and `github.com/otfabric/go-serial`
-  v0.5.0 (the version go-modbus requires; `mbnet` uses it directly). Pin the versions; diff the
-  API of what this module uses, and read the libraries' `RELEASE.md`, before bumping.
-- **Binaries:** `modbus-client(.exe)` and `modbus-server(.exe)` in `bin/`.
+- **Library:** go-modbus v1.24.1 (MIT) from the fork: the module path stays
+  `github.com/otfabric/go-modbus`, and `go.mod` has
+  `replace github.com/otfabric/go-modbus => github.com/riclolsen/go-modbus v1.24.1` (bump both
+  together). `github.com/otfabric/go-serial` v0.5.0 (the version go-modbus requires; `mbnet`
+  uses it directly). Pin the versions; diff the API of what this module uses, and read the
+  library's `RELEASE.md`, before bumping.
+- **SunSpec library:** go-sunspec (MIT) from the fork, untagged: the module path stays
+  `github.com/otfabric/go-sunspec`, and `go.mod` has
+  `replace github.com/otfabric/go-sunspec => github.com/riclolsen/go-sunspec <pseudo-version>`.
+  Its own go.mod requires go-modbus; this module's go-modbus `replace` decides the version.
+- **Binaries:** `modbus-client(.exe)`, `modbus-server(.exe)` and `sunspec-client(.exe)` in `bin/`.
 - **Service names do not change:** Supervisor programs `modbusclient` / `modbusserver`, Windows
   services `JSON_SCADA_modbusclient` / `JSON_SCADA_modbusserver`, process-manager keys
-  `MODBUS` / `MODBUS_SERVER`.
+  `MODBUS` / `MODBUS_SERVER`. SunSpec: `sunspecclient`, `JSON_SCADA_sunspecclient`, `SUNSPEC`,
+  environment prefix `JS_SUNSPEC_`.
 - **Packages:**
-  - `cmd/modbusclient`, `cmd/modbusserver` — entry points; `Main` takes the full `os.Args`
+  - `cmd/modbusclient`, `cmd/modbusserver`, `cmd/sunspecclient` — entry points; `Main` takes
+    the full `os.Args`
   - `internal/mbcore` — codec, byte orders, addresses/ASDUs, CRC/RTU framing, request
     descriptions, JavaScript number semantics. No MongoDB or driver imports.
   - `internal/mbnet` — TLS configs, client loopback `Bridge`, server `Front` and RTU gateway,
     serial ports
   - `internal/drv` — CLI/config start-up, instance document, loggers, BSON/JS conversions
-  - `internal/clientapp` — `MODBUS` driver; `internal/serverapp` — `MODBUS_SERVER` driver
+  - `internal/mbsec` — security event kinds and their classification, the mapping of go-modbus
+    `secevent` events and the Modbus fields onto `secEvents` documents
+  - `internal/clientapp` — `MODBUS` driver, and `Run` (start-up, instance, connections through a
+    `Factory` of `ManagedConnection`s, redundancy, stats, bindings reload, the `jssecevents.Writer`)
+    shared with `SUNSPEC`; `internal/serverapp` — `MODBUS_SERVER` driver
+  - `internal/sunspecapp` — `SUNSPEC` driver: discovery per `unitIds`, point addresses
+    (`<model>[#n]/[<group>[i]/...]<point>`), automatic tags from the discovered models,
+    `ReadModels` polling, `WritePoint` commands, security events. Values (invalid ones too) are
+    written as whole `sourceDataUpdate` documents (the data processors watch that field), in
+    read order (`nextSeq` taken inside the gate); a binding's `last` moves only after the write.
+    Commands recheck expiry, active node and session inside the gate.
   - `internal/loopback` — client ↔ server tests over every network transport
   - `src/go-common` via a `replace` directive — `jsconfig`, `jslog`, `jsmongo`,
-    `jsredundancy`, `jsstats`, `jsrtdata`, `jscommands`, `jstls`, `jsmodel`
+    `jsredundancy`, `jsstats`, `jsrtdata`, `jscommands`, `jstls`, `jsmodel`, `jssecevents`
 - **Build:** `build.bat`, or `go build -ldflags="-s -w" -o ../../bin/modbus-client ./cmd/modbusclient`
   (and `modbus-server` from `./cmd/modbusserver`)
 - **Documentation:**
-  - `cmd/modbusclient/README.md` and `cmd/modbusserver/README.md` are the standalone operator
-    references; the Node.js sources and their docs are no longer in the repository.
+  - `cmd/modbusclient/README.md`, `cmd/modbusserver/README.md` and `cmd/sunspecclient/README.md`
+    are the standalone operator references; the Node.js sources and their docs are no longer in the repository.
   - `README.md` keeps what both share (transports, types, byte orders, addressing, logging),
     build, architecture, the numbered differences from the former Node.js drivers, migration
     and testing.
   - Every key `config.go` reads must be in the driver README (`TestReadmeDocumentsEveryConfigKey`).
     A changed default, statistic, command result or log line is a README change in the same commit.
-- **Connection stats:** `stats.isConnected` (via `jsstats.Entry.IsConnected`) — client:
+- **Security events and peer identification:** each driver process runs one
+  `jssecevents.Writer`; each connection gets an `mbsec.Reporter` (`SetSecurity`, with the
+  `realtimeData` collection for the unnecessary-command check). `peerIdentification` (default
+  true) publishes `stats.peerIdentity` and seeds the change detection from the stored one.
+  Client: `clientapp/secevents.go` (FC43/14 or FC17 per polled unit when the device first
+  answers, MAC, certificate; read, response, command, flood, stale and unnecessary checks).
+  Server: `serverapp/secevents.go` (front-end hooks `OnReject`/`OnHandshake`/`OnOpen`/`OnClose`/
+  `OnBadFrame`, the handler's refusals, the backend's `ServerConfig.Security` sink and `PDUTap`).
+  Server sessions are registered in `opened` at once with a token; `identify` completes one only
+  while the same token is open. The unnecessary-command check runs in the background against a
+  supervised value older than the command (`SupervisedState` `before`); the FC17 identity key
+  masks the run indicator (`serverIDKey`).
+  SunSpec client: `sunspecapp/secevents.go`, protocol `sunspec` (go-sunspec's `secevent` reports
+  only on servers): identity from the Common model (1) and the model chain per unit after each
+  discovery, unknown units, invalid chains, refused reads, configured points the device does not
+  expose, and the Modbus client's response and command checks.
+  Kinds, sources and the stats shape are documented in the driver READMEs and `docs/schema.md`
+  (secEvents, Peer identification); a new kind goes into the `mbsec` catalogue and both.
+- **Connection stats:** `stats.isConnected` (via `jsstats.Entry.IsConnected`) — SunSpec client:
+  at least one unit discovered; Modbus client:
   `Stats().Status == "connected"`, set once the device answers (a silent peer is a lost link);
   server: at least one client attached, or on a serial port a request within `clientIdleTimeoutMs`
 
@@ -68,6 +109,18 @@ defaults, same CLI and environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), sa
   every target of a request before relaying any.
 - Server handler exceptions are wrapped in `handlerError` (logged and counted once); the
   `metrics` hook logs only exceptions the library sends itself. Keep that split.
+- A write refused for a reason of its own returns a `refusal` (it unwraps to the exception
+  answered) so it is reported as `cmd.rejected`; a bare `ErrIllegalDataAddress` is
+  `cmd.object_unknown`.
+- The backend's library events name the loopback connection: resolve them through `AddrMap`
+  (it remembers closed connections for 30 s) and keep dropping the library's connection events;
+  the front-end reports the masters' own.
+- A condition that can repeat (a peer, unit, address, certificate error, noisy line) is
+  reported through a `jssecevents.Throttle` (once per 10 minutes, with `count`), never once per
+  request.
+- SunSpec: a discovered model whose header changed (`ErrModelChanged`) is discovered again, never
+  decoded against the old chain; scale factor and pad points and the model header get no tag;
+  commands write only top-level points through `WritePoint`, without retries.
 - Do not set a client-level timeout on the MongoDB client; give each call its own deadline
   (change streams would be torn down otherwise).
 
@@ -75,6 +128,7 @@ defaults, same CLI and environment variables (`JS_MODBUS_`, `JS_MODBUSSRV_`), sa
 
 - `go vet ./...` and `gofmt -l .` clean; `go test ./...` and `go test -race ./...` pass.
   No MongoDB or hardware needed; the TLS loopback tests generate certificates in `t.TempDir()`.
+- `internal/sunspecapp` tests run the SunSpec client against an in-process go-sunspec device.
 - Interop by hand: `diagslave` / `modpoll` (see `README.md`).
 
 ## Child DOX Index

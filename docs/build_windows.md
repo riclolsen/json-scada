@@ -110,7 +110,7 @@ Then run `\json-scada\src\cim-ems\install.bat` (`build.bat` also calls it): it i
 
 Add the following files to \json-scada\platform-windows:
 
-    nssm.exe
+    WinSW.exe (WinSW 2.x WinSW-x64.exe from https://github.com/winsw/winsw/releases, renamed)
     ffmpeg.exe
     sounder.exe
     OpcWatch.exe

@@ -42,7 +42,8 @@
     "customDevelopments": "Kundenspezifische Entwicklungen",
     "open": "Offen",
     "cimEms": "CIM-EMS",
-    "svgedit": "SVG-Editor"
+    "svgedit": "SVG-Editor",
+    "secEventsViewer": "Sicherheitsereignisse"
   },
   "tabularViewer": {
     "station": "Station",
@@ -91,9 +92,15 @@
       "value": "Wert",
       "state": "Zustand",
       "quality": "Qualität",
-      "hiLimit": "Hohe Grenze",
-      "loLimit": "Untere Grenze",
+      "hiLimit": "Hohe Grenze (HI)",
+      "loLimit": "Untere Grenze (LO)",
+      "hihiLimit": "Hohe Grenze 2 (HIHI)",
+      "hihihiLimit": "Hohe Grenze 3 (HIHIHI)",
+      "loloLimit": "Untere Grenze 2 (LOLO)",
+      "lololoLimit": "Untere Grenze 3 (LOLOLO)",
       "hysteresis": "Hysterese",
+      "alarmRange": "Alarmbereich",
+      "limitsOrder": "Grenzwerte nicht in Reihenfolge (LOLOLO ≤ LOLO ≤ LO ≤ HI ≤ HIHI ≤ HIHIHI)",
       "annotation": "Blockierende Annotation",
       "notes": "Dokumentennotizen",
       "alarmDisabled": "Alarm deaktiviert",
@@ -170,6 +177,72 @@
       "date": "Datum",
       "time": "Anfangszeit",
       "filter": "Filter"
+    }
+  },
+  "alarmsViewer": {
+    "alarms": "Alarme",
+    "unackedOnly": "Nur unquittierte",
+    "modes": {
+      "normal": "Normal",
+      "aggregated": "Aggregiert",
+      "historical": "Historie"
+    },
+    "columns": {
+      "time": "Zeit",
+      "alarm": "Alarm",
+      "state": "Zustand",
+      "priority": "Priorität",
+      "normalTime": "Normalzeit",
+      "ackTime": "Quittierzeit",
+      "ackUser": "Quittiert von"
+    },
+    "state": {
+      "active": "Aktiv",
+      "normal": "Normal"
+    },
+    "hist": {
+      "from": "Von",
+      "to": "Bis",
+      "filter": "Filter",
+      "filterHint": "Tag, Beschreibung, Text",
+      "find": "Suchen",
+      "limited": "Nur die ersten {n} Alarme werden angezeigt: Zeitraum oder Filter eingrenzen."
+    }
+  },
+  "secEvents": {
+    "title": "Sicherheitsereignisse",
+    "from": "Von",
+    "to": "Bis",
+    "now": "jetzt",
+    "minSeverity": "Mindestschwere",
+    "category": "Kategorie",
+    "filterHint": "Art, Gegenstelle, Objekt, Detail",
+    "find": "Suchen",
+    "autoRefresh": "Aktualisieren",
+    "exportCsv": "CSV exportieren",
+    "showFrom": "Ab {s} anzeigen",
+    "events": "Ereignisse",
+    "limited": "Nur die {n} neuesten Ereignisse werden angezeigt: Zeitraum oder Filter einschränken.",
+    "noData": "Keine Sicherheitsereignisse",
+    "noRight": "Ihre Rollen gewähren das Recht Sicherheitsereignisse anzeigen nicht.",
+    "unavailable": "Datenbank nicht verfügbar",
+    "severities": {
+      "info": "Info",
+      "notice": "Hinweis",
+      "warning": "Warnung",
+      "alert": "Alarm",
+      "critical": "Kritisch"
+    },
+    "columns": {
+      "time": "Zeit",
+      "severity": "Schwere",
+      "kind": "Ereignis",
+      "connection": "Verbindung",
+      "peer": "Gegenstelle",
+      "object": "Objekt",
+      "action": "Aktion",
+      "detail": "Detail",
+      "source": "Quelle"
     }
   },
   "login": {
@@ -315,7 +388,11 @@
         "total": "Rollen",
         "admin": "Admin-Rollen",
         "unused": "Nicht zugewiesen"
-      }
+      },
+      "viewSecEvents": "Sicherheitsereignisse anzeigen",
+      "viewSecEventsHint": "Darf den Viewer für Sicherheitsereignisse öffnen (Verbindungs-, Zertifikats-, Identitäts- und Befehlsanomalien, gemeldet von den Protokolltreibern).",
+      "editDisplays": "Anzeigen bearbeiten",
+      "editDisplaysHint": "Darf die SVG-Anzeigen im SVG-Editor auflisten, öffnen und speichern (Administratoren immer). Mit einer Anzeigenliste nur diese Anzeigen."
     },
     "protocolDriverInstances": {
       "title": "Protokolltreiberinstanzen",
@@ -742,6 +819,28 @@
       "serverUnitIds": "Server-Unit-Ids",
       "serverUnitIdsTitle": "Bediente Unit-Ids (Slave-Adressen)",
       "serverUnitIdsHint": "Zahl eingeben und Enter drücken. Bereich 0 bis 255.",
+      "sunspecParameters": "SunSpec-Parameter",
+      "unitIds": "Unit-IDs",
+      "unitIdsTitle": "Zu erkennende SunSpec-Geräte (Modbus-Unit-IDs)",
+      "unitIdsHint": "Zahl eingeben und Enter drücken. Bereich 1 bis 255. Leer: Unit 1.",
+      "baseAddresses": "Basisadressen",
+      "baseAddressesTitle": "Auf die SunS-Kennung geprüfte Registeradressen",
+      "baseAddressesHint": "Zahl eingeben und Enter drücken. Leer: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",
+      "modelIds": "Modell-IDs",
+      "modelIdsTitle": "SunSpec-Modelle mit automatischen Tags",
+      "modelIdsHint": "Modell-ID eingeben und Enter drücken (z. B. 1, 103, 160). Leer: alle erkannten Modelle.",
+      "registerType": "Registertyp",
+      "registerTypeTitle": "Register mit der SunSpec-Tabelle",
+      "registerTypeHint": "holding (Funktion 3, fast alle Geräte) oder input (Funktion 4, nur lesend).",
+      "maxModels": "Max. Modelle",
+      "maxModelsTitle": "Höchstzahl gelesener Modell-Header einer Kette",
+      "maxModelsHint": "Ganzzahl, mindestens 1. Standard 256.",
+      "autoCreateCommandTags": "Befehls-Tags automatisch erstellen: ",
+      "autoCreateCommandTagsTrue": "Wahr",
+      "autoCreateCommandTagsFalse": "Falsch",
+      "autoCreateUnimplemented": "Tags für nicht implementierte Punkte erstellen: ",
+      "autoCreateUnimplementedTrue": "Wahr",
+      "autoCreateUnimplementedFalse": "Falsch",
       "strictUnitId": "Strikte Unit-Id: ",
       "strictUnitIdTrue": "WAHR",
       "strictUnitIdFalse": "FALSCH",
@@ -802,7 +901,9 @@
         "total": "Verbindungen",
         "tags": "Tags",
         "invalidTags": "Ungültige Tags"
-      }
+      },
+      "peerIdentification": "Gegenstelle identifizieren (Sicherheitsereignisse): ",
+      "peerIdentificationHint": "Liest bei jeder Verbindung die Identität der Gegenstelle (Hersteller, Modell, Firmware, MAC-Adresse, Zertifikat) in die Verbindungsstatistik und meldet Änderungen als Sicherheitsereignisse."
     },
     "userActions": {
       "title": "Benutzeraktionen",
@@ -850,6 +951,13 @@
       "editOrigin": "Herkunft",
       "editType": "Typ",
       "editHistorianDeadBand": "Totzone des Historikers (%)",
+      "editHihihiLimit": "Hohe Grenze 3 (HIHIHI)",
+      "editHihiLimit": "Hohe Grenze 2 (HIHI)",
+      "editHiLimit": "Hohe Grenze (HI)",
+      "editLoLimit": "Untere Grenze (LO)",
+      "editLoloLimit": "Untere Grenze 2 (LOLO)",
+      "editLololoLimit": "Untere Grenze 3 (LOLOLO)",
+      "editHysteresis": "Hysterese",
       "editHistorianPeriod": "Integritätszeitraum des Historikers (Sekunden)",
       "editAlarmState": "Alarmzustand",
       "editAlarmStateOff": "AUS",
@@ -1016,7 +1124,15 @@
       "pruneExecute": "Löschen",
       "pruneConfirmText": "Die ausgewählte Konfiguration wird endgültig gelöscht. Zuerst eine Sicherung exportieren, falls sie noch gebraucht wird.",
       "pruneTypeToConfirm": "{word} eingeben, um zu bestätigen",
-      "pruneDone": "Konfiguration bereinigt"
+      "pruneDone": "Konfiguration bereinigt",
+      "retentionTitle": "Datenaufbewahrung",
+      "retentionHint": "Aufbewahrungstage für Ereignisse (SOE), Alarme und historische Daten; der Überschuss wird einmal täglich gelöscht. Unquittierte oder aktive Alarme bleiben erhalten.",
+      "retentionSoe": "Ereignisse (SOE)",
+      "retentionAlarms": "Alarme",
+      "retentionHist": "Historische Daten",
+      "retentionDays": "Tage",
+      "retentionRule": "Eine ganze Zahl von Tagen von {min} bis {max}",
+      "retentionSecEvents": "Sicherheitsereignisse"
     },
     "cimEms": {
       "readOnly": "Nur Lesen: Hochladen und Aktivieren von Modellen, Freigabe von Zuordnungen und Downloads erfordern eine Rolle mit dem CIM-EMS-Engineering-Recht.",
@@ -1221,8 +1337,12 @@
     "reset": "Ansicht zurücksetzen und live folgen",
     "downloadCsv": "CSV herunterladen",
     "current": "Aktueller Wert",
-    "hiLimit": "Obergrenze",
-    "loLimit": "Untergrenze",
+    "hiLimit": "Obergrenze (HI)",
+    "loLimit": "Untergrenze (LO)",
+    "hihiLimit": "Obergrenze 2 (HIHI)",
+    "hihihiLimit": "Obergrenze 3 (HIHIHI)",
+    "loloLimit": "Untergrenze 2 (LOLO)",
+    "lololoLimit": "Untergrenze 3 (LOLOLO)",
     "noData": "Keine Daten in diesem Zeitraum",
     "noPoint": "Kein Punkt angegeben (?point=<Schlüssel oder Tag> verwenden)",
     "notFound": "Punkt nicht gefunden"
@@ -1247,5 +1367,18 @@
       "analytics": "Analyse",
       "engineering": "Engineering"
     }
+  },
+  "customDev": {
+    "subtitle": "In src/custom-developments erstellte Web-Apps: Dashboards, Faceplates und Sonderansichten.",
+    "search": "Apps suchen",
+    "open": "Öffnen",
+    "openNewWindow": "In neuem Fenster öffnen",
+    "back": "Zurück zur Liste",
+    "retry": "Erneut versuchen",
+    "empty": "Noch keine Eigenentwicklung",
+    "emptyHint": "Erstellen Sie eine App in einem Ordner von src/custom-developments (npm install && npm run build) und starten Sie server_realtime_auth neu.",
+    "noMatch": "Keine App passt zur Suche.",
+    "noDescription": "Keine Beschreibung",
+    "built": "Erstellt am {date}"
   }
 }

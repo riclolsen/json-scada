@@ -236,6 +236,8 @@ func reportHandler(conn *Iec61850Connection, st *rcbState, rep *client.Report) {
 		}
 	}
 
+	conn.secReportSequence(st, rep)
+
 	if logging {
 		if rep.DataSet != "" {
 			fmt.Fprintf(&log, "  data-set: %s\n", st.dataSetRef)

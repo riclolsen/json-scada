@@ -24,11 +24,14 @@ import (
 	"modbus-go/internal/drv"
 	"modbus-go/internal/mbcore"
 	"modbus-go/internal/mbnet"
+	"modbus-go/internal/mbsec"
 
 	"github.com/otfabric/go-modbus"
+	"github.com/otfabric/go-modbus/secevent"
 	"github.com/riclolsen/json-scada/src/go-common/jslog"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
 // Feeder keeps the point map current.
@@ -68,6 +71,7 @@ type Server struct {
 	addrs mbnet.AddrMap
 	st    counters
 	wh    *WriteHandler
+	sec   *serverSec
 
 	mu      sync.Mutex
 	status  string
@@ -93,8 +97,17 @@ func NewServer(cfg Config, sink CommandSink, feeder Feeder) *Server {
 	pm := NewPointMap(cfg)
 	s := &Server{Cfg: cfg, PM: pm, Feeder: feeder, log: drv.ConnLogger{Prefix: cfg.Name}, status: "stopped"}
 	s.wh = NewWriteHandler(cfg, sink, pm)
+	s.sec = newServerSec(cfg, &s.addrs)
+	s.wh.sec = s.sec
 	return s
 }
+
+// SetSecurity sets, before Start, where the security events go (nil: only
+// logged) and the realtimeData collection the command checks read.
+func (s *Server) SetSecurity(rep *mbsec.Reporter, rt *mongo.Collection) { s.sec.set(rep, rt) }
+
+// PeerIdentity is stats.peerIdentity, nil when peerIdentification is off.
+func (s *Server) PeerIdentity() bson.M { return s.sec.statsDoc() }
 
 // SetFeeder sets the feeder before Start.
 func (s *Server) SetFeeder(f Feeder) { s.Feeder = f }
@@ -148,6 +161,7 @@ func (s *Server) Start() {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	s.cancel, s.done = cancel, make(chan struct{})
+	go s.sec.run(ctx)
 	go func() {
 		defer close(s.done)
 		s.run(ctx)
@@ -222,13 +236,15 @@ func (s *Server) startBackend() (*modbus.Server, string, error) {
 	if maxc := int(s.Cfg.MaxClientConnections); maxc > 0 {
 		backendMax = uint(2*maxc + 4)
 	}
-	h := &Handler{cfg: s.Cfg, pm: s.PM, wh: s.wh, addrs: &s.addrs, st: &s.st}
+	h := &Handler{cfg: s.Cfg, pm: s.PM, wh: s.wh, addrs: &s.addrs, st: &s.st, sec: s.sec}
 	srv, err := modbus.NewServer(&modbus.ServerConfig{
 		URL:        "tcp://" + addr,
 		Timeout:    backendIdle,
 		MaxClients: backendMax,
 		Logger:     drv.LibLogger{Prefix: s.Cfg.Name},
 		Metrics:    metrics{name: s.Cfg.Name, st: &s.st},
+		Security:   &modbus.SecurityPolicy{Policy: secevent.Policy{Sink: secevent.SinkFunc(s.sec.libSink)}},
+		PDUTap:     modbus.ServerPDUTapFunc(s.sec.tap),
 	}, h)
 	if err != nil {
 		return nil, "", err
@@ -239,11 +255,12 @@ func (s *Server) startBackend() (*modbus.Server, string, error) {
 	return srv, addr, nil
 }
 
-func (s *Server) acceptUnit(unit byte) bool {
+func (s *Server) acceptUnit(remote string, unit byte) bool {
 	if unit == 0 || !s.Cfg.StrictUnitID || s.PM.AcceptsUnit(int(unit)) {
 		return true
 	}
 	s.log.Info(fmt.Sprintf("request ignored: unit id %d not served (strictUnitId is enabled)", unit))
+	s.sec.unitUnknown(remote, unit, -1, false)
 	return false
 }
 
@@ -306,6 +323,11 @@ func (s *Server) serve(ctx context.Context) error {
 			s.setStatus(s.Stats().Status, err.Error())
 			jslog.Log(jslog.LevelBasic, "%s: listener error: %v", s.Cfg.Name, err)
 		},
+		OnReject:    s.sec.rejected,
+		OnHandshake: s.sec.handshake,
+		OnOpen:      s.sec.opened,
+		OnClose:     s.sec.closed,
+		OnBadFrame:  s.sec.badFrame,
 	})
 	if err := front.Listen(); err != nil {
 		return err
@@ -353,7 +375,7 @@ func (s *Server) serveSerial(ctx context.Context, upstream string) error {
 		}
 		s.setStatus("listen failed", msg)
 		jslog.Log(jslog.LevelBasic, "%s: serial port %s: %s, retrying in 5 s", s.Cfg.Name, s.Cfg.PortName, msg)
-	})
+	}, s.sec.badFrame)
 	s.mu.Lock()
 	s.serialOpened = time.Time{}
 	s.mu.Unlock()

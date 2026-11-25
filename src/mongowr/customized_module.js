@@ -1,8 +1,6 @@
 /*
  * One way replication mechanism (mongofw/mongowr)
- * Listen for UDP messages with realtime and backfill changes data, and point list integrity data.
- * The data of realtime and backfill changes are write as updates to realtimeData/sourceDataUpdate in MongoDB.
- * The data of integrity is upserted to realtimeData in mongodb.
+ * Receive UDP point snapshots, updates, deletions, and security events.
  *
  * THIS FILE IS INTENDED TO BE CUSTOMIZED BY USERS TO DO SPECIAL PROCESSING
  *
@@ -25,207 +23,354 @@
 'use strict'
 const Log = require('./simple-logger')
 const AppDefs = require('./app-defs')
-const { Double } = require('mongodb')
-const { setTimeout } = require('node:timers')
+const { BSON, Double, MongoBulkWriteError, ObjectId } = require('mongodb')
+const { verifyPacket, isFresh } = require('./udp-auth')
+const { setTimeout: sleep } = require('node:timers/promises')
 const dgram = require('node:dgram')
-const Queue = require('queue-fifo')
-// const zlib = require('fast-zlib')
-const zlib = require('zlib')
+const { once } = require('node:events')
+const zlib = require('node:zlib')
 
-// UDP broadcast options
-const udpPort = AppDefs.UDP_PORT
-const udpBind = AppDefs.IP_BIND
-
-const UserAcinfltionsCollectionName = 'userActions'
-const RealtimeDataCollectionName = 'realtimeData'
-const CommandsQueueCollectionName = 'commandsQueue'
-const SoeDataCollectionName = 'soeData'
-const ProcessInstancesCollectionName = 'processInstances'
-const ProtocolDriverInstancesCollectionName = 'protocolDriverInstances'
-const ProtocolConnectionsCollectionName = 'protocolConnections'
-
-let msgQueue = new Queue() // queue of messages
-let collection = null
-let pktCnt = 0
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-// this will be called by the main module when mongo is connected (or reconnected)
-module.exports.CustomProcessor = async function (
-  clientMongo,
-  jsConfig,
-  Redundancy,
-  MongoStatus
-) {
-  if (clientMongo === null) return
-  const db = clientMongo.db(jsConfig.mongoDatabaseName)
-  collection = db.collection(RealtimeDataCollectionName)
-
-  const server = dgram.createSocket('udp4')
-
-  server.on('error', (err) => {
-    Log.log(`Server error:\n${err.stack}`)
-    server.close()
-  })
-
-  server.on('message', (msgRaw, rinfo) => {
-    if (!Redundancy.ProcessStateIsActive() || !MongoStatus.HintMongoIsConnected)
-      return // do nothing if process is inactive
-
-    msgQueue.enqueue(msgRaw)
-    pktCnt++
-  })
-
-  server.on('listening', () => {
-    const address = server.address()
-    Log.log(`server listening ${address.address}:${address.port}`)
-  })
-
-  server.bind(udpPort, udpBind)
-}
-
-let cntChg = -1
+const durable = { writeConcern: { w: 'majority' }, timeoutMS: 5000 }
+const msgQueue = new Map()
+let journalBatch = []
+let pending = []
+let cntChg = null
 let cntLost = 0
 
-setTimeout(procQueue, 1000)
-async function procQueue() {
-  if (msgQueue.size() > AppDefs.MAX_QUEUE) {
-    msgQueue.clear()
-    Log.log('Queue too large! Emptied!')
-  }
+module.exports.CustomProcessor = async function (
+  clientMongo, jsConfig, Redundancy, MongoStatus, signal
+) {
+  const db = clientMongo.db(jsConfig.mongoDatabaseName)
+  const realtime = db.collection('realtimeData')
+  const secEvents = db.collection('secEvents')
+  const receipts = db.collection('replicationUdpReceipts')
+  const revisions = db.collection('replicationPointRevisions')
+  await realtime.createIndex(
+    { replicatedSourceId: 1 },
+    { name: 'replicatedSourceId', unique: true, sparse: true }
+  )
+  await receipts.createIndex(
+    { expiresAt: 1 },
+    { name: 'expiresAt', expireAfterSeconds: 0 }
+  )
+  await receipts.createIndex({ pendingBatch: 1, position: 1 }, { sparse: true })
+  if (signal.aborted) return
 
-  let cntPr = 0
-  const bulkOps = []
-  while (!msgQueue.isEmpty()) {
-    cntPr++
-    if (cntPr > AppDefs.MAX_MSG_SEQ) {
-      break
+  const server = dgram.createSocket('udp4')
+  const active = () =>
+    !signal.aborted && MongoStatus.HintMongoIsConnected && Redundancy.ProcessStateIsActive()
+
+  server.on('message', (msgRaw) => {
+    if (!active()) return
+    const packet = verifyPacket(msgRaw, jsConfig.UdpAuthKey)
+    if (!packet || msgQueue.has(packet.nonce)) return
+    if (msgQueue.size >= AppDefs.MAX_QUEUE) {
+      msgQueue.clear()
+      Log.log('Queue too large! Emptied!')
     }
-    try {
-      const msgRaw = msgQueue.peek()
-      msgQueue.dequeue()
+    msgQueue.set(packet.nonce, packet)
+  })
 
-      //const inflate = new zlib.Inflate()
-      //const buffer = inflate.process(msgRaw)
-      const buffer = zlib.inflateSync(msgRaw)
-      const msg = buffer.toString('utf8')
-      const arrObj = JSON.parse(msg)
+  const controller = new AbortController()
+  const stop = () => controller.abort()
+  const onError = (error) => {
+    Log.log('UDP socket error: ' + error)
+    stop()
+  }
+  server.on('error', onError)
+  signal.addEventListener('abort', stop, { once: true })
+  try {
+    const listening = once(server, 'listening', { signal: controller.signal })
+    server.bind(AppDefs.UDP_PORT, AppDefs.IP_BIND)
+    await listening
+    const { address, port } = server.address()
+    Log.log('Server listening ' + address + ':' + port)
 
-      if (arrObj.length)
-        for (let i = 0; i < arrObj.length; i++) {
-          const dataObj = arrObj[i]
-
-          if (
-            !('cnt' in dataObj) ||
-            !('operationType' in dataObj) ||
-            !('updateDescription' in dataObj)
-          ) {
-            Log.log('Unexpected format:' + JSON.stringify(dataObj))
-            continue
-          }
-          if (dataObj.cnt - cntChg > 1 && cntChg != -1) {
-            Log.log('Message lost # ' + (dataObj.cnt - 1))
-            cntLost += dataObj.cnt - cntChg
-          }
-          cntChg = dataObj.cnt
-
-          if (
-            dataObj.operationType === 'integrity' &&
-            dataObj?.updateDescription?.updatedFields &&
-            dataObj?.updateDescription?.updatedFields?._id &&
-            dataObj?.tag
-          ) {
-            // will process integrity of realtimeData (tag list)
-            if (dataObj?.updateDescription?.updatedFields?.timeTag)
-              dataObj.updateDescription.updatedFields.timeTag = new Date(
-                dataObj.updateDescription.updatedFields.timeTag
-              )
-
-            if (dataObj?.updateDescription?.updatedFields?.timeTagAtSource)
-              dataObj.updateDescription.updatedFields.timeTagAtSource =
-                new Date(
-                  dataObj.updateDescription.updatedFields.timeTagAtSource
-                )
-
-            if (dataObj?.updateDescription?.updatedFields?.timeTagAlarm)
-              dataObj.updateDescription.updatedFields.timeTagAlarm = new Date(
-                dataObj.updateDescription.updatedFields.timeTagAlarm
-              )
-
-            const _id = dataObj.updateDescription.updatedFields._id
-            delete dataObj.updateDescription.updatedFields._id
-
-            bulkOps.push({
+    let wasActive = false
+    while (!controller.signal.aborted) {
+      const isActive = active()
+      if (isActive) {
+        try {
+          if (!journalBatch.length) await readBatch(receipts, active)
+          if (pending.length && active()) await writeBatch(realtime, secEvents, revisions, active)
+          if (!pending.length && journalBatch.length && active()) {
+            await receipts.bulkWrite(journalBatch.map(({ _id, retainUntil }) => ({
               updateOne: {
-                filter: { tag: dataObj.tag },
-                // filter: { _id: _id },
+                filter: { _id },
                 update: {
-                  $set: dataObj.updateDescription.updatedFields,
-                  $setOnInsert: {
-                    _id: new Double(_id),
-                    // ...dataObj.updateDescription.updatedFields,
-                  },
-                },
-                upsert: true,
-              },
-            })
-            // console.log(dataObj.updateDescription.updatedFields)
-          } else if (
-            dataObj.operationType === 'update' &&
-            dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
-          ) {
-            // will process update data from drivers
-            if (
-              dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
-                .timeTag
-            )
-              dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag =
-                new Date(
-                  dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTag
-                )
-            if (
-              dataObj?.updateDescription?.updatedFields?.sourceDataUpdate
-                .timeTagAtSource
-            )
-              dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource =
-                new Date(
-                  dataObj.updateDescription.updatedFields.sourceDataUpdate.timeTagAtSource
-                )
-
-            bulkOps.push({
-              updateOne: {
-                filter: { tag: dataObj.tag },
-                update: {
-                  $set: { ...dataObj.updateDescription.updatedFields },
+                  $set: { expiresAt: retainUntil },
+                  $unset: { payload: '', pendingBatch: '', position: '', retainUntil: '' },
                 },
               },
-            })
+            })), durable)
+            journalBatch = []
           }
+        } catch (error) {
+          Log.log('UDP journal error: ' + error)
         }
-    } catch (e) {
-      Log.log('Error: ' + e)
+      } else if (wasActive && MongoStatus.HintMongoIsConnected) {
+        // A standby must not drain writes captured before it lost ownership.
+        msgQueue.clear()
+        journalBatch = []
+        pending = []
+        cntChg = null
+      }
+      wasActive = isActive
+      await sleep(AppDefs.INTERVAL_AFTER_WRITE, undefined, { signal: controller.signal })
     }
-    await sleep(1) // yield to allow packets to be collected and queued
+  } finally {
+    signal.removeEventListener('abort', stop)
+    await new Promise((resolve) => server.close(resolve))
   }
+}
 
-  if (bulkOps.length > 0) {
+async function readBatch(receipts, active) {
+  const loadPending = () => receipts.find(
+    { pendingBatch: { $exists: true } },
+    { readConcern: { level: 'majority' }, timeoutMS: 5000 }
+  ).sort({ pendingBatch: 1, position: 1 }).limit(AppDefs.MAX_MSG_SEQ).toArray()
+
+  let entries = await loadPending()
+  if (!entries.length && msgQueue.size && active()) {
+    const packets = []
+    for (const packet of msgQueue.values()) {
+      packets.push(packet)
+      if (packets.length === AppDefs.MAX_MSG_SEQ) break
+    }
+    const batch = new ObjectId()
+    // Payload and nonce commit together. Pending receipts have no TTL and are
+    // recoverable even after the original datagram's authentication window.
+    const operations = packets.flatMap(({ nonce, sentAt, expiresAt, payload }, position) =>
+      isFresh(sentAt) ? [{
+        updateOne: {
+          filter: { _id: nonce },
+          update: { $setOnInsert: { pendingBatch: batch, position, retainUntil: expiresAt, payload } },
+          upsert: true,
+        },
+      }] : []
+    )
+    if (operations.length && active())
+      await receipts.bulkWrite(operations, { ...durable, ordered: false })
+    for (const { nonce } of packets) msgQueue.delete(nonce)
+    entries = await loadPending()
+  }
+  if (!active()) return
+  pending = decodePackets(entries)
+  journalBatch = entries
+}
+
+function decodePackets(packets) {
+  const groups = []
+  for (const { payload } of packets) {
     try {
-      const result = await collection.bulkWrite(bulkOps, {
-        ordered: false, // may run ops in parallel, do all ops even when some operation fail
-        writeConcern: { w: 1 }, // wait for just 1 node to complete the ops (put zero here to not wait, in this case it won't detect write errors)
-      })
-      // Log.log(JSON.stringify(bulkOps))
-      Log.log(JSON.stringify(result))
-      Log.log('Queue Size: ' + msgQueue.size())
-      Log.log('Total lost: ' + cntLost)
-      Log.log('                 Chg count: ' + cntChg)
-      Log.log('                 UDP count: ' + pktCnt)
-    } catch (e) {
-      Log.log('Error: ' + e)
+      const buffer = zlib.inflateSync(payload.buffer, { maxOutputLength: 300000 })
+      const entries = JSON.parse(buffer.toString('utf8'))
+      if (!Array.isArray(entries)) continue
+      for (const entry of entries) {
+        if (!Number.isSafeInteger(entry?.cnt)) continue
+        if (cntChg !== null && entry.cnt > cntChg + 1) {
+          const lost = entry.cnt - cntChg - 1
+          cntLost += lost
+          Log.log('Sequence gap: ' + lost + ' (total: ' + cntLost + ')')
+        }
+        cntChg = entry.cnt
+        const securityEvent = entry.operationType === 'secEvent'
+        const operation = securityEvent ? toSecEventOperation(entry) : toWriteOperation(entry)
+        if (!operation) continue
+        const sourceId = entry.documentKey?._id
+        const historical = entry.operationType === 'update' &&
+          entry.updateDescription?.updatedFields?.sourceDataUpdate?.isHistorical === true
+        if (!securityEvent && !historical) {
+          if (Number.isFinite(sourceId) && typeof entry.revision === 'string' &&
+              /^\d{20}\/[0-9A-Fa-f~]*(?:\/[01])?$/.test(entry.revision)) {
+            groups.push({ sourceId, revision: entry.revision, operations: [operation] })
+          }
+          continue
+        }
+        let group = groups.at(-1)
+        if (!group || group.revision || group.securityEvent !== securityEvent) {
+          group = { securityEvent, operations: [] }
+          groups.push(group)
+        }
+        group.operations.push(operation)
+      }
+    } catch (error) {
+      Log.log('Error decoding replication packet: ' + error)
+    }
+  }
+  return groups
+}
+
+function toSecEventOperation(entry) {
+  if (typeof entry.eventBson !== 'string' || !entry.eventBson) return
+  let event
+  try {
+    event = BSON.deserialize(Buffer.from(entry.eventBson, 'base64'), { promoteValues: false })
+  } catch (error) {
+    Log.log('Error decoding security event: ' + error)
+    return
+  }
+  const { _id, ...fields } = event
+  if (!(_id instanceof BSON.ObjectId) || !(fields.timeTag instanceof Date) ||
+      !Number.isFinite(fields.timeTag.getTime()) || typeof fields.kind !== 'string') return
+  return {
+    updateOne: {
+      filter: { _id },
+      update: { $setOnInsert: fields },
+      upsert: true,
+    },
+  }
+}
+
+function toWriteOperation(entry) {
+  const { operationType, tag, documentKey, updateDescription } = entry
+  const fields = updateDescription?.updatedFields
+  const sourceId = documentKey?._id ?? (operationType === 'integrity' ? fields?._id : undefined)
+
+  if (operationType === 'delete') {
+    if (!Number.isFinite(sourceId)) return
+    return { deleteOne: { filter: { replicatedSourceId: sourceId } } }
+  }
+  if (typeof tag !== 'string' || !tag || !fields ||
+      typeof fields !== 'object' || Array.isArray(fields)) return
+
+  // An established mapping survives source renames. A tag match can adopt an
+  // existing point, including points with a different local MongoDB _id.
+  const tagFilter = { tag, replicatedSourceId: { $exists: false } }
+  const filter = Number.isFinite(sourceId)
+    ? { $or: [{ replicatedSourceId: sourceId }, tagFilter] }
+    : { tag }
+
+  if (operationType === 'integrity' && Number.isFinite(sourceId)) {
+    const { _id, ...point } = fields
+    for (const key of ['timeTag', 'timeTagAtSource', 'timeTagAlarm', 'timeTagAlertState']) {
+      if (point[key]) point[key] = new Date(point[key])
+    }
+    return {
+      updateOne: {
+        filter,
+        update: {
+          $set: { ...point, tag, replicatedSourceId: sourceId },
+          $setOnInsert: { _id: new Double(sourceId) },
+        },
+        upsert: true,
+      },
     }
   }
 
-  setTimeout(procQueue, AppDefs.INTERVAL_AFTER_WRITE)
+  if (operationType === 'update' && fields.sourceDataUpdate &&
+      typeof fields.sourceDataUpdate === 'object' && !Array.isArray(fields.sourceDataUpdate)) {
+    const sourceDataUpdate = { ...fields.sourceDataUpdate }
+    for (const key of ['timeTag', 'timeTagAtSource']) {
+      if (sourceDataUpdate[key]) sourceDataUpdate[key] = new Date(sourceDataUpdate[key])
+    }
+    const { _id, tag: updatedTag, replicatedSourceId, ...companionFields } = fields
+    const update = sourceDataUpdate.isHistorical
+      ? { sourceDataUpdate }
+      : { ...companionFields, sourceDataUpdate }
+    return { updateOne: { filter, update: { $set: update } } }
+  }
+}
+
+async function applyPoint(realtime, revisions, group, active) {
+  const { sourceId, revision } = group
+  const operation = group.operations[0]
+  const change = operation.updateOne ?? operation.deleteOne
+  const identity = { _id: sourceId }
+  const point = await realtime.findOne(change.filter, { projection: { replicationRevision: 1 }, timeoutMS: 5000 })
+  if (!active()) return
+
+  if (operation.updateOne && !change.upsert && !point) {
+    // An update can arrive ahead of its first integrity packet. Keep the
+    // newest deferred value until the writer can attach it to a point.
+    await revisions.updateOne(identity, [{ $set: {
+      deferred: { $cond: [
+        { $gt: [revision, { $max: [
+          { $ifNull: ['$revision', ''] }, { $ifNull: ['$deferred.revision', ''] },
+        ] }] },
+        { $literal: { revision, operation } },
+        '$deferred',
+      ] },
+    } }], { ...durable, upsert: true })
+    return
+  }
+
+  const state = await revisions.findOneAndUpdate(
+    identity, { $max: { revision } },
+    { ...durable, upsert: true, returnDocument: 'after' }
+  )
+  if (!active()) return
+  const deferred = state.deferred
+  if (state.revision !== revision) {
+    // Recovery can revisit the integrity record after the deferred update
+    // reserved its revision but before it reached realtimeData.
+    if (change.upsert && point && deferred?.revision === state.revision) {
+      await applyPoint(realtime, revisions, {
+        sourceId, revision: deferred.revision, operations: [deferred.operation],
+      }, active)
+    }
+    return
+  }
+
+  const versionFilter = {
+    $or: [
+      { replicationRevision: { $exists: false } },
+      { replicationRevision: { $lt: revision } },
+    ],
+  }
+  if (operation.deleteOne) {
+    await realtime.deleteOne({ $and: [change.filter, versionFilter] }, durable)
+  } else if (!point?.replicationRevision || point.replicationRevision < revision) {
+    const filter = point ? { _id: point._id } : change.filter
+    const update = {
+      ...change.update,
+      $set: { ...change.update.$set, replicationRevision: revision },
+    }
+    await realtime.updateOne({ $and: [filter, versionFilter] }, update,
+      { ...durable, upsert: change.upsert && !point })
+  }
+
+  if (change.upsert && state.deferred?.revision > revision && active()) {
+    await applyPoint(realtime, revisions, {
+      sourceId, revision: deferred.revision, operations: [deferred.operation],
+    }, active)
+  }
+  if (active() && deferred && deferred.revision <= revision)
+    await revisions.updateOne({ ...identity, 'deferred.revision': deferred.revision },
+      { $unset: { deferred: '' } }, durable)
+}
+
+async function writeBatch(realtime, secEvents, revisions, active) {
+  let completed = 0
+  try {
+    for (const group of pending) {
+      if (!active()) break
+      const collection = group.securityEvent ? secEvents : realtime
+      try {
+        if (group.revision) await applyPoint(realtime, revisions, group, active)
+        else await collection.bulkWrite(group.operations, { ...durable, ordered: true })
+        if (!active()) break
+        completed++
+      } catch (error) {
+        Log.log('Replication write error in ' + collection.collectionName + ': ' + error)
+        const permanentCodes = [2, 9, 14, 28, 40, 52, 66, 121, 11000]
+        if (!(error instanceof MongoBulkWriteError)) {
+          if (group.revision && permanentCodes.includes(error.code)) completed++
+          break
+        }
+        if (error.result.getWriteConcernError()) break
+
+        const failure = error.result.getWriteErrorAt(0)
+        if (!failure) break // An ambiguous write retains the current group.
+        // MongoDB stopped at this index. Drop the acknowledged prefix and skip
+        // errors that replaying the same operation cannot resolve.
+        const permanentError = permanentCodes.includes(failure.code)
+        group.operations = group.operations.slice(failure.index + (permanentError ? 1 : 0))
+        if (!group.operations.length) completed++
+        break
+      }
+    }
+  } finally {
+    pending = pending.slice(completed)
+  }
 }

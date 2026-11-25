@@ -16,7 +16,7 @@ document, same model layout and object references, no native library dependency.
 ## Local Contracts
 
 - **Language:** Go 1.26, module `iec61850_server`, flat `package main`
-- **Library:** `github.com/dscsystems/go-iec61850` v0.7.1 (pure Go, GPLv3) — **pin the version**,
+- **Library:** `github.com/dscsystems/go-iec61850` v0.8.0 (pure Go, GPLv3) — **pin the version**,
   the API is pre-v1, and keep it in step with the client driver
 - **Binary:** `iec61850_server(.exe)` in `bin/`, as `platform-windows/build.bat` and
   `platform-linux/build.sh` build it
@@ -34,9 +34,12 @@ document, same model layout and object references, no native library dependency.
   - `stats.go` — instance keep-alive and connection statistics (no active/standby arbitration)
   - `tlsconf.go` — server-side TLS
   - `selftest.go` — synthetic model, no MongoDB (← `SelfTest.cs`)
+  - `secevents.go` — security events (library dispatcher, driver detections) and client identification (`stats.peerIdentity`)
+  - `secevents_map.go` — go-iec61850 `secevent.Event` → `secEvents` document; identical in `../iec61850_client`, change both together
 - **Build:** `go build -ldflags="-s -w" -o ../../../bin/iec61850_server`
 - **Config:** `conf/json-scada.json` plus MongoDB documents; CLI `<instance> <logLevel> <configFile>`
-- **Connection stats:** `stats.isConnected` = at least one MMS client association open (`OpenConnections() > 0`)
+- **Connection stats:** `stats.isConnected` = at least one MMS client association open (`OpenConnections() > 0`); with `peerIdentification` also `stats.peerIdentity` (`clients`, `known`)
+- **Security events:** the package variable `sec` (`secState`, nil in tests and self-test) is created in `main` before `NewGateway`; the server gets its dispatcher with `server.WithCyberEventSink`, Info-level library events are not stored. Driver detections: allow-list rejections, refused client certificates (`withCertEvents` wraps the verifier per handshake through `GetConfigForClient`, for the client address), refused/flooding/unnecessary controls, MAC / ACSE identity / certificate changes per client IP (seeded from `stats.peerIdentity.known`). `opened` registers the session in `open` at once; the identification goroutine replaces it only while the same `sessionId` is still open. Unnecessary-control checks compare a supervised value older than the control's receipt (`cmdCheck.at`). Shutdown: `gw.Stop`, `sec.close`, then cancel so the writer stores what is queued
 
 ## Work Guidance
 
@@ -55,7 +58,9 @@ document, same model layout and object references, no native library dependency.
   arbitration. The 1 Hz loop in `main.go` starts the server and retries the bind if it fails.
 - The control handler runs on the connection's goroutine, holding the server's model write lock:
   it must not block, and must never call `Update` or `Read` on the server (deadlock). Commands are
-  queued and inserted by a separate goroutine.
+  queued and inserted by a separate goroutine. Its security events only queue (`controlRefused`,
+  `controlReceived`); the unnecessary-command check reads MongoDB in `checkLoop`, and the client
+  identification (MAC lookup may run a command) runs in a goroutine of its own.
 - `watchRealtimeData` re-reads every point (`resyncPoints`) each time the change stream opens:
   events missed while it was closed are never delivered.
 - The control handler refuses a control flagged test (`Blocked-by-mode`): there is no test mode to
@@ -74,7 +79,8 @@ document, same model layout and object references, no native library dependency.
 
 ## Verification
 
-- `go test ./...` — model builder, update path, command documents, and a loopback run against the
+- `go test ./...` — security events (allow-list, identification, stored identity, controls, refused
+  client certificate: `secevents_test.go`), model builder, update path, command documents, and a loopback run against the
   library's own client (no MongoDB or device needed)
 - `go vet ./...` and `go test -race ./...`
 - Independent check: `bin/iec61850_server selftest 10102` then, from the library module,

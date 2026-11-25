@@ -42,7 +42,8 @@
     "customDevelopments": "Desarrollos personalizados",
     "open": "Abierto",
     "cimEms": "CIM-EMS",
-    "svgedit": "Editor SVG"
+    "svgedit": "Editor SVG",
+    "secEventsViewer": "Eventos de Seguridad"
   },
   "tabularViewer": {
     "station": "Estación",
@@ -91,9 +92,15 @@
       "value": "Valor",
       "state": "Estado",
       "quality": "Calidad",
-      "hiLimit": "Límite superior",
-      "loLimit": "Límite inferior",
+      "hiLimit": "Límite superior (HI)",
+      "loLimit": "Límite inferior (LO)",
+      "hihiLimit": "Límite superior 2 (HIHI)",
+      "hihihiLimit": "Límite superior 3 (HIHIHI)",
+      "loloLimit": "Límite inferior 2 (LOLO)",
+      "lololoLimit": "Límite inferior 3 (LOLOLO)",
       "hysteresis": "Histéresis",
+      "alarmRange": "Rango de alarma",
+      "limitsOrder": "Límites fuera de orden (LOLOLO ≤ LOLO ≤ LO ≤ HI ≤ HIHI ≤ HIHIHI)",
       "annotation": "Anotación de bloqueo",
       "notes": "Notas documentales",
       "alarmDisabled": "Alarma desactivada",
@@ -170,6 +177,72 @@
       "date": "Fecha",
       "time": "Tiempo inicial",
       "filter": "Filtrar"
+    }
+  },
+  "alarmsViewer": {
+    "alarms": "alarmas",
+    "unackedOnly": "Solo no reconocidas",
+    "modes": {
+      "normal": "Normal",
+      "aggregated": "Agregado",
+      "historical": "Histórico"
+    },
+    "columns": {
+      "time": "Hora",
+      "alarm": "Alarma",
+      "state": "Estado",
+      "priority": "Prioridad",
+      "normalTime": "Hora Normal",
+      "ackTime": "Hora Reconoc.",
+      "ackUser": "Usuario Reconoc."
+    },
+    "state": {
+      "active": "Activa",
+      "normal": "Normal"
+    },
+    "hist": {
+      "from": "Desde",
+      "to": "Hasta",
+      "filter": "Filtro",
+      "filterHint": "tag, descripción, texto",
+      "find": "Buscar",
+      "limited": "Mostrando solo las primeras {n} alarmas: reduzca el período o el filtro."
+    }
+  },
+  "secEvents": {
+    "title": "Eventos de Seguridad",
+    "from": "Desde",
+    "to": "Hasta",
+    "now": "ahora",
+    "minSeverity": "Severidad mínima",
+    "category": "Categoría",
+    "filterHint": "tipo, par, objeto, detalle",
+    "find": "Buscar",
+    "autoRefresh": "Actualizar",
+    "exportCsv": "Exportar CSV",
+    "showFrom": "Mostrar desde {s}",
+    "events": "eventos",
+    "limited": "Se muestran solo los {n} eventos más recientes: acote el período o el filtro.",
+    "noData": "Sin eventos de seguridad",
+    "noRight": "Sus roles no conceden el derecho Ver Eventos de Seguridad.",
+    "unavailable": "Base de datos no disponible",
+    "severities": {
+      "info": "Info",
+      "notice": "Aviso",
+      "warning": "Advertencia",
+      "alert": "Alerta",
+      "critical": "Crítico"
+    },
+    "columns": {
+      "time": "Hora",
+      "severity": "Severidad",
+      "kind": "Evento",
+      "connection": "Conexión",
+      "peer": "Par",
+      "object": "Objeto",
+      "action": "Acción",
+      "detail": "Detalle",
+      "source": "Origen"
     }
   },
   "login": {
@@ -315,7 +388,11 @@
         "total": "Funciones",
         "admin": "Funciones de administrador",
         "unused": "Sin asignar"
-      }
+      },
+      "viewSecEvents": "Ver Eventos de Seguridad",
+      "viewSecEventsHint": "Puede abrir el visor de Eventos de Seguridad (anomalías de conexión, certificado, identidad y comandos informadas por los drivers de protocolo).",
+      "editDisplays": "Editar Pantallas",
+      "editDisplaysHint": "Puede listar, abrir y guardar las pantallas SVG en el Editor SVG (los administradores siempre pueden). Con una lista de pantallas, solo esas pantallas."
     },
     "protocolDriverInstances": {
       "title": "Instancias del controlador de protocolo",
@@ -742,6 +819,28 @@
       "serverUnitIds": "Unit ids del servidor",
       "serverUnitIdsTitle": "Unit ids (direcciones de esclavo) atendidos",
       "serverUnitIdsHint": "Escriba un número y pulse Intro. Rango de 0 a 255.",
+      "sunspecParameters": "Parámetros SunSpec",
+      "unitIds": "Unit Ids",
+      "unitIdsTitle": "Dispositivos SunSpec (unit ids Modbus) a descubrir",
+      "unitIdsHint": "Escriba un número y pulse Enter. Rango 1 a 255. Vacío: unidad 1.",
+      "baseAddresses": "Direcciones Base",
+      "baseAddressesTitle": "Direcciones de registro sondeadas para el marcador SunS",
+      "baseAddressesHint": "Escriba un número y pulse Enter. Vacío: 0, 40000, 50000, 1, 39999, 40001, 49999, 50001.",
+      "modelIds": "Ids de Modelo",
+      "modelIdsTitle": "Modelos SunSpec que reciben tags automáticos",
+      "modelIdsHint": "Escriba un id de modelo y pulse Enter (p. ej. 1, 103, 160). Vacío: todos los modelos descubiertos.",
+      "registerType": "Tipo de Registro",
+      "registerTypeTitle": "Registros que contienen el mapa SunSpec",
+      "registerTypeHint": "holding (función 3, casi todos los dispositivos) o input (función 4, solo lectura).",
+      "maxModels": "Máx. Modelos",
+      "maxModelsTitle": "Máximo de cabeceras de modelo leídas de la cadena",
+      "maxModelsHint": "Número entero, al menos 1. Por defecto 256.",
+      "autoCreateCommandTags": "Crear tags de comando automáticamente: ",
+      "autoCreateCommandTagsTrue": "Verdadero",
+      "autoCreateCommandTagsFalse": "Falso",
+      "autoCreateUnimplemented": "Crear tags para puntos no implementados: ",
+      "autoCreateUnimplementedTrue": "Verdadero",
+      "autoCreateUnimplementedFalse": "Falso",
       "strictUnitId": "Unit id estricto: ",
       "strictUnitIdTrue": "Verdadero",
       "strictUnitIdFalse": "FALSO",
@@ -802,7 +901,9 @@
         "total": "Conexiones",
         "tags": "Tags",
         "invalidTags": "Tags inválidos"
-      }
+      },
+      "peerIdentification": "Identificar el par (eventos de seguridad): ",
+      "peerIdentificationHint": "Lee la identidad del par (fabricante, modelo, firmware, dirección MAC, certificado) en cada conexión en las estadísticas de la conexión e informa sus cambios como eventos de seguridad."
     },
     "userActions": {
       "title": "Acciones del usuario",
@@ -850,6 +951,13 @@
       "editOrigin": "Origen",
       "editType": "Tipo",
       "editHistorianDeadBand": "Historiador Banda muerta (%)",
+      "editHihihiLimit": "Límite superior 3 (HIHIHI)",
+      "editHihiLimit": "Límite superior 2 (HIHI)",
+      "editHiLimit": "Límite superior (HI)",
+      "editLoLimit": "Límite inferior (LO)",
+      "editLoloLimit": "Límite inferior 2 (LOLO)",
+      "editLololoLimit": "Límite inferior 3 (LOLOLO)",
+      "editHysteresis": "Histéresis",
       "editHistorianPeriod": "Periodo de integridad del historiador (segundos)",
       "editAlarmState": "Estado de alarma",
       "editAlarmStateOff": "APAGADO",
@@ -1016,7 +1124,15 @@
       "pruneExecute": "Eliminar",
       "pruneConfirmText": "La configuración seleccionada se elimina definitivamente. Exporte una copia antes si puede necesitarla.",
       "pruneTypeToConfirm": "Escriba {word} para confirmar",
-      "pruneDone": "Configuración limpiada"
+      "pruneDone": "Configuración limpiada",
+      "retentionTitle": "Retención de datos",
+      "retentionHint": "Días conservados para los eventos (SOE), las alarmas y los datos históricos; el exceso se elimina una vez al día. Las alarmas no reconocidas o activas se conservan.",
+      "retentionSoe": "Eventos (SOE)",
+      "retentionAlarms": "Alarmas",
+      "retentionHist": "Datos históricos",
+      "retentionDays": "días",
+      "retentionRule": "Un número entero de días de {min} a {max}",
+      "retentionSecEvents": "Eventos de seguridad"
     },
     "cimEms": {
       "readOnly": "Solo lectura: la carga y activación de modelos, la aprobación de vínculos y las descargas requieren un rol con el derecho de ingeniería CIM-EMS.",
@@ -1221,8 +1337,12 @@
     "reset": "Restablecer vista y seguir en vivo",
     "downloadCsv": "Descargar CSV",
     "current": "Valor actual",
-    "hiLimit": "Límite superior",
-    "loLimit": "Límite inferior",
+    "hiLimit": "Límite superior (HI)",
+    "loLimit": "Límite inferior (LO)",
+    "hihiLimit": "Límite superior 2 (HIHI)",
+    "hihihiLimit": "Límite superior 3 (HIHIHI)",
+    "loloLimit": "Límite inferior 2 (LOLO)",
+    "lololoLimit": "Límite inferior 3 (LOLOLO)",
     "noData": "Sin datos en este período",
     "noPoint": "No se indicó un punto (use ?point=<clave o tag>)",
     "notFound": "Punto no encontrado"
@@ -1247,5 +1367,18 @@
       "analytics": "Análisis",
       "engineering": "Ingeniería"
     }
+  },
+  "customDev": {
+    "subtitle": "Aplicaciones web construidas en src/custom-developments: paneles, faceplates y vistas especiales.",
+    "search": "Buscar aplicaciones",
+    "open": "Abrir",
+    "openNewWindow": "Abrir en una ventana nueva",
+    "back": "Volver a la lista",
+    "retry": "Reintentar",
+    "empty": "Aún no hay desarrollos personalizados",
+    "emptyHint": "Construya una aplicación en una carpeta de src/custom-developments (npm install && npm run build) y reinicie server_realtime_auth.",
+    "noMatch": "Ninguna aplicación coincide con la búsqueda.",
+    "noDescription": "Sin descripción",
+    "built": "Construido el {date}"
   }
 }

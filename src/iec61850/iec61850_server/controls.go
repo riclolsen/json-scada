@@ -93,6 +93,7 @@ func installControlHandlers(g *Gateway) {
 func (g *Gateway) handleControl(mp *MappedPoint, ctx *server.ControlCtx) model.AddCause {
 	if !g.conn.CommandsEnabled {
 		jslog.Log(jslog.LevelBasic, "Control refused for %s: commands are disabled for this connection.", mp.Tag)
+		sec.controlRefused(ctx.Conn, mp, model.AddCauseBlockedByMode, ctx.Test, ctx.CtlNum, "commands are disabled")
 		return model.AddCauseBlockedByMode
 	}
 	if ctx.Test {
@@ -100,6 +101,7 @@ func (g *Gateway) handleControl(mp *MappedPoint, ctx *server.ControlCtx) model.A
 		// this gateway has no test mode to run it in: the command it would
 		// queue is a real one for the source device.
 		jslog.Log(jslog.LevelBasic, "Control refused for %s: test commands are not executed (from %s).", mp.Tag, ctx.Peer)
+		sec.controlRefused(ctx.Conn, mp, model.AddCauseBlockedByMode, true, ctx.CtlNum, "test command refused")
 		return model.AddCauseBlockedByMode
 	}
 	if ctx.Select {
@@ -110,8 +112,11 @@ func (g *Gateway) handleControl(mp *MappedPoint, ctx *server.ControlCtx) model.A
 	value, valueString, ok := controlValue(mp.Kind, ctx.Value)
 	if !ok {
 		jslog.Log(jslog.LevelNoLog, "Control value conversion error for %s", mp.Tag)
+		sec.controlRefused(ctx.Conn, mp, model.AddCauseInconsistentParameters, ctx.Test, ctx.CtlNum,
+			"control value of the wrong type")
 		return model.AddCauseInconsistentParameters
 	}
+	sec.controlReceived(ctx.Conn, ctx.Peer, mp, value)
 	value, valueString = convertCommandValue(mp, value, valueString)
 
 	enqueueCommand(bson.M{

@@ -17,6 +17,8 @@ import (
 	"modbus-go/internal/mbcore"
 	"modbus-go/internal/mbnet"
 
+	"github.com/riclolsen/json-scada/src/go-common/jsmongo"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
@@ -71,6 +73,13 @@ type Config struct {
 	Topics         []string
 
 	KeepProtocolRunningWhileInactive bool
+
+	// PeerIdentification reads the device identification on every
+	// connection into stats.peerIdentity and reports its changes as security
+	// events; StoredIdentity is the identity stored there, so a change across
+	// a driver restart is seen.
+	PeerIdentification bool
+	StoredIdentity     bson.M
 }
 
 // Normalize reads a protocolConnections document permissively.
@@ -126,6 +135,9 @@ func Normalize(doc bson.M) Config {
 		Topics:         drv.StrArr(doc, "topics"),
 
 		KeepProtocolRunningWhileInactive: drv.Bool(doc, "keepProtocolRunningWhileInactive", false),
+
+		PeerIdentification: drv.Bool(doc, "peerIdentification", true),
+		StoredIdentity:     jsmongo.GetDoc(jsmongo.GetDoc(doc, "stats"), "peerIdentity"),
 	}
 }
 

@@ -69,6 +69,7 @@ func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg
 			entries = append(entries, jsstats.Entry{
 				ConnectionNumber: conn.ProtocolConnectionNumber,
 				IsConnected:      jsstats.Bool(false),
+				Stats:            peerIdentityStats(conn),
 			})
 			continue
 		}
@@ -79,6 +80,7 @@ func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg
 		entries = append(entries, jsstats.Entry{
 			ConnectionNumber: conn.ProtocolConnectionNumber,
 			Extra:            bson.M{"lastReportIds": ids},
+			Stats:            peerIdentityStats(conn),
 			IsConnected:      jsstats.Bool(cli.State() == mms.StateConnected),
 		})
 	}
@@ -88,4 +90,13 @@ func updateConnectionStats(ctx context.Context, collConns *mongo.Collection, cfg
 			jslog.Log(jslog.LevelDetailed, "Redundancy - stats update: %v", err)
 		},
 	}.Write(ctx, collConns, entries)
+}
+
+// peerIdentityStats is the IED's last identity, kept in the statistics
+// while the link is down too (each update replaces the whole stats field).
+func peerIdentityStats(conn *Iec61850Connection) bson.M {
+	if id := conn.PeerIdentityDoc(); id != nil && conn.PeerIdentification {
+		return bson.M{"peerIdentity": id}
+	}
+	return nil
 }

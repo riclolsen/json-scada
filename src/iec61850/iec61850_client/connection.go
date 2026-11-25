@@ -95,7 +95,7 @@ func runConnection(ctx context.Context, conn *Iec61850Connection) error {
 		if err != nil {
 			return fmt.Errorf("%s TLS configuration error: %w", conn.Name, err)
 		}
-		opts = append(opts, client.WithTLS(tlsCfg))
+		opts = append(opts, client.WithTLS(conn.withCertEvents(tlsCfg)))
 	}
 	if conn.Password != "" {
 		opts = append(opts, client.WithPassword(conn.Password))
@@ -106,24 +106,33 @@ func runConnection(ctx context.Context, conn *Iec61850Connection) error {
 
 	addr := splitHostPort(conn.IPAddresses[0])
 	jslog.Log(jslog.LevelBasic, "%s Connecting to %s", conn.Name, addr)
+	conn.secNewAssociation(addr)
 
 	dialCtx, cancelDial := context.WithTimeout(ctx, conn.requestTimeout())
 	cli, err := client.Dial(dialCtx, addr, opts...)
 	cancelDial()
 	if err != nil {
+		if conn.UseSecurity {
+			conn.secDialFailed(err)
+		}
 		return fmt.Errorf("%s Connection error: %w", conn.Name, err)
 	}
 	conn.SetClient(cli)
 
-	idCtx, cancelID := context.WithTimeout(ctx, conn.requestTimeout())
-	vendor, modelName, revision, err := cli.MMS().Identify(idCtx)
-	cancelID()
-	if err == nil {
-		jslog.Log(jslog.LevelBasic, "Vendor:   %s", vendor)
-		jslog.Log(jslog.LevelBasic, "Model:    %s", modelName)
-		jslog.Log(jslog.LevelBasic, "Revision: %s", revision)
-	} else {
-		jslog.Log(jslog.LevelDetailed, "%s Identify not supported: %v", conn.Name, err)
+	// MMS Identify is part of the peer identification: with it off the
+	// driver sends no identification request at all.
+	if conn.PeerIdentification {
+		idCtx, cancelID := context.WithTimeout(ctx, conn.requestTimeout())
+		vendor, modelName, revision, err := cli.MMS().Identify(idCtx)
+		cancelID()
+		if err == nil {
+			jslog.Log(jslog.LevelBasic, "Vendor:   %s", vendor)
+			jslog.Log(jslog.LevelBasic, "Model:    %s", modelName)
+			jslog.Log(jslog.LevelBasic, "Revision: %s", revision)
+		} else {
+			jslog.Log(jslog.LevelDetailed, "%s Identify not supported: %v", conn.Name, err)
+		}
+		identifyPeer(ctx, conn, cli, vendor, modelName, revision, err)
 	}
 
 	conn.Datasets = nil
@@ -265,6 +274,7 @@ func pollSweep(ctx context.Context, conn *Iec61850Connection) error {
 				return fmt.Errorf("%s Connection error detected! %v", conn.Name, err)
 			}
 			jslog.Log(jslog.LevelBasic, "%s READ  %s %s\n    Read error: %v", conn.Name, p.entry.Path, tag, err)
+			conn.secReadError(p.entry, err)
 			continue
 		}
 		var log strings.Builder

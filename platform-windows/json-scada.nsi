@@ -18,18 +18,65 @@ RequestExecutionLevel admin
 !include "WordFunc.nsh"
 !include "x64.nsh"
 !include "LogicLib.nsh"
+!include "FileFunc.nsh"
 
 ;--------------------------------
 
-!define VERSION "v.0.71"
-!define VERSION_ "0.71.0.0"
+!define VERSION "v.0.72"
+!define VERSION_ "0.72.0.0"
+
+; PostgreSQL major version bundled in postgresql-runtime (PGBIN_1), read from pg_ctl.exe at compile time.
+; Upgrades over data of another major keep the old runtime (see upgrade.ps1).
+!getdllversion "postgresql-runtime\bin\pg_ctl.exe" PGBIN_
+
+; Upgrade state, set in .onInit
+Var IS_UPGRADE   ; 1 = previous installation files, registry entry or databases found
+Var HAS_DATA     ; 1 = MongoDB or PostgreSQL data found: never run initial_setup.bat
+Var PREV_VERSION ; version recorded by the previous installer ("" for 0.71 and older)
+Var BACKUP_DIR   ; per-upgrade backup of conf and scripts
 
 Function .onInit
- System::Call 'keexrnel32::CreateMutexA(p0, i1, t "MutexJsonScadaInstall")?e'
- Pop $0
- IntCmpU $0 183 0 +3 +3
-   MessageBox MB_OK|MB_ICONEXCLAMATION "Installer already executing!"
-   Abort
+  System::Call 'kernel32::CreateMutex(p 0, i 0, t "MutexJsonScadaInstall") p .r1 ?e'
+  Pop $0
+  ${If} $0 = 183
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Installer already executing!" /SD IDOK
+    Abort
+  ${EndIf}
+
+  ${IfNot} ${RunningX64}
+    MessageBox MB_OK|MB_ICONSTOP "JSON-SCADA requires a 64-bit Windows." /SD IDOK
+    Abort
+  ${EndIf}
+
+  SetRegView 64
+  StrCpy $IS_UPGRADE 0
+  StrCpy $HAS_DATA 0
+  ReadRegStr $PREV_VERSION HKLM "Software\JSON_SCADA" "Version"
+  ReadRegStr $0 HKLM "Software\JSON_SCADA" "Install_Dir"
+  ${If} $0 != ""
+  ${OrIf} ${FileExists} "$INSTDIR\platform-windows\*.*"
+    StrCpy $IS_UPGRADE 1
+  ${EndIf}
+  ${If} ${FileExists} "$INSTDIR\platform-windows\postgresql-data\PG_VERSION"
+  ${OrIf} ${FileExists} "$INSTDIR\platform-windows\mongodb-data\WiredTiger"
+    StrCpy $IS_UPGRADE 1
+    StrCpy $HAS_DATA 1
+  ${EndIf}
+
+  ${If} $IS_UPGRADE == 1
+    ${If} $PREV_VERSION == ""
+      StrCpy $1 "0.71 or older"
+    ${Else}
+      StrCpy $1 $PREV_VERSION
+      ${VersionCompare} $PREV_VERSION ${VERSION_} $2
+      ${If} $2 == 1
+        MessageBox MB_YESNO|MB_ICONEXCLAMATION|MB_DEFBUTTON2 "A newer JSON-SCADA ($PREV_VERSION) is installed in $INSTDIR.$\r$\nDowngrades are not supported and may leave the databases unusable.$\r$\n$\r$\nContinue anyway?" /SD IDNO IDYES +2
+        Abort
+      ${EndIf}
+    ${EndIf}
+    MessageBox MB_OKCANCEL|MB_ICONINFORMATION "An existing JSON-SCADA installation (version $1) was found in $INSTDIR and will be upgraded to ${VERSION}.$\r$\n$\r$\nDatabases, configuration (conf folder), displays and service settings are kept. All JSON-SCADA services are stopped during the upgrade and the ones running now are restarted at the end. Configuration and scripts are backed up to $INSTDIR\backup first." /SD IDOK IDOK +2
+    Abort
+  ${EndIf}
 FunctionEnd
 
 ;!macro CreateInternetShortcut FILEPATH URL
@@ -103,63 +150,27 @@ ShowInstDetails show
 
 Section "" ; empty string makes it hidden, so would starting with -
 
-; REJECT NON 64 BIT OS
-${IfNot} ${RunningX64}
-
-    Abort
-
-${EndIf}
-
 ${DisableX64FSRedirection}
 
 SetRegView 64
 
-; Closes all processes
-  nsExec::Exec 'net stop JSON_SCADA_grafana'
-  nsExec::Exec 'net stop JSON_SCADA_n8nclient'
-  nsExec::Exec 'net stop JSON_SCADA_nodered_runtime'
-  nsExec::Exec 'net stop JSON_SCADA_nodered_driver'
-  nsExec::Exec 'net stop JSON_SCADA_metabase'
-  nsExec::Exec 'net stop JSON_SCADA_mongodb'
-  nsExec::Exec 'net stop JSON_SCADA_calculations'
-  nsExec::Exec 'net stop JSON_SCADA_cs_data_processor'
-  nsExec::Exec 'net stop JSON_SCADA_cs_custom_processor'
-  nsExec::Exec 'net stop JSON_SCADA_server_realtime_auth'
-  nsExec::Exec 'net stop JSON_SCADA_config_server_excel'
-  nsExec::Exec 'net stop JSON_SCADA_demo_simul'
-  nsExec::Exec 'net stop JSON_SCADA_mongofw'
-  nsExec::Exec 'net stop JSON_SCADA_mongowr'
-  nsExec::Exec 'net stop JSON_SCADA_alarm_beeep'
-  nsExec::Exec 'net stop JSON_SCADA_process_rtdata'
-  nsExec::Exec 'net stop JSON_SCADA_process_hist'
-  nsExec::Exec 'net stop JSON_SCADA_iec101client'
-  nsExec::Exec 'net stop JSON_SCADA_iec101server'
-  nsExec::Exec 'net stop JSON_SCADA_iec104client'
-  nsExec::Exec 'net stop JSON_SCADA_iec104server'
-  nsExec::Exec 'net stop JSON_SCADA_dnp3server'
-  nsExec::Exec 'net stop JSON_SCADA_iccpclient'
-  nsExec::Exec 'net stop JSON_SCADA_iccpserver'
-  nsExec::Exec 'net stop JSON_SCADA_iec61850client'
-  ; nsExec::Exec 'net stop JSON_SCADA_plctags'
-  nsExec::Exec 'net stop JSON_SCADA_dnp3client' 
-  nsExec::Exec 'net stop JSON_SCADA_opcuaclient' 
-  nsExec::Exec 'net stop JSON_SCADA_opcdaclient' 
-  nsExec::Exec 'net stop JSON_SCADA_opcuaserver' 
-  nsExec::Exec 'net stop JSON_SCADA_mqttsparkplugclient'  
-  nsExec::Exec 'net stop JSON_SCADA_plc4xclient'  
-  nsExec::Exec 'net stop JSON_SCADA_telegraf_runtime'
-  nsExec::Exec 'net stop JSON_SCADA_telegraf_listener'
-  nsExec::Exec 'net stop JSON_SCADA_modbusclient'
-  nsExec::Exec 'net stop JSON_SCADA_modbusserver'
-  nsExec::Exec 'net stop JSON_SCADA_iccpclient'
-  nsExec::Exec 'net stop JSON_SCADA_iccpserver'
-  nsExec::Exec 'net stop JSON_SCADA_nginx'
-  nsExec::Exec 'net stop JSON_SCADA_php'
-  nsExec::Exec 'net stop JSON_SCADA_log_io_file'
-  nsExec::Exec 'net stop JSON_SCADA_log_io_server'
-  nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
-  nsExec::Exec '"c:\json-scada\platform-windows\postgresql-runtime\bin\pg_ctl" stop -D c:\json-scada\platform-windows\postgresql-runtime'
-  nsExec::Exec 'c:\json-scada\platform-windows\stop_services.bat'
+; Upgrade preparation (upgrade.ps1 -Phase PreInstall): stop every JSON_SCADA_* service (databases last)
+; and leftover processes from $INSTDIR, back up conf and scripts, keep database binaries the existing
+; data still needs. Runs from $PLUGINSDIR because older installations do not have the script.
+  InitPluginsDir
+  File "/oname=$PLUGINSDIR\upgrade.ps1" "upgrade.ps1"
+  ${If} $IS_UPGRADE == 1
+    ${GetTime} "" "L" $0 $1 $2 $3 $4 $5 $6
+    StrCpy $BACKUP_DIR "$INSTDIR\backup\upgrade_$2$1$0_$4$5$6"
+    System::Call 'kernel32::GetCurrentProcessId() i .r7'
+    DetailPrint "Preparing the upgrade: stopping JSON-SCADA services, backing up configuration..."
+    nsExec::ExecToLog 'powershell -NoProfile -ExecutionPolicy Bypass -File "$PLUGINSDIR\upgrade.ps1" -Phase PreInstall -InstallDir "$INSTDIR" -BackupDir "$BACKUP_DIR" -BundledPgMajor ${PGBIN_1} -InstallerPid $7'
+    Pop $0
+    ${If} $0 != 0
+      MessageBox MB_YESNO|MB_ICONSTOP "The upgrade preparation failed (result: $0, see $INSTDIR\log\upgrade.log).$\r$\nContinuing may overwrite files that are still needed.$\r$\n$\r$\nAbort the installation (nothing was replaced yet)?" /SD IDYES IDNO +2
+      Abort
+    ${EndIf}
+  ${EndIf}
   SetOverwrite on
 
   var /GLOBAL NAVWINCMD
@@ -201,6 +212,9 @@ SetRegView 64
   ; write uninstall strings
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\JSON_SCADA" "DisplayName" "JSON SCADA (remove only)"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\JSON_SCADA" "UninstallString" '"$INSTDIR\bt-uninst.exe"'
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\JSON_SCADA" "Publisher" "Ricardo Olsen"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\JSON_SCADA" "NoModify" 1
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\JSON_SCADA" "NoRepair" 1
 
   ; erases all of the old chromium
   ;RMDir /r "$INSTDIR\browser-runtime" 
@@ -259,15 +273,24 @@ SetRegView 64
   
   SetOutPath $INSTDIR\bin
   File /a /r "..\bin\*.*"
-  File /a "..\platform-windows\nssm.exe"
 
-  ; preserve previous start_services.bat
-  Rename $INSTDIR\platform-windows\start_services.bat $INSTDIR\platform-windows\start_services.bat.bak
+  ; preserve previous start_services.bat (all scripts are also in $BACKUP_DIR on upgrades)
+  ${If} ${FileExists} "$INSTDIR\platform-windows\start_services.bat"
+    Delete "$INSTDIR\platform-windows\start_services.bat.bak"
+    Rename "$INSTDIR\platform-windows\start_services.bat" "$INSTDIR\platform-windows\start_services.bat.bak"
+  ${EndIf}
 
   SetOutPath $INSTDIR\platform-windows
   File /a "..\platform-windows\*.bat"
   File /a "..\platform-windows\*.ps1"
-  File /a "..\platform-windows\nssm.exe"
+  ; WinSW runs every JSON_SCADA_* service (except PostgreSQL): winsw-services.ps1 installs the
+  ; service-templates as platform-windows\services\<svc>.xml + <svc>.exe (hard link to WinSW.exe).
+  ; The templates are installer-owned and replaced as a whole; the live services\ folder is never touched.
+  File /a "..\platform-windows\WinSW.exe"
+  RMDir /r "$INSTDIR\platform-windows\service-templates"
+  SetOutPath $INSTDIR\platform-windows\service-templates
+  File /a /r "..\platform-windows\service-templates\*.xml"
+  SetOutPath $INSTDIR\platform-windows
   File /a "..\platform-windows\ffmpeg.exe"
   File /a "..\platform-windows\sounder.exe"
   File /a "..\platform-windows\OpcWatch.exe"
@@ -303,12 +326,16 @@ SetRegView 64
   ; We use PowerShell helpers (shipped with the installer) instead of WMIC. No DISM install attempted.
   Sleep 1000
   
+  ; npm and corepack are replaced as a whole: stale files from an older npm break it.
+  ; Other global packages in nodejs-runtime\node_modules are kept.
+  RMDir /r "$INSTDIR\platform-windows\nodejs-runtime\node_modules\npm"
+  RMDir /r "$INSTDIR\platform-windows\nodejs-runtime\node_modules\corepack"
   SetOutPath $INSTDIR\platform-windows\nodejs-runtime
   File /a /r "..\platform-windows\nodejs-runtime\*.*"
 
-  ; Python 3.13 with the CIM-EMS package and its pinned dependencies installed by
+  ; Python with the CIM-EMS package and its pinned dependencies installed by
   ; build.bat (src\cim-ems\install.bat). Replaced as a whole so removed packages do not linger.
-  ;RMDir /r "$INSTDIR\platform-windows\python-runtime"
+  RMDir /r "$INSTDIR\platform-windows\python-runtime"
   SetOutPath $INSTDIR\platform-windows\python-runtime
   File /a /r /x tests /x __pycache__ "..\platform-windows\python-runtime\*.*"
 
@@ -343,8 +370,12 @@ SetRegView 64
   SetOutPath $INSTDIR\platform-windows\mongodb-runtime
   File /a /r /x *.pdb "..\platform-windows\mongodb-runtime\*.*"
 
+  ; mongod.cfg is the live configuration: never overwrite it (the samples are refreshed)
   SetOutPath $INSTDIR\platform-windows\mongodb-conf
-  File /a /r "..\platform-windows\mongodb-conf\*.*"
+  File /a /r /x mongod.cfg "..\platform-windows\mongodb-conf\*.*"
+  SetOverwrite off
+  File /a "..\platform-windows\mongodb-conf\mongod.cfg"
+  SetOverwrite on
 
   SetOutPath $INSTDIR\platform-windows\postgresql-runtime
   File /a /r /x doc /x include /x StackBuilder /x *.pdb /x "pgAdmin 4" "..\platform-windows\postgresql-runtime\*.*"
@@ -364,8 +395,37 @@ SetRegView 64
   SetOutPath $INSTDIR\conf-templates
   File /a "..\conf-templates\*.*"
 
-  ; preserve previous screen_list 
+  ; preserve previous screen_list
   ; Rename $INSTDIR\src\htdocs\svg\screen_list.js $INSTDIR\src\htdocs\svg\screen_list.js.bak
+
+  ; Shipped node_modules are replaced as a whole: packages left over from the previous version can
+  ; shadow the new dependency tree. node_modules the installer does not ship (user installs) are kept.
+  !macro CleanNodeModules SUBDIR
+    RMDir /r "$INSTDIR\src\${SUBDIR}\node_modules"
+  !macroend
+  !insertmacro CleanNodeModules "camera-onvif"
+  !insertmacro CleanNodeModules "demo_simul"
+  !insertmacro CleanNodeModules "mongofw"
+  !insertmacro CleanNodeModules "mongowr"
+  !insertmacro CleanNodeModules "grafana_alert2event"
+  !insertmacro CleanNodeModules "alarm_beep"
+  !insertmacro CleanNodeModules "backup-mongo"
+  !insertmacro CleanNodeModules "oshmi2json"
+  !insertmacro CleanNodeModules "oshmi_sync"
+  !insertmacro CleanNodeModules "cs_data_processor"
+  !insertmacro CleanNodeModules "mcp-json-scada-db"
+  !insertmacro CleanNodeModules "config_server_for_excel"
+  !insertmacro CleanNodeModules "server_realtime_auth"
+  !insertmacro CleanNodeModules "updateUser"
+  !insertmacro CleanNodeModules "telegraf-listener"
+  !insertmacro CleanNodeModules "process_pg_sql"
+  !insertmacro CleanNodeModules "mqtt-sparkplug"
+  !insertmacro CleanNodeModules "OPC-UA-Server"
+  !insertmacro CleanNodeModules "n8n-client"
+  !insertmacro CleanNodeModules "node-red-driver"
+  !insertmacro CleanNodeModules "carbone-reports"
+  !insertmacro CleanNodeModules "log-io\inputs\file"
+  !insertmacro CleanNodeModules "log-io\server"
 
   SetOutPath $INSTDIR\src\certificate-creator
   File /a "..\src\certificate-creator\client.conf"
@@ -634,40 +694,61 @@ SetRegView 64
   ; Windows Defender exclusions for write intensive data files and runtime processes
   ExecWait 'powershell -ExecutionPolicy Bypass -File "$INSTDIR\platform-windows\defender_exclusions.ps1" -JsonScadaRoot "$INSTDIR"'
 
-; If database data empty (no previous installation), then do initial setup for MongoDB and PostgreSQL
-IfFileExists "$INSTDIR\postgresql-data\base" pgDatabaseExists 0
+  ; Initial setup (databases, demo seed, services) only when there is no database data at all.
+  ; Never on upgrades: initial_setup.bat overwrites the PostgreSQL configuration, re-imports the demo
+  ; users and points and rewrites every service.
+  ${If} $HAS_DATA == 0
+    Delete "$INSTDIR\log\upgrade-state.json"
+    ExpandEnvStrings $0 %COMSPEC%
+    ; am_admin: the installer is already elevated, run it synchronously (no self-elevation)
+    ExecWait '"$0" /C ""$INSTDIR\platform-windows\initial_setup.bat" am_admin"'
+  ${Else}
+    Call UpgradeServicesAndData
+  ${EndIf}
 
-  ExpandEnvStrings $0 %COMSPEC%
-  ExecWait '"$0" /C "$INSTDIR\platform-windows\initial_setup.bat"'
+  ; record the installed version (read by the next installer for upgrade/downgrade detection)
+  WriteRegStr HKLM "Software\JSON_SCADA" "Version" "${VERSION_}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\JSON_SCADA" "DisplayVersion" "${VERSION_}"
 
-pgDatabaseExists:
+  ${If} $HAS_DATA == 0
+    MessageBox MB_OK "Installation finished! To run the system: Open the JSON-SCADA desktop folder, execute the '_Start_Services' shortcut and then open '_JSON SCADA WEB'." /SD IDOK
+  ${ElseIf} $R9 == 0
+    MessageBox MB_OK|MB_ICONINFORMATION "Upgrade to ${VERSION} finished.$\r$\n$\r$\nServices that were running before the upgrade were restarted. The previous configuration and scripts were backed up to $BACKUP_DIR (log: $INSTDIR\log\upgrade.log)." /SD IDOK
+  ${Else}
+    MessageBox MB_OK|MB_ICONEXCLAMATION "Upgrade to ${VERSION} finished with warnings (result: $R9).$\r$\n$\r$\nReview $INSTDIR\log\upgrade.log before using the system. The previous configuration and scripts were backed up to $BACKUP_DIR." /SD IDOK
+  ${EndIf}
 
-  ; Point the PostgreSQL loader services to src\process_pg_sql (upgrades from the former
-  ; sql\process_pg_*.bat loaders; a no-op on fresh installs, create_services.bat already did it)
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist Application "$INSTDIR\platform-windows\nodejs-runtime\node.exe"'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist AppParameters "$INSTDIR\src\process_pg_sql\index.js" hist 1'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist AppDirectory "$INSTDIR\src\process_pg_sql"'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_hist AppStdout "$INSTDIR\log\process_pg_hist.log"'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata Application "$INSTDIR\platform-windows\nodejs-runtime\node.exe"'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata AppParameters "$INSTDIR\src\process_pg_sql\index.js" rtdata 1'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata AppDirectory "$INSTDIR\src\process_pg_sql"'
-  nsExec::Exec '"$INSTDIR\platform-windows\nssm.exe" set JSON_SCADA_process_rtdata AppStdout "$INSTDIR\log\process_pg_rtdata.log"'
+SectionEnd
+
+; Upgrade completion, existing databases: service path migrations, then upgrade.ps1 -Phase PostInstall
+; (new services, database runtime/schema/FCV/TimescaleDB updates, restart of the services that were
+; running). Result in $R9: 0 = ok, 2 = warnings, other = failure.
+Function UpgradeServicesAndData
+
+  ; Former sql\process_pg_*.bat loaders: upgrade.ps1 (winsw-services.ps1 -Action Migrate) recreates
+  ; NSSM services that run a .bat or a missing program from their service template (src\process_pg_sql)
   Delete "$INSTDIR\sql\process_pg_hist.bat"
   Delete "$INSTDIR\sql\process_pg_rtdata.bat"
   Delete "$INSTDIR\sql\terminate_pg_hist.bat"
   Delete "$INSTDIR\sql\terminate_pg_rtdata.bat"
 
-  MessageBox MB_OK "Installation finished! To run the system: Open the JSON-SCADA desktop folder, execute the '_Start_Services' shortcut and then open '_JSON SCADA WEB'."
-  
-SectionEnd
+  DetailPrint "Completing the upgrade: services, databases..."
+  nsExec::ExecToLog 'powershell -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\platform-windows\upgrade.ps1" -Phase PostInstall -InstallDir "$INSTDIR" -BundledPgMajor ${PGBIN_1}'
+  Pop $R9
+
+FunctionEnd
 
 ; Uninstaller
 
-UninstallText "JSON SCADA Uninstall. All files will be removed from $INSTDIR !"
+UninstallText "JSON SCADA Uninstall. All files, including the databases and backups, will be removed from $INSTDIR ! To upgrade, run the new installer instead (data is kept)."
 UninstallIcon "${NSISDIR}\Contrib\Graphics\Icons\nsis1-uninstall.ico"
 
 Section "Uninstall"
-  
+
+  ${DisableX64FSRedirection}
+  SetRegView 64
+  ExpandEnvStrings $0 %COMSPEC%
+
   ; Close processes
 
   !define SC  `$SYSDIR\sc.exe`
@@ -763,8 +844,10 @@ Section "Uninstall"
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_modbusclient"`
+  ExecWait `"${SC}" stop "JSON_SCADA_sunspecclient"`
   Sleep 50
   ExecWait `"${SC}" delete "JSON_SCADA_modbusclient"`
+  ExecWait `"${SC}" delete "JSON_SCADA_sunspecclient"`
   ClearErrors
 
   ExecWait `"${SC}" stop "JSON_SCADA_modbusserver"`
@@ -917,16 +1000,18 @@ Section "Uninstall"
   ExecWait `"${SC}" delete "JSON_SCADA_cim_ems_demo_field"`
   ClearErrors
 
-  ExecWait '"$0" /C "$INSTDIR\platform-windows\mongodb-stop.bat"'
-  ExecWait '"$0" /C "$INSTDIR\platform-windows\postgresql-stop.bat"'
-  ExecWait '"$0" /C "$INSTDIR\platform-windows\stop_services.bat"'
+  ; the batch files resolve their helpers relative to the working directory ($OUTDIR)
+  SetOutPath "$INSTDIR\platform-windows"
+  ExecWait '"$0" /C ""$INSTDIR\platform-windows\mongodb-stop.bat" am_admin"'
+  ExecWait '"$0" /C ""$INSTDIR\platform-windows\postgresql-stop.bat" am_admin"'
+  ExecWait '"$0" /C ""$INSTDIR\platform-windows\stop_services.bat" am_admin"'
   Sleep 5000
   ; Replaced WMIC calls with a PowerShell helper script that uses Get-CimInstance/Invoke-CimMethod
   ; The installer will call remove_services.bat which in turn invokes
   ; kill_processes_by_pattern.ps1 to find and terminate processes by commandline pattern.
   ; This avoids using the deprecated WMIC tool.
   Sleep 5000
-  ExecWait '"$0" /C "$INSTDIR\platform-windows\remove_services.bat"'
+  ExecWait '"$0" /C ""$INSTDIR\platform-windows\remove_services.bat" am_admin"'
   Sleep 5000
 
   ; Remove Windows Defender exclusions (before platform-windows is deleted)
@@ -935,7 +1020,8 @@ Section "Uninstall"
   ; ExecWait `regsvr32 gbda_aut.dll -u`
   ; ExecWait `regsvr32 gbhda_aw.dll -u`
 
-  RMDir /r "$INSTDIR\bin" 
+  SetOutPath $TEMP ; leave $INSTDIR so that it can be removed
+  RMDir /r "$INSTDIR\bin"
   RMDir /r "$INSTDIR\platform-windows" 
   RMDir /r "$INSTDIR\conf" 
   RMDir /r "$INSTDIR\docs" 

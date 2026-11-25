@@ -72,6 +72,9 @@ func main() {
 	built := BuildModel(points, conn)
 	exportManifest(built, conn)
 
+	sec = newSecState(conn, cfg.NodeName)
+	sec.run(ctx, cfg)
+
 	gw, err := NewGateway(conn, built)
 	if err != nil {
 		jslog.Fatal("Error creating the MMS server - %v", err)
@@ -95,8 +98,13 @@ func main() {
 		select {
 		case <-sigs:
 			jslog.Log(jslog.LevelNoLog, "Shutdown requested...")
-			cancel()
 			gw.Stop()
+			sec.close() // the library's last events reach the writer
+			cancel()
+			select { // the writer stores what is queued
+			case <-sec.writer.Done():
+			case <-time.After(3 * time.Second):
+			}
 			jslog.Flush()
 			os.Exit(0)
 

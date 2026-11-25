@@ -1,0 +1,215 @@
+1
+00:00:00,000 --> 00:00:06,000
+Welcome to JSON-SCADA, an open platform for monitoring and operating industrial systems.
+
+2
+00:00:06,000 --> 00:00:12,000
+The Display Viewer presents a substation as a single-line diagram with live electrical measurements.
+
+3
+00:00:12,000 --> 00:00:18,000
+Equipment symbols, voltage levels, and power flows provide a geographic and operational context.
+
+4
+00:00:18,000 --> 00:00:24,000
+The top toolbar selects screens and provides zoom, pan, fit, slideshow, and time-machine controls.
+
+5
+00:00:24,000 --> 00:00:30,000
+Measurements appear beside transformers, breakers, buses, and outgoing feeders.
+
+6
+00:00:30,000 --> 00:00:36,000
+The alarm ticker at the top keeps recent conditions visible while an operator views the diagram.
+
+7
+00:00:36,000 --> 00:00:42,000
+The Alarms Viewer gathers active conditions across the monitored system.
+
+8
+00:00:42,000 --> 00:00:48,000
+Rows show each station, the point description, its state, quality indicators, and timestamps.
+
+9
+00:00:48,000 --> 00:00:54,000
+Filters and column controls help operators focus on the alarms that matter to their work.
+
+10
+00:00:54,000 --> 00:01:00,000
+Colors and status text make it easier to distinguish conditions in a busy alarm list.
+
+11
+00:01:00,000 --> 00:01:06,000
+The toolbar offers acknowledgement and audible alarm controls for authorized operators.
+
+12
+00:01:06,000 --> 00:01:12,000
+This walkthrough is read-only: no alarm acknowledgements or field commands are issued.
+
+13
+00:01:12,000 --> 00:01:18,000
+The Tabular Viewer offers a point-by-point view of a selected station.
+
+14
+00:01:18,000 --> 00:01:24,000
+Here AGGAN CT11 is selected, showing measurements and equipment states in one table.
+
+15
+00:01:24,000 --> 00:01:30,000
+Rows include values and units, quality information, alarm time, and source time.
+
+16
+00:01:30,000 --> 00:01:36,000
+Station and bay selectors narrow a large system to a useful operational scope.
+
+17
+00:01:36,000 --> 00:01:42,000
+Commandable and abnormal filters help operators find specific kinds of points.
+
+18
+00:01:42,000 --> 00:01:48,000
+The example includes analog measurements and open or closed equipment states.
+
+19
+00:01:48,000 --> 00:01:54,000
+The Events Viewer displays a chronological stream of changes and events.
+
+20
+00:01:54,000 --> 00:02:00,000
+Timestamps and point descriptions help reconstruct what happened and where.
+
+21
+00:02:00,000 --> 00:02:06,000
+Event history complements the active alarm view when investigating an incident.
+
+22
+00:02:06,000 --> 00:02:12,000
+CIM-EMS adds network analysis based on an imported CGMES model.
+
+23
+00:02:12,000 --> 00:02:18,000
+The demo includes the active SVEDALA model, revision 1, using CGMES version 3.0.
+
+24
+00:02:18,000 --> 00:02:24,000
+The model list displays import metadata and counts of errors, warnings, and unsupported items.
+
+25
+00:02:24,000 --> 00:02:30,000
+Bindings connect network model elements to SCADA tags.
+
+26
+00:02:30,000 --> 00:02:36,000
+This screen lists switch and analog bindings, their associated tags, and approval state.
+
+27
+00:02:36,000 --> 00:02:42,000
+Search and kind filters support review of mappings in large network models.
+
+28
+00:02:42,000 --> 00:02:48,000
+The Runs view shows repeated analysis cycles and their results.
+
+29
+00:02:48,000 --> 00:02:54,000
+Each row reports its trigger, status, processing time, and model revision.
+
+30
+00:02:54,000 --> 00:03:00,000
+The visible state-estimation results converged; contingency-analysis status appears alongside them.
+
+31
+00:03:00,000 --> 00:03:06,000
+The Requests view is where analysis requests and their status can be inspected.
+
+32
+00:03:06,000 --> 00:03:12,000
+Its columns include request type, user, status, node, completion time, and errors.
+
+33
+00:03:12,000 --> 00:03:18,000
+There are no requests in this captured view, so the table is empty.
+
+34
+00:03:18,000 --> 00:03:24,000
+The Admin dashboard brings together users, roles, drivers, connections, and tags.
+
+35
+00:03:24,000 --> 00:03:30,000
+The Users tab shows account details, assigned roles, and authentication information.
+
+36
+00:03:30,000 --> 00:03:36,000
+Search, refresh, and CSV export controls help administrators review the configured accounts.
+
+37
+00:03:36,000 --> 00:03:42,000
+Roles define the permissions available to groups of users.
+
+38
+00:03:42,000 --> 00:03:48,000
+The role list summarizes rights and provides access to role configuration.
+
+39
+00:03:48,000 --> 00:03:54,000
+Access controls matter: the CIM-EMS screen shown earlier explicitly reports read-only access.
+
+40
+00:03:54,000 --> 00:04:00,000
+Driver Instances lists the protocol processes configured for this installation.
+
+41
+00:04:00,000 --> 00:04:06,000
+The table summarizes driver names, status, instance numbers, and associated connections.
+
+42
+00:04:06,000 --> 00:04:12,000
+JSON-SCADA integrates different protocols through separate communication drivers.
+
+43
+00:04:12,000 --> 00:04:18,000
+Connections describe individual links between drivers and external systems or devices.
+
+44
+00:04:18,000 --> 00:04:24,000
+The table presents status, connection names, endpoints, and other operational details.
+
+45
+00:04:24,000 --> 00:04:30,000
+Status counts across the top help administrators spot connections needing attention.
+
+46
+00:04:30,000 --> 00:04:36,000
+The Tags view exposes the point database behind displays, alarms, and integrations.
+
+47
+00:04:36,000 --> 00:04:42,000
+Search and filter controls help locate tags among a large set of measurements and states.
+
+48
+00:04:42,000 --> 00:04:48,000
+The list includes tag identity, grouping, descriptions, and current configuration.
+
+49
+00:04:48,000 --> 00:04:54,000
+The System tab groups project backup and process-management controls.
+
+50
+00:04:54,000 --> 00:05:00,000
+It also displays system totals and administrative tools for maintaining the installation.
+
+51
+00:05:00,000 --> 00:05:06,000
+These controls can change the system; this demonstration only shows the interface.
+
+52
+00:05:06,000 --> 00:05:12,000
+Together, displays, alarms, point tables, and event history support daily operations.
+
+53
+00:05:12,000 --> 00:05:18,000
+CIM-EMS and the administration tools extend that picture to analysis and engineering.
+
+54
+00:05:18,000 --> 00:05:24,000
+This concludes the JSON-SCADA demo. The visuals are captures from the running demo system.

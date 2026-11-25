@@ -138,6 +138,29 @@ function buildContentFilter(station, bay, onlyAlarms) {
   return cf
 }
 
+// Out-of-range alarm limit fields of analog points, from the least severe.
+export const HiLimitFields = ['hiLimit', 'hihiLimit', 'hihihiLimit']
+export const LoLimitFields = ['loLimit', 'loloLimit', 'lololoLimit']
+
+// The limits of a point, Infinity (high) or -Infinity (low) when not set.
+function limitsOf(prop) {
+  const out = {}
+  for (const k of HiLimitFields)
+    out[k] = typeof prop[k] === 'number' && !isNaN(prop[k]) ? prop[k] : Infinity
+  for (const k of LoLimitFields)
+    out[k] = typeof prop[k] === 'number' && !isNaN(prop[k]) ? prop[k] : -Infinity
+  return out
+}
+
+// Label of an alarm range (alarmRange of an analog point): HI, HIHI, HIHIHI,
+// LO, LOLO, LOLOLO, '' when normal.
+export function alarmRangeLabel(range) {
+  const n = Math.trunc(range)
+  if (n > 0 && n <= 3) return 'HI'.repeat(n)
+  if (n < 0 && n >= -3) return 'LO'.repeat(-n)
+  return ''
+}
+
 // Convert one OPC read Result element + its _Properties into a normalized point.
 function normalizePoint(element, cfg) {
   const prop = element._Properties || {}
@@ -218,10 +241,10 @@ function normalizePoint(element, cfg) {
     isEvent: !!prop.isEvent,
     commandKey: prop.commandOfSupervised || 0,
     supervisedOfCommand: prop.supervisedOfCommand || 0,
-    hiLimit:
-      isNaN(prop.hiLimit) || prop.hiLimit === null ? Infinity : prop.hiLimit,
-    loLimit:
-      isNaN(prop.loLimit) || prop.loLimit === null ? -Infinity : prop.loLimit,
+    // out-of-range alarm limits: Infinity / -Infinity when not set
+    ...limitsOf(prop),
+    // 1..3 above hi/hihi/hihihiLimit, -1..-3 below lo/lolo/lololoLimit, 0 normal
+    alarmRange: typeof prop.alarmRange === 'number' ? prop.alarmRange : 0,
     hysteresis: prop.hysteresis,
     stateTextTrue: prop.stateTextTrue,
     stateTextFalse: prop.stateTextFalse,
@@ -361,7 +384,9 @@ export async function readPoints(keysOrTags, askInfo, cfg, jsonKeys) {
 
 // --- alarm acknowledge / silence beep ----------------------------------------
 
-export async function writeAck({ pointId, action }) {
+// alarmId: one alarm of the alarm list (alarmsData) of the point, for
+// AckOneAlarm; without it every alarm of the point is acknowledged
+export async function writeAck({ pointId, action, alarmId }) {
   const handle = newHandle()
   const numeric = !isNaN(parseInt(pointId))
   const req = {
@@ -383,11 +408,65 @@ export async function writeAck({ pointId, action }) {
           },
           AttributeId: OpcAttributeId.ExtendedAlarmEventsAck,
           Value: { Type: OpcValueTypes.Integer, Body: action },
+          ...(alarmId ? { _Properties: { alarm_id: String(alarmId) } } : {}),
         },
       ],
     },
   }
   return invoke(req, 1500)
+}
+
+// --- alarm list (alarmsData) ---------------------------------------------------
+
+// Reads the alarm list (server_realtime_auth auth/listAlarms).
+// params: { mode: 'realtime' | 'historical', timeBegin, timeEnd (Date),
+// group1: [station], text, unackedOnly, limit }.
+// Returns { alarms: [row], limited } with rows ready for the grid.
+export async function readAlarms(params, cfg, timeoutMs = 10000) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  let json
+  try {
+    const resp = await fetch('/Invoke/auth/listAlarms', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        ...params,
+        ...(params.timeBegin instanceof Date ? { timeBegin: params.timeBegin.toISOString() } : {}),
+        ...(params.timeEnd instanceof Date ? { timeEnd: params.timeEnd.toISOString() } : {}),
+      }),
+    })
+    json = await resp.json()
+  } finally {
+    clearTimeout(timer)
+  }
+  if (json?.ok === false) {
+    accessDeniedHandler()
+    throw new Error(json.message || 'access denied')
+  }
+  if (!json || json.error) throw new Error(json?.error || 'invalid answer')
+  const fmt = (v) =>
+    formatDateTime(v, cfg.TabularViewer_LocaleDateTime, cfg.TabularViewer_LocaleDateTimeOptions)
+  return {
+    limited: !!json.limited,
+    alarms: (json.alarms || []).map((a) => ({
+      ...a,
+      rowId: a._id,
+      station: a.group1 || '',
+      descr: a.description || '',
+      displayValue: a.valueString || (a.value ?? ''),
+      text: a.alarmText || a.valueString || '',
+      priority: typeof a.priority === 'number' ? a.priority : 9,
+      acked: a.ack !== 0,
+      rangeLabel: a.type === 'analog' ? alarmRangeLabel(a.alarmRange) : '',
+      date: new Date(a.timeTag),
+      timeStr: fmt(a.timeTag),
+      sourceTimeStr: a.timeTagAtSource ? fmt(a.timeTagAtSource) : '',
+      ackTimeStr: a.timeTagAck ? fmt(a.timeTagAck) : '',
+      normalTimeStr: a.timeTagNormal ? fmt(a.timeTagNormal) : '',
+    })),
+  }
 }
 
 // --- command execution -------------------------------------------------------

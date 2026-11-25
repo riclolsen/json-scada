@@ -4,7 +4,8 @@ A driver that connects JSON-SCADA to OPC UA servers. It reads data from the serv
 JSON-SCADA real-time database and carries operator commands back to the server.
 
 It is a single executable with no runtime to install, built on the pure-Go
-[gopcua](https://github.com/gopcua/opcua) library.
+[gopcua](https://github.com/gopcua/opcua) library, in the
+[riclolsen/opcua](https://github.com/riclolsen/opcua) fork that adds security event reporting.
 
 What it does:
 
@@ -14,7 +15,10 @@ What it does:
 - subscribes to the points, so values arrive when they change instead of being polled;
 - executes **commands** (writes to variables, calls to methods) queued by JSON-SCADA operators;
 - recovers from lost connections, fails over between redundant servers, and takes part in
-  JSON-SCADA's active/standby node redundancy.
+  JSON-SCADA's active/standby node redundancy;
+- identifies each server on every session and records **security events** (refused
+  certificates, malformed or replayed messages, unknown nodes, refused or suspicious commands,
+  identity, MAC address and restart changes) in the `secEvents` collection.
 
 ## Contents
 
@@ -28,6 +32,7 @@ What it does:
 - [Security and certificates](#security-and-certificates)
 - [Tags](#tags)
 - [Commands](#commands)
+- [Security events and server identification](#security-events-and-server-identification)
 - [Redundancy](#redundancy)
 - [Reconnection and recovery](#reconnection-and-recovery)
 - [Logging and troubleshooting](#logging-and-troubleshooting)
@@ -78,7 +83,7 @@ go build -ldflags="-s -w" -o ../../bin/opcua-client
 
 | Platform | How |
 |---|---|
-| Linux (supervisor) | Enable `opcua_goclient.ini` from the platform folder (`platform-ubuntu-*`, `platform-rhel*`). It is installed with `autostart=false`. |
+| Linux (supervisor) | Enable `opcua_goclient.ini` from the platform folder (`platform-ubuntu`, `platform-rhel`). It is installed with `autostart=false`. |
 | Windows | `platform-windows/create_services.bat` installs the `JSON_SCADA_opcuagoclient` service with manual start. |
 | AdminUI process manager | Put `processExecutableVariant: "opcuago"` in the driver instance document and the process manager starts this binary for the `OPC-UA` driver. |
 
@@ -202,6 +207,7 @@ Collection `protocolConnections`, one document per server. Changes take effect a
 | `description` | — | Free text. |
 | `enabled` | `true` | `false` skips the connection. |
 | `commandsEnabled` | `true` | `false` refuses all commands for this connection, and also stops the driver from creating command tags and discovering methods. |
+| `peerIdentification` | `true` | Identify the server on every session (its `ServerStatus.BuildInfo`, application description, certificate and MAC address) into `stats.peerIdentity`, and report changes of it. `false` stores no identity, looks up no MAC address when connecting and puts none in the events (the library still reads the neighbour table once for a connection on which it reports an event; the driver discards the result). See [Security events and server identification](#security-events-and-server-identification). |
 
 ### Server and session
 
@@ -241,7 +247,7 @@ The identity is chosen in this order: user name, then user certificate, then ano
 
 | Field | Meaning |
 |---|---|
-| `stats` | `{ nodeName, timeTag }`, refreshed every 5 s while this node is active. A heartbeat other tools can watch. |
+| `stats` | `{ nodeName, timeTag, isConnected, peerIdentity }`, refreshed every 5 s while this node is active: a heartbeat other tools can watch, whether the session is up, and, with `peerIdentification`, the server's identity (see [Server identification](#server-identification)). |
 | `giInterval` | Accepted, ignored. |
 
 ### Several connections
@@ -328,6 +334,15 @@ that does not already have one.
 objects (folders), variables and methods. Properties of a variable are discovered as tags of their
 own, but their children are not expanded. Types, views and anything outside `Objects` are not
 browsed.
+
+**Units and measurement range.** The `EngineeringUnits`, `EURange`, `InstrumentRange` and
+`NumberRange` properties of a variable (reached through `HasProperty`) are not tagged or monitored.
+Instead they fill in the variable's new analog tag: `unit` gets the `EUInformation` display name
+(its description when the display name is empty), and `lololoLimit` / `hihihiLimit` get the low
+and high bounds of the range. `EURange` takes precedence over `InstrumentRange`, which takes
+precedence over `NumberRange` (not a standard OPC UA property, accepted when a server uses it). A
+range whose bounds are not finite or not increasing is ignored, and a tag without these properties
+keeps the defaults (no unit, no limits). Only new tags are affected; existing tags are not changed.
 
 **What is skipped.** The server's own bookkeeping about its clients: `SessionsDiagnosticsSummary`
 (with everything below it), `SessionDiagnosticsArray`, `SessionSecurityDiagnosticsArray` and
@@ -539,7 +554,7 @@ nothing is written to the server.
 
    | `cancelReason` | Because |
    |---|---|
-   | `expired` | the command is more than 10 seconds old |
+   | `expired` | the command is more than 10 seconds old, on arrival or when it is about to be sent |
    | `not connected` | the connection has no live session |
    | `commands disabled` | `commandsEnabled` is `false` for the connection |
    | `type conversion error` | the value does not fit the type (out of range, `NaN`, ...), a base64 string, node id, GUID or array element cannot be converted, or the type cannot be written |
@@ -567,6 +582,91 @@ ByteString), refusing the call with the conversion error when a value does not f
 argument whose type is not declared or not one of those, the element is sent as Boolean, Int64
 (whole numbers), Double or String. `resultDescription` is `OK`, or `OK:` followed by the method's
 output arguments.
+
+## Security events and server identification
+
+The driver writes cyber-security events to the `secEvents` collection (see
+[docs/schema.md](../../docs/schema.md#secevents-collection); the Admin UI Security Events viewer
+lists them). Nothing is refused because of them: they are a record, not a policy.
+
+### Server identification
+
+With `peerIdentification` (the default), every time a session connects, including the
+reconnections the client makes by itself, the driver identifies the server and writes it to
+`stats.peerIdentity`:
+
+| Field | Meaning |
+|---|---|
+| `vendor`, `model`, `productUri` | `ServerStatus.BuildInfo`: manufacturer name, product name, product URI. |
+| `softwareVersion`, `buildNumber`, `buildDate` | `ServerStatus.BuildInfo`: software version, build number and date. |
+| `startTime`, `state` | `ServerStatus.StartTime` and `State` (`ServerStateRunning`, ...). |
+| `application` | The endpoint's application description: `applicationUri`, `applicationName`, `productUri`, `applicationType`. |
+| `certificate` | The server's certificate: `subject`, `issuer`, `serial`, `sha256`, `notAfter`. |
+| `endpointUrl`, `securityPolicy`, `securityMode` | The endpoint the session uses. |
+| `address`, `ip`, `mac`, `macSource` | The server's address, and its MAC address from the operating system's neighbour table (`macSource` `neighbor`; absent when the server is behind a router). |
+| `method`, `error` | `buildInfo`, or `error` when the server did not answer the read (`error` says why). |
+| `collectedAt`, `keys` | When it was read, and the compared values (`k`, `v`): per configured endpoint URL (`model\|opc.tcp://...`), the MAC address per IP (`mac\|10.0.0.5`). |
+
+A change of `vendor`, `model`, `productUri`, `softwareVersion`, `buildNumber`, `buildDate` or
+`applicationUri` is `peer.identity_changed`, of the MAC address `peer.mac_changed`, of the
+certificate `tls.cert_changed`, and a new `startTime` is `remote.restart`. Each server is
+compared with its own history: with several `endpointURLs`, failing over between them reports
+nothing, and the MAC address is compared per IP. The history is the identity stored there, so a
+change across a driver restart is seen too. An identification still being read when the
+connection is replaced or closed is discarded.
+
+### Events
+
+Detected by the opcua library (`source: "library"`), with the kinds it names:
+
+- malformed messages, headers, fields and chunks, and invalid message types
+  (`message.malformed`), oversized messages (`message.oversized`);
+- sequence numbers that are not the successor of the previous one: replayed, dropped or
+  reordered chunks (`message.sequence_error`);
+- signatures or encryption that do not verify, a renewal that changes the security policy
+  (`message.security_check_failed`); a server certificate that cannot be used or is not the
+  endpoint's (`message.certificate_rejected`);
+- messages for an unknown secure channel or token (`message.unknown_channel`), responses that
+  match no request (`message.unsolicited_response`);
+- a different MAC address for the server's IP on a reconnection (`connection.mac_changed`).
+
+The same library event is stored once per 10 s, with the count. Routine informational events are
+not stored.
+
+Detected by the driver (`source: "driver"`):
+
+- `peer.identified` at the first identification (none when an identity was already stored), and
+  the identity changes above; `remote.state`: the server reports a state other than running;
+- `tls.cert_rejected`: the server certificate refused with `autoAcceptUntrustedCertificates`
+  false (once per 10 minutes for the same certificate); its peer is the server of the endpoint
+  URL being connected to;
+- `access.unknown_node`: a configured node the server refused to monitor because it does not
+  have it (`BadNodeIdUnknown`, `BadNodeIdInvalid`, `BadAttributeIdInvalid`, `BadNotFound`), once
+  an hour per node; past 20 in one subscription setup, the rest in one event with the count;
+- `cmd.rejected`: a command refused because `commandsEnabled` is false, or refused by the server
+  (`BadUserAccessDenied`, `BadNotWritable`, ..., in the operation's result or the whole request's);
+  a lost connection or a timeout is not a refusal. `cmd.object_unknown`: a command for a node or
+  method the server does not have, or whose address is not a node id; `cmd.wrong_type`: a value
+  that does not convert to its ASDU or does not fit it, or that the server refused for its type
+  or arguments (`BadTypeMismatch`, `BadOutOfRange`, `BadInvalidArgument`, ...);
+  `cmd.stale_time`: a command older than its expiry, on arrival or after the lookups a method
+  call needs, not sent. The same refusal of the same
+  address is stored once a minute, with the count;
+- `flood.commands`: more than 10 commands to the server within 10 s, or more than 256 waiting;
+- `cmd.unnecessary`: a Boolean command to the state its supervised point already was in;
+- every method call, after it was sent, with its outcome (`value`, e.g. `Good`): `ctrl.restart`
+  for `Server.RequestServerStateChange` and the methods of a `ProgramStateMachineType` object,
+  `ctrl.config_change` for those of `ServerConfiguration`, a certificate group or a trust list,
+  `file.transfer` for those of a `FileType` or `FileDirectoryType` object, and
+  `ctrl.method_call` for any other. A standard method is known by its id (namespace 0); another
+  by the type of the object it is called on, the standard type itself (a vendor subtype of it is
+  an ordinary call). `fields` give `method`, `methodId`, `objectId`, `objectType` and the number
+  of `arguments`.
+
+The command events carry the tag, the node id and the command value, never `valueString`: it
+holds a method's arguments (file contents or keys, for some) and string setpoints. A client has no listener,
+link addresses or scans to watch: unexpected connections and address scans are the OPC UA server
+driver's events.
 
 ## Redundancy
 

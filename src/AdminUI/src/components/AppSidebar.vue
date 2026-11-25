@@ -223,6 +223,7 @@ const props = defineProps({
   loggedInUser: { type: String, default: '' },
   isLDAPUser: { type: Boolean, default: false },
   isAdmin: { type: Boolean, default: false },
+  rights: { type: Object, default: () => ({}) },
   theme: { type: String, default: 'dark' },
   locale: { type: String, default: 'en' },
   availableLocales: { type: Array, default: () => [] },
@@ -264,7 +265,7 @@ function closeIfMobile() {
 // flat list: home, then each group (header + items)
 const menu = computed(() => {
   const out = [{ key: 'home', item: homeItem }]
-  for (const g of visibleGroups(props.isAdmin)) {
+  for (const g of visibleGroups(props.isAdmin, props.rights)) {
     out.push({ key: 'g-' + g.key, group: g.key })
     for (const it of g.items) out.push({ key: it.id, item: it })
   }
@@ -409,6 +410,11 @@ const initials = computed(() => (props.loggedInUser || '?').slice(0, 2).toUpperC
   gap: 2px;
 }
 /* thin scrollbar matching the theme when the menu does not fit */
+/* navigation chrome: clicks and drags must not select its text */
+.app-sidebar {
+  user-select: none;
+  -webkit-user-select: none;
+}
 .app-sidebar :deep(.v-navigation-drawer__content) {
   scrollbar-width: thin;
   scrollbar-color: rgba(var(--v-theme-on-surface), 0.25) transparent;
