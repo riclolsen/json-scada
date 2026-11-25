@@ -21,7 +21,7 @@
     "sass": "^1.83.0",
     "typescript": "^5.7.2",
     "vite": "^7.0.0",
-    "vitest": "^3.0.0"
+    "vitest": "^5.1.2"
   },
   "scripts": {
     "start": "vite",
