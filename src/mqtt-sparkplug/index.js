@@ -2014,7 +2014,6 @@ async function sparkplugProcess(
                   toNumber(payload.seq)
                 : undefined,
             }
-            delete RebirthRequests[nodeLocator]
             // devices of this node must be birthed again (DBIRTH follows)
             Object.keys(DevicesList).forEach(function (key) {
               if (key !== nodeLocator && isSameOrChildPath(key, nodeLocator))
